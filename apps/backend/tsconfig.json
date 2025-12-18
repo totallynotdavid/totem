@@ -1,0 +1,9 @@
+{
+  "extends": "@totem/tsconfig/backend.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}
