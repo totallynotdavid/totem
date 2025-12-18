@@ -1,0 +1,16 @@
+## tsconfig
+
+Shared TypeScript configurations for the monorepo.
+
+Extend one of the configs in your `tsconfig.json`:
+
+```json
+{
+  "extends": "@totem/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
+```
