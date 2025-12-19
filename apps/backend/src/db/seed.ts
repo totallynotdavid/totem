@@ -15,7 +15,7 @@ export function seedDatabase() {
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(adminId, "admin", hash, "admin", "Administrador del Sistema", null);
 
-    console.log("✓ Admin user created (username: admin, password: admin123)");
+    console.log("Admin user created (username: admin, password: admin123)");
   }
 
   // Seed some sample products if empty
