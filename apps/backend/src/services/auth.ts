@@ -18,6 +18,7 @@ export interface User {
     id: string;
     username: string;
     role: string;
+    name: string;
 }
 
 export type SessionValidationResult =
@@ -56,7 +57,7 @@ export function validateSessionToken(token: string): SessionValidationResult {
     );
     const row = db
         .prepare(`
-        SELECT s.id, s.user_id, s.expires_at, u.id as uid, u.username, u.role 
+        SELECT s.id, s.user_id, s.expires_at, u.id as uid, u.username, u.role, u.name as uname
         FROM session s
         INNER JOIN users u ON u.id = s.user_id 
         WHERE s.id = ?
@@ -77,6 +78,7 @@ export function validateSessionToken(token: string): SessionValidationResult {
         id: row.uid,
         username: row.username,
         role: row.role,
+        name: row.uname,
     };
 
     if (Date.now() >= session.expiresAt.getTime()) {
