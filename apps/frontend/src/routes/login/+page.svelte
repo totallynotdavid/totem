@@ -17,7 +17,7 @@
             const data = await res.json();
             user.data = data.user;
             user.isAuthenticated = true;
-            goto('/'); // Redirect to Dashboard, not Catalog
+            goto('/');
         } else {
             error = 'Credenciales no válidas';
         }

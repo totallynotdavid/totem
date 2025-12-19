@@ -83,7 +83,7 @@
             </div>
 
             <!-- Messages -->
-            <div class="flex-grow p-12 overflow-y-auto space-y-6">
+            <div class="grow p-12 overflow-y-auto space-y-6">
                 <div class="flex justify-center mb-8">
                     <span class="text-xs text-ink-300 uppercase tracking-widest border-b border-ink-200 pb-1">Inicio de historial</span>
                 </div>
@@ -104,7 +104,7 @@
                     <div class="flex gap-0 shadow-lg">
                         <input 
                             bind:value={messageText} 
-                            class="flex-grow bg-white p-4 text-lg font-serif outline-none placeholder-ink-300"
+                            class="grow bg-white p-4 text-lg font-serif outline-none placeholder-ink-300"
                             placeholder="Escriba su mensaje..."
                         />
                         <button onclick={sendMessage} class="bg-ink-900 text-white px-8 font-bold hover:bg-ink-700 transition-colors">

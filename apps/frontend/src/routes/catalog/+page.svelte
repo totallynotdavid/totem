@@ -152,7 +152,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {#each products as p}
             <div class="group">
-                <div class="aspect-[4/5] bg-white border border-cream-200 mb-4 overflow-hidden relative">
+                <div class="aspect-4/5 bg-white border border-cream-200 mb-4 overflow-hidden relative">
                     <img src={`/static/${p.image_main_path}`} alt={p.name} class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                     <span class="absolute bottom-0 left-0 bg-white/90 backdrop-blur px-3 py-1 text-[10px] font-bold uppercase tracking-widest border-t border-r border-cream-200">
                         {p.segment}
