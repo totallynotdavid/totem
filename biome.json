@@ -34,7 +34,8 @@
       },
       "style": {
         "recommended": true,
-        "useNamingConvention": "off"
+        "useNamingConvention": "off",
+        "useConst": "off"
       },
       "suspicious": {
         "recommended": true,

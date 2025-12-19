@@ -19,7 +19,7 @@ async function takeover(phone: string) {
 }
 
 async function sendMessage() {
-    if (!selectedPhone || !messageText) return;
+    if (!(selectedPhone && messageText)) return;
     await fetch(`/api/conversations/${selectedPhone}/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
