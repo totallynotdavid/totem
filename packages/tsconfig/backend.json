@@ -1,7 +1,7 @@
 {
-  "extends": "./base.json",
-  "compilerOptions": {
-    "lib": ["ESNext"],
-    "types": ["bun-types"]
-  }
+    "extends": "./base.json",
+    "compilerOptions": {
+        "lib": ["ESNext"],
+        "types": ["bun-types"]
+    }
 }
