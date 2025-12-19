@@ -26,9 +26,10 @@
     }
 
     async function upload() {
-        if (!files || files.length === 0) return;
+        const file = files?.[0];
+        if (!file) return;
         const form = new FormData();
-        form.append('image', files[0]);
+        form.append('image', file);
         form.append('name', name);
         form.append('price', price);
         form.append('segment', segment);
@@ -40,9 +41,10 @@
     }
 
     async function uploadCsv() {
-        if (!csvFiles || csvFiles.length === 0) return;
+        const csvFile = csvFiles?.[0];
+        if (!csvFile) return;
         const form = new FormData();
-        form.append('csv', csvFiles[0]);
+        form.append('csv', csvFile);
         const res = await fetch('/api/catalog/bulk', { method: 'POST', body: form });
         importResult = await res.json();
         load();
