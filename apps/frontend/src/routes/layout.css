@@ -67,7 +67,7 @@ h6 {
 }
 
 .module-header {
-    @apply flex flex-col md:flex-row justify-between items-end mb-12 border-b border-ink-900/10 pb-6 gap-6;
+    @apply flex flex-col md:flex-row justify-between items-end mb-8 border-b border-ink-900/10 pb-6 gap-6;
 }
 
 .module-title {

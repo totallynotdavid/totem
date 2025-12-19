@@ -1,0 +1,88 @@
+import { Client, LocalAuth } from "whatsapp-web.js";
+import qrcode from "qrcode-terminal";
+import process from "node:process";
+import fs from "node:fs";
+import path from "node:path";
+
+const DATA_PATH = process.env.NOTIFIER_DATA_PATH || "./data/notifier";
+
+// Ensure data directory exists
+fs.mkdirSync(DATA_PATH, { recursive: true });
+
+export let client: Client | null = null;
+
+export const groupMapping = new Map<string, string>();
+
+// Load group mapping from file if exists
+const MAPPING_FILE = path.join(DATA_PATH, "group_mapping.json");
+if (fs.existsSync(MAPPING_FILE)) {
+  const data = JSON.parse(fs.readFileSync(MAPPING_FILE, "utf-8"));
+  Object.entries(data).forEach(([key, jid]) => {
+    groupMapping.set(key, jid as string);
+  });
+  console.log("✓ Loaded group mapping:", Array.from(groupMapping.keys()));
+}
+
+function saveGroupMapping() {
+  const obj = Object.fromEntries(groupMapping.entries());
+  fs.writeFileSync(MAPPING_FILE, JSON.stringify(obj, null, 2));
+}
+
+export async function initializeWhatsAppClient() {
+  client = new Client({
+    authStrategy: new LocalAuth({
+      dataPath: DATA_PATH,
+    }),
+    puppeteer: {
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    },
+  });
+
+  client.on("qr", (qr) => {
+    console.log("\n📱 Scan this QR code with WhatsApp:");
+    qrcode.generate(qr, { small: true });
+  });
+
+  client.on("ready", () => {
+    console.log("✓ WhatsApp client ready");
+  });
+
+  client.on("authenticated", () => {
+    console.log("✓ WhatsApp authenticated");
+  });
+
+  client.on("auth_failure", (msg) => {
+    console.error("✗ WhatsApp auth failure:", msg);
+  });
+
+  // Auto-register groups with @activate command
+  client.on("message", async (msg) => {
+    if (msg.body === "@activate" && msg.from.endsWith("@g.us")) {
+      const chat = await msg.getChat();
+      const groupName = chat.name || "unknown";
+
+      groupMapping.set(groupName, msg.from);
+      saveGroupMapping();
+
+      await msg.reply(
+        `✓ Grupo "${groupName}" activado para notificaciones.\nJID: ${msg.from}`,
+      );
+
+      console.log(`✓ Group registered: ${groupName} -> ${msg.from}`);
+    }
+  });
+
+  await client.initialize();
+}
+
+export function getGroupJID(channel: "agent" | "dev"): string | null {
+  // Try environment variable first
+  const envKey =
+    channel === "agent" ? "WHATSAPP_GROUP_AGENT" : "WHATSAPP_GROUP_DEV";
+  const envJID = process.env[envKey];
+  if (envJID) return envJID;
+
+  // Try mapping
+  const mappingKey = channel === "agent" ? "agent_team" : "dev_team";
+  return groupMapping.get(mappingKey) || null;
+}

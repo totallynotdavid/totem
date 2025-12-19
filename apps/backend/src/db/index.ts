@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import fs from "node:fs";
 import path from "node:path";
-import bcrypt from "bcryptjs";
 import process from "node:process";
+import { seedDatabase } from "./seed.ts";
 
 const DB_PATH = process.env.DB_PATH || "./data/database.sqlite";
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "./data/uploads";
@@ -18,17 +18,8 @@ const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
 const schema = fs.readFileSync(schemaPath, "utf-8");
 db.run(schema);
 
-// Seed Admin User if empty
-const adminCheck = db.prepare("SELECT count(*) as count FROM users").get() as {
-    count: number;
-};
-if (adminCheck.count === 0) {
-    const hash = bcrypt.hashSync("admin123", 10);
-    const stmt = db.prepare(
-        "INSERT INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)",
-    );
-    stmt.run(crypto.randomUUID(), "admin", hash, "admin");
-}
+// Seed database with initial sample data
+seedDatabase();
 
 export type DbUser = {
     id: string;

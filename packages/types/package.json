@@ -1,8 +1,8 @@
 {
-    "name": "@totem/types",
-    "version": "0.1.0",
-    "type": "module",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "private": false
+  "name": "@totem/types",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
 }

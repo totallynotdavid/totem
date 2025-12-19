@@ -1,20 +1,20 @@
--- USERS
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin', 'editor', 'viewer')),
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    role TEXT NOT NULL CHECK(role IN ('admin', 'developer', 'sales_agent')),
+    name TEXT NOT NULL,
+    is_active INTEGER DEFAULT 1 CHECK(is_active IN (0, 1)),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT REFERENCES users(id)
 );
 
--- SESSIONS
 CREATE TABLE IF NOT EXISTS session (
     id TEXT NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL
 );
 
--- CATALOG
 CREATE TABLE IF NOT EXISTS catalog_products (
     id TEXT PRIMARY KEY,
     segment TEXT NOT NULL CHECK(segment IN ('fnb', 'gaso')),
@@ -22,40 +22,63 @@ CREATE TABLE IF NOT EXISTS catalog_products (
     name TEXT NOT NULL,
     description TEXT,
     price REAL NOT NULL,
+    installments INTEGER,
     image_main_path TEXT NOT NULL,
     image_specs_path TEXT,
-    is_active BOOLEAN DEFAULT 1,
+    is_active INTEGER DEFAULT 1 CHECK(is_active IN (0, 1)),
     stock_status TEXT DEFAULT 'in_stock' CHECK(stock_status IN ('in_stock', 'low_stock', 'out_of_stock')),
     created_by TEXT REFERENCES users(id),
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- CONVERSATIONS
 CREATE TABLE IF NOT EXISTS conversations (
     phone_number TEXT PRIMARY KEY,
     client_name TEXT,
     dni TEXT,
-    is_calidda_client BOOLEAN DEFAULT 0,
-    segment TEXT,
+    is_calidda_client INTEGER DEFAULT 0 CHECK(is_calidda_client IN (0, 1)),
+    segment TEXT CHECK(segment IN ('fnb', 'gaso')),
     credit_line REAL,
     nse INTEGER,
     current_state TEXT NOT NULL DEFAULT 'INIT',
     context_data TEXT DEFAULT '{}',
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'human_takeover', 'closed')),
+    handover_reason TEXT,
     last_activity_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- MESSAGES
 CREATE TABLE IF NOT EXISTS messages (
     id TEXT PRIMARY KEY,
     phone_number TEXT NOT NULL REFERENCES conversations(phone_number) ON DELETE CASCADE,
     direction TEXT NOT NULL CHECK(direction IN ('inbound', 'outbound')),
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('text', 'image')),
     content TEXT,
     status TEXT DEFAULT 'sent',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- INDEXES
-CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(last_activity_at);
+CREATE TABLE IF NOT EXISTS analytics_events (
+    id TEXT PRIMARY KEY,
+    phone_number TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    metadata TEXT DEFAULT '{}',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id),
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT,
+    metadata TEXT DEFAULT '{}',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(last_activity_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_status ON conversations(status);
 CREATE INDEX IF NOT EXISTS idx_products_segment ON catalog_products(segment);
+CREATE INDEX IF NOT EXISTS idx_products_active ON catalog_products(is_active, stock_status);
+CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone_number, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_phone ON analytics_events(phone_number);
+CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id, created_at DESC);

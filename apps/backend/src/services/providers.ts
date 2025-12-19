@@ -111,8 +111,7 @@ async function getFNBSession(): Promise<FNBSession> {
                 "content-type": "application/json",
                 origin: "https://appweb.calidda.com.pe",
                 referer: "https://appweb.calidda.com.pe/WebFNB/login",
-                "user-agent":
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             },
             body: JSON.stringify({
                 usuario: process.env.CALIDDA_USERNAME,
@@ -183,6 +182,7 @@ export const FNBProvider = {
                 headers: {
                     Authorization: `Bearer ${session.token}`,
                     "Content-Type": "application/json",
+                    "referer": "https://appweb.calidda.com.pe/WebFNB/consulta-credito",
                 },
             });
 
@@ -209,8 +209,6 @@ const VISUAL_IDS = {
     saldo: "fa2a9da34ca3522cc3b6",
     nombre: "a75cdb19088461402488",
     nse: "3ad014bf316f57fe6b8f",
-    serviceCuts: "04df67600e7aad10d3a0",
-    habilitado: "7f69ea308db71aa50aa7",
 };
 
 async function queryPowerBI(
@@ -337,26 +335,35 @@ export const GasoProvider = {
         }
 
         try {
-            const [
-                estado,
-                nombre,
-                saldoStr,
-                nseStr,
-                serviceCutsStr,
-                habilitadoStr,
-            ] = await Promise.all([
+            const [estado, nombre, saldoStr, nseStr] = await Promise.all([
                 queryPowerBI(dni, "Estado", VISUAL_IDS.estado),
                 queryPowerBI(dni, "Cliente", VISUAL_IDS.nombre),
                 queryPowerBI(dni, "Saldo", VISUAL_IDS.saldo),
                 queryPowerBI(dni, "NSE", VISUAL_IDS.nse),
-                queryPowerBI(dni, "ServiceCuts", VISUAL_IDS.serviceCuts),
-                queryPowerBI(dni, "Habilitado", VISUAL_IDS.habilitado),
             ]);
 
+            // Check Estado field - primary eligibility gate
             if (!estado || estado === "--" || estado === "NO APLICA") {
-                return { eligible: false, credit: 0, reason: "not_found" };
+                // Parse credit for context even if not eligible
+                let credit = 0;
+                if (saldoStr && saldoStr !== "undefined") {
+                    const clean = saldoStr
+                        .replace("S/", "")
+                        .trim()
+                        .replace(/\./g, "")
+                        .replace(",", ".");
+                    credit = parseFloat(clean) || 0;
+                }
+
+                return {
+                    eligible: false,
+                    credit,
+                    reason: credit === 0 ? "no_credit_line" : "not_eligible_per_calidda",
+                    name: nombre,
+                };
             }
 
+            // Estado is "APLICA FNB" or similar positive value - client is eligible
             let credit = 0;
             if (saldoStr && saldoStr !== "undefined") {
                 const clean = saldoStr
@@ -371,38 +378,6 @@ export const GasoProvider = {
                 nseStr && nseStr !== "undefined"
                     ? parseInt(nseStr, 10)
                     : undefined;
-            const cuts =
-                serviceCutsStr && serviceCutsStr !== "undefined"
-                    ? parseInt(serviceCutsStr, 10)
-                    : 0;
-
-            // When habilitado field is undefined/missing, treat as eligible (installation already done)
-            // When it explicitly says "NO", then installation is pending
-            let habilitado = true; // Default to true when field is missing
-
-            if (habilitadoStr && habilitadoStr !== "undefined") {
-                const habilitadoUpper = habilitadoStr.toUpperCase().trim();
-                // Explicitly check for "NO" - if it says NO, not enabled
-                habilitado =
-                    habilitadoUpper !== "NO" &&
-                    habilitadoUpper !== "0" &&
-                    habilitadoUpper !== "FALSE";
-            }
-
-            if (!habilitado)
-                return {
-                    eligible: false,
-                    credit,
-                    reason: "installation_pending",
-                    name: nombre,
-                };
-            if (cuts > 1)
-                return {
-                    eligible: false,
-                    credit,
-                    reason: "service_cuts_exceeded",
-                    name: nombre,
-                };
 
             return {
                 eligible: true,
@@ -412,7 +387,6 @@ export const GasoProvider = {
                 reason: undefined,
             };
         } catch (error) {
-
             // Mark as blocked if it's a persistent auth/connection error
             if (error instanceof Error) {
                 const msg = error.message.toLowerCase();
