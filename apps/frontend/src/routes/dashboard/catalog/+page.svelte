@@ -205,7 +205,10 @@ onMount(() => {
             alt={p.name}
             class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
             onerror={(e) => {
-              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f3ef' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23888' font-size='14'%3ENo image%3C/text%3E%3C/svg%3E";
+              const target = e.currentTarget;
+              if (target instanceof HTMLImageElement) {
+                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f3ef' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23888' font-size='14'%3ENo image%3C/text%3E%3C/svg%3E";
+              }
             }}
           />
           <span class="absolute bottom-0 left-0 bg-white/90 backdrop-blur px-3 py-1 text-[10px] font-bold uppercase tracking-widest border-t border-r border-cream-200">

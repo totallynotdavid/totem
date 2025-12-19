@@ -1,11 +1,11 @@
 import { browser } from "$app/environment";
 
 type AuthResponse = {
-    user: { username: string; role: string } | null;
+    user: { username: string; role: string; name: string } | null;
 };
 
 export const user = $state({
-    data: null as null | { username: string; role: string },
+    data: null as null | { username: string; role: string; name: string },
     isAuthenticated: false,
 
     async checkAuth() {
