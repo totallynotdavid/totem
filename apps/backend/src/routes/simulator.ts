@@ -16,6 +16,8 @@ simulator.post("/message", async (c) => {
     return c.json({ error: "phoneNumber and message required" }, 400);
   }
 
+  WhatsAppService.logMessage(phoneNumber, "inbound", "text", message, "received");
+
   // Process message through engine (same path as webhook)
   await processMessage(phoneNumber, message);
 
@@ -38,6 +40,7 @@ simulator.get("/conversation/:phone", (c) => {
 simulator.post("/reset/:phone", (c) => {
   const phoneNumber = c.req.param("phone");
   resetSession(phoneNumber);
+  WhatsAppService.clearMessageHistory(phoneNumber);
 
   return c.json({ status: "reset" });
 });

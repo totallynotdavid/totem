@@ -7,6 +7,7 @@ let messages = $state<any[]>([]);
 let currentInput = $state("");
 let conversation = $state<any>(null);
 let loading = $state(false);
+let messagesContainer: HTMLDivElement;
 
 async function loadConversation() {
     const res = await fetch(`/api/simulator/conversation/${testPhone}`);
@@ -14,6 +15,13 @@ async function loadConversation() {
         const data = await res.json();
         conversation = data.conversation;
         messages = data.messages;
+        setTimeout(() => scrollToBottom(), 100);
+    }
+}
+
+function scrollToBottom() {
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 }
 
@@ -35,6 +43,8 @@ async function sendMessage() {
             created_at: new Date().toISOString(),
         },
     ];
+    
+    setTimeout(() => scrollToBottom(), 50);
 
     try {
         await fetch("/api/simulator/message", {
@@ -116,7 +126,7 @@ onMount(() => {
     </div>
   {/if}
 
-  <div class="bg-white border border-cream-200 shadow-lg" style="height: 600px; display: flex; flex-direction: column;">
+  <div bind:this={messagesContainer} class="bg-white border border-cream-200 shadow-lg" style="height: 600px; display: flex; flex-direction: column;">
     <!-- Messages area -->
     <div class="flex-1 overflow-y-auto p-8 space-y-4">
       {#if messages.length === 0}

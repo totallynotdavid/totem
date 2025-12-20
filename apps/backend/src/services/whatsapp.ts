@@ -113,9 +113,15 @@ export const WhatsAppService = {
       .prepare(
         `SELECT * FROM messages 
          WHERE phone_number = ? 
-         ORDER BY created_at DESC 
+         ORDER BY created_at DESC, ROWID DESC 
          LIMIT ?`
       )
       .all(phoneNumber, limit) as any[];
+  },
+
+  clearMessageHistory(phoneNumber: string): void {
+    db.prepare(
+      `DELETE FROM messages WHERE phone_number = ?`
+    ).run(phoneNumber);
   },
 };
