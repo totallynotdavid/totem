@@ -1,25 +1,29 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import type { Conversation } from "@totem/types";
-import { auth } from "$lib/state/auth.svelte";
 import { fetchApi } from "$lib/utils/api";
 import ConversationList from "$lib/components/conversations/conversation-list.svelte";
 import ConversationHeader from "$lib/components/conversations/conversation-header.svelte";
 import MessageThread from "$lib/components/conversations/message-thread.svelte";
 import MessageInput from "$lib/components/conversations/message-input.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
+import type { PageData } from "./$types";
 
-let conversations = $state<Conversation[]>([]);
+let { data }: { data: PageData } = $props();
+
+let localConversations = $state<Conversation[]>([]);
 let selectedPhone = $state<string | null>(null);
 let conversationDetail = $state<any>(null);
 let messageText = $state("");
 let polling: Timer | null = null;
 
+let conversations = $derived(localConversations.length > 0 ? localConversations : data.conversations);
+
 async function loadConversations() {
     try {
-        conversations = await fetchApi<Conversation[]>("/api/conversations");
-    } catch {
-        auth.logout();
+        localConversations = await fetchApi<Conversation[]>("/api/conversations");
+    } catch (error) {
+        console.error("Failed to load conversations:", error);
     }
 }
 
@@ -56,12 +60,6 @@ $effect(() => {
 });
 
 onMount(() => {
-    if (!auth.isAuthenticated) {
-        window.location.href = "/login";
-        return;
-    }
-
-    loadConversations();
     polling = setInterval(() => {
         loadConversations();
         if (selectedPhone) loadConversationDetail(selectedPhone);

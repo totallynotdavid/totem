@@ -1,16 +1,20 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import { auth } from "$lib/state/auth.svelte";
 import { fetchApi } from "$lib/utils/api";
 import PageHeader from "$lib/components/shared/page-header.svelte";
 import Button from "$lib/components/ui/button.svelte";
 import MetricsGrid from "$lib/components/metrics/metrics-grid.svelte";
 import ActivityLog from "$lib/components/metrics/activity-log.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
+import type { PageData } from "./$types";
 
-let stats = $state<any>(null);
-let events = $state<any[]>([]);
-let loading = $state(true);
+let { data }: { data: PageData } = $props();
+
+let loading = $state(false);
+let localStats = $state<any>(null);
+let localEvents = $state<any[]>([]);
+
+let stats = $derived(loading ? localStats : data.stats);
+let events = $derived(loading ? localEvents : data.events);
 
 async function loadData() {
     loading = true;
@@ -20,8 +24,8 @@ async function loadData() {
         fetchApi<{ events: any[] }>("/api/analytics/events?limit=100"),
     ]);
 
-    stats = statsData.stats;
-    events = eventsData.events;
+    localStats = statsData.stats;
+    localEvents = eventsData.events;
     loading = false;
 }
 
@@ -29,14 +33,6 @@ function getFailureRate(): string {
     if (!stats || stats.dni_collected === 0) return "0.0";
     return ((stats.eligibility_failed / stats.dni_collected) * 100).toFixed(1);
 }
-
-onMount(() => {
-    if (!auth.isAuthenticated) {
-        window.location.href = "/login";
-        return;
-    }
-    loadData();
-});
 </script>
 
 <PageTitle title="Analytics" />
