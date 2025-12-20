@@ -1,7 +1,7 @@
-import { db } from "./index.ts";
+import type { Database } from "bun:sqlite";
 import bcrypt from "bcryptjs";
 
-export function seedDatabase() {
+export function seedDatabase(db: Database) {
   const adminCheck = db
     .prepare("SELECT count(*) as count FROM users")
     .get() as { count: number };

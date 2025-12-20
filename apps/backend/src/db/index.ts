@@ -1,25 +1,4 @@
-import { Database } from "bun:sqlite";
-import fs from "node:fs";
-import path from "node:path";
-import process from "node:process";
-import { seedDatabase } from "./seed.ts";
-
-const DB_PATH = process.env.DB_PATH || "./data/database.sqlite";
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./data/uploads";
-
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-export const db = new Database(DB_PATH, { create: true });
-db.run("PRAGMA journal_mode = WAL;");
-
-// Initialize Schema
-const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
-const schema = fs.readFileSync(schemaPath, "utf-8");
-db.run(schema);
-
-// Seed database with initial sample data
-seedDatabase();
+export { db } from "./connection.ts";
 
 export type DbUser = {
     id: string;

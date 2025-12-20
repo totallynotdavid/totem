@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import process from "node:process";
 
 import { db } from "./db/index.ts";
+import { initializeDatabase } from "./db/init.ts";
 import { seedDatabase } from "./db/seed.ts";
 import bcrypt from "bcryptjs";
 
@@ -43,8 +44,9 @@ type Env = {
 
 const app = new Hono<Env>();
 
-// Seed database on startup
-seedDatabase();
+// Initialize database schema and seed data on startup
+initializeDatabase(db);
+seedDatabase(db);
 
 // Global middleware
 app.use("/*", securityHeaders);
