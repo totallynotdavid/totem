@@ -10,21 +10,26 @@ import ProductGrid from "$lib/components/catalog/product-grid.svelte";
 import ProductModal from "$lib/components/catalog/product-modal.svelte";
 import BulkActionsPanel from "$lib/components/catalog/bulk-actions-panel.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
+import type { PageData } from "./$types";
 
-let products = $state<Product[]>([]);
+let { data }: { data: PageData } = $props();
+
+let localProducts = $state<Product[]>([]);
 let selectedProduct = $state<Product | null>(null);
 let showModal = $state(false);
 
+let products = $derived(localProducts.length > 0 ? localProducts : data.products);
+
 let selectedProducts = $derived(
-    products.filter((p) => catalogSelection.isSelected(p.id)),
+    products.filter((p: Product) => catalogSelection.isSelected(p.id)),
 );
 
 async function loadProducts() {
     try {
-        products = await fetchApi<Product[]>("/api/catalog");
+        localProducts = await fetchApi<Product[]>("/api/catalog");
         catalogSelection.clear();
-    } catch {
-        auth.logout();
+    } catch (error) {
+        console.error("Failed to load products:", error);
     }
 }
 
@@ -36,7 +41,7 @@ function handleProductClick(product: Product) {
 }
 
 function handleStockUpdate(productId: string, newStatus: StockStatus) {
-    const product = products.find((p) => p.id === productId);
+    const product = products.find((p: Product) => p.id === productId);
     if (product) {
         product.stock_status = newStatus;
         products = [...products];

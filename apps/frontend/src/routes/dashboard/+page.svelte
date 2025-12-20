@@ -1,14 +1,10 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import { auth } from "$lib/state/auth.svelte";
 import DashboardGridItem from "$lib/components/shared/dashboard-grid-item.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
+import type { PageData } from "./$types";
 
-onMount(async () => {
-    if (!auth.isAuthenticated) {
-        window.location.href = "/login";
-    }
-});
+let { data }: { data: PageData } = $props();
 </script>
 
 <PageTitle title="Dashboard" />
@@ -18,12 +14,12 @@ onMount(async () => {
 		<div>
 			<h1 class="text-5xl font-serif mb-6 italic">totem</h1>
 			<p class="text-lg text-ink-600 font-serif leading-relaxed">
-				Bienvenido, {auth.user?.name || auth.user?.username}.<br />
+				Bienvenido, {data.user?.name || data.user?.username}.<br />
 				Seleccione un módulo operativo para comenzar su sesión.
 			</p>
 		</div>
 
-		{#if auth.user}
+		{#if data.user}
 			<div class="hidden md:block">
 				<div class="border-t border-ink-900/10 pt-6 mb-6">
 					<p class="text-xs uppercase tracking-widest text-ink-400 mb-2 font-bold">
