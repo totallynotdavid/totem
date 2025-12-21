@@ -18,7 +18,6 @@ export function seedDatabase(db: Database) {
         console.log("Admin user created (username: admin, password: admin123)");
     }
 
-    // Seed some sample products if empty
     const productCheck = db
         .prepare("SELECT count(*) as count FROM catalog_products")
         .get() as { count: number };
@@ -60,10 +59,10 @@ export function seedDatabase(db: Database) {
         ];
 
         const stmt = db.prepare(`
-      INSERT INTO catalog_products 
-      (id, segment, category, name, description, price, installments, image_main_path, is_active, stock_status, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'in_stock', ?)
-    `);
+            INSERT INTO catalog_products 
+            (id, segment, category, name, description, price, installments, image_main_path, is_active, stock_status, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'in_stock', ?)
+        `);
 
         sampleProducts.forEach((p) => {
             const id = `${p.segment.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substring(7)}`;

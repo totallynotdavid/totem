@@ -1,7 +1,0 @@
-{
-    "extends": "@totem/tsconfig/base.json",
-    "compilerOptions": {
-        "jsx": "react-jsx"
-    },
-    "exclude": ["node_modules", "dist", ".next", ".svelte-kit"]
-}

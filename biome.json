@@ -9,7 +9,7 @@
         "ignoreUnknown": false
     },
     "formatter": {
-        "enabled": true,
+        "enabled": false,
         "indentStyle": "space",
         "indentWidth": 4
     },
@@ -18,7 +18,10 @@
         "rules": {
             "recommended": true,
             "a11y": "on",
-            "complexity": "on",
+            "complexity": {
+              "recommended": true,
+              "noExcessiveCognitiveComplexity": "off"
+            },
             "correctness": {
                 "recommended": true,
                 "noNodejsModules": "off",
