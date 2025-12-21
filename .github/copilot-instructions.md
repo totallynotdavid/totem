@@ -1,248 +1,177 @@
-TOTEM AI AGENT. A WhatsApp Sales Bot for Tottem, a company ally of the Calidda
-Gas Company
+BUSINESS_CONTEXT: WhatsApp Sales Bot for Totem, a Calidda gas company ally in
+Peru.
 
-Principles we must follow when writing code:
+WHAT_WE_DO:
 
-- Simplicity as a scaling strategy (dumb, explicit, predictable components)
-- Minimal moving parts
-- Maintainability
-- Code as documentation (comments should only be used for non-obvious decisions
-  or for JSDoc).
-- Files and modules must not god files. Modularization is encouraged where it
-  makes sense and makes the codebase maintanable.
+- Sell household appliances (smartphones, kitchens, refrigerators, laptops, TVs)
+- Customers pay through monthly Calidda bill (Calidda handles
+  payments/collections)
+- Operate in Lima Metropolitana and Callao only
 
-ARCHITECTURE: Bun monorepo with 3 apps. Data flow: WhatsApp → webhook.ts →
-debouncer.ts → engine.ts → state-machine (packages/core) → Commands →
-WhatsApp/DB. Frontend (SvelteKit) reads SQLite. Notifier app sends team alerts
-via WhatsApp Web.
+CLIENT_SEGMENTS:
 
-WORKSPACE STRUCTURE:
+- FNB (premium): Good payment history, flexible rules
+- GASO (majority): Calidda gas clients, restrictive rules, specific product
+  combinations
 
-- apps/backend: Hono server, agent engine, SQLite DB (apps/backend/src/db/),
-  webhook handler (apps/backend/src/routes/webhook.ts)
-- apps/frontend: SvelteKit dashboard, Svelte 5 runes, auth state in
-  apps/frontend/src/lib/state.svelte.ts using $state()
-- apps/notifier: puppeteer-based WhatsApp Web client for team notifications, QR
-  auth on startup
-- packages/core: Pure functions only (NO I/O). State machine in
-  packages/core/src/state-machine/transitions.ts, eligibility logic, message
-  templates
-- packages/types: TypeScript types shared across workspace
+BOT_OBJECTIVES:
 
-STATE MACHINE PATTERN (CRITICAL): All conversation logic in
-packages/core/src/state-machine/transitions.ts. States: INIT, CONFIRM_CLIENT,
-COLLECT_DNI, WAITING_PROVIDER, COLLECT_AGE, OFFER_PRODUCTS, HANDLE_OBJECTION,
-CLOSING, ESCALATED. Transitions are pure functions that return {nextState,
-commands[], updatedContext}. Commands executed by
-apps/backend/src/agent/engine.ts. Command types: CHECK_FNB (credit check),
-CHECK_GASO, SEND_MESSAGE, SEND_IMAGES, NOTIFY_TEAM, TRACK_EVENT, ESCALATE (human
-takeover).
+- Qualify client eligibility (check FNB first, then GASO)
+- Offer appropriate products based on credit line
+- Drive conversation toward sale
+- Escalate to human when needed
+- Avoid overwhelming/confusing client
+- Keep internal validation rules private
 
-TWO CUSTOMER SEGMENTS: FNB (higher credit, direct offers) vs GASO (lower credit,
-age/NSE eligibility matrix, mandatory kitchen bundle). Segment determined by
-provider check.
+ENGINEERING_DISCIPLINE: Senior-level decision making and verification.
 
-PROVIDER INTEGRATION: apps/backend/src/services/providers.ts exports FNBProvider
-and GasoProvider. FNBProvider: Calidda credit line API, JWT auth with session
-caching (3500s expiry), session reused across requests. GasoProvider: PowerBI
-REST API queries, 6 parallel queries per DNI check (estado, nombre, saldo, NSE,
-serviceCuts, habilitado). Both have circuit-breaker: on auth failure
-(401/403/blocked), mark provider unavailable for 30min. Health tracked in
-fnbHealth/gasoHealth objects, checked via isProviderAvailable().
-getProvidersHealth() exposes status to /health endpoint.
+TASK_CLASSIFICATION:
 
-WEBHOOK FLOW: POST /webhook (apps/backend/src/routes/webhook.ts) receives
-WhatsApp message → logs to DB → debounceMessage() in
-apps/backend/src/agent/debouncer.ts aggregates rapid messages (500ms window) →
-processMessage() in apps/backend/src/agent/engine.ts. Engine: loads conversation
-from DB via getOrCreateConversation(), checks 3hr session timeout
-(checkSessionTimeout), calls transition(), updates DB state
-(updateConversationState), executes commands sequentially.
+- High-rigor: Features affecting user flows, unclear bugs, architecture changes,
+  UX modifications, external integrations, cross-cutting refactoring
+- Medium-rigor: Component additions following patterns, API endpoint updates,
+  form validation, business logic, tests
+- Low-rigor: Typos, content, comments, formatting, known micro-patterns
 
-SESSION HANDLING: 3-hour timeout tracked by last_activity_at column. On timeout:
-resets state to INIT, preserves lastInterestCategory in context_data JSON column
-for smart resume. context_data stores arbitrary session state (offeredCategory,
-objectionCount, sessionStartedAt, etc). Context synced between DB columns (dni,
-segment, credit_line, nse) and JSON field.
+CRITICAL_THINKING (high-rigor):
 
-ESCALATION: When bot can't handle (objectionCount >= 2, complex queries):
-transition returns ESCALATE command → escalateConversation() sets
-status='human_takeover', handover_reason → NOTIFY_TEAM command sends message to
-WhatsApp group via notifier app.
+- MUST: Question requests conflicting with usability, consistency, or
+  architecture
+- MUST: Propose alternatives when better approaches exist
+- MUST: Consider full user/system context, not just immediate task
+- MUST: Use decision rubric to evaluate approaches systematically
 
-DATABASE: SQLite at apps/backend/src/db/. Schema in schema.sql, direct SQL via
-db.prepare().run()/.get()/.all(). Booleans as INTEGER (0/1) with CHECK
-constraints. No ORM. Key tables: conversations (phone_number PK, current_state,
-status, context_data TEXT JSON, last_activity_at), messages (direction:
-inbound/outbound, type: text/image), catalog_products (segment: fnb/gaso,
-stock_status), analytics_events, users (role: admin/developer/sales_agent),
-session (auth tokens).
+DECISION_RUBRIC (evaluate approaches against project principles):
 
-MESSAGE TEMPLATES: packages/core/src/templates/standard.ts (informational:
-GREETING, INVALID*DNI, ESCALATED_TO_HUMAN), sales.ts (offers: FNB_APPROVED,
-GASO_OFFER_KITCHEN_BUNDLE). Templates are functions returning strings. Imported
-as * as T or \_ as S in transitions.ts.
+- Complexity: Does this add unnecessary moving parts? Which approach is dumbest?
+- Discoverability: Will this be obvious to others? Is the pattern explicit?
+- Coupling: Does this introduce dependencies between unrelated parts?
+- Pattern match: Does this already exist? Does it fit established patterns?
+- Real need: What problem does this solve? Is there a simpler solution?
 
-DEVELOPER COMMANDS: bun install - install all workspaces bun run dev:backend -
-start backend :3000 bun run dev:frontend - start frontend :5173 bun run
-dev:notifier - start notifier (node index.js) bun run seed - seed DB with test
-data
+EXAMPLES_PUSHBACK:
 
-CODE CONVENTIONS:
+Good pushback:
 
-- Formatting: Biome (not ESLint). 4-space indent, double quotes. Run: bun x
-  biome check --write .
-- File org: routes in apps/backend/src/routes/, services in
-  apps/backend/src/services/, pure logic in packages/core/src/
-- No I/O in packages/core - keep testable
-- SQLite booleans: store as INTEGER 0/1, use CHECK(field IN (0,1))
-- Frontend: Svelte 5 runes, $state() for reactive state
-- Auth: Session-based (not JWT). Session tokens in cookies,
-  validateSessionToken() middleware in apps/backend/src/middleware/auth.ts
+- Request: "Add loading state to this component"
+- Response: "This component is used in 12 places. Applying rubric: 1)
+  Complexity: Should loading be internal or controlled by parent? 2) Pattern
+  match: How do other components handle loading? 3) Discoverability: Prop-based
+  or state-based? What's the use case to decide best approach?"
 
-ADDING FEATURES: New conversation state: (1) Add to ConversationState type in
-packages/types/src/index.ts, (2) Add handler function in
-packages/core/src/state-machine/transitions.ts matching pattern
-handleStateName(), (3) If new command needed, add to Command union in
-packages/core/src/state-machine/types.ts and execute in
-apps/backend/src/agent/engine.ts executeCommand(). New message template: Add to
-packages/core/src/templates/standard.ts or sales.ts as exported const or
-function. New product category: Insert into catalog_products table with segment
-(fnb/gaso), category, image_main_path. Images served via /static/ endpoint
-(serveStatic from data/uploads/).
+- Request: "Store conversation context in Redis"
+- Response: "Current setup uses SQLite for persistence. Applying rubric: 1)
+  Complexity: Redis adds infrastructure dependency. 2) Real need: Is SQLite a
+  bottleneck? 3) Coupling: Adds deployment complexity. What specific problem are
+  we solving? Can we optimize SQLite first?"
 
-ENV VARS (Backend): WHATSAPP_TOKEN, WHATSAPP_PHONE_ID,
-WHATSAPP_WEBHOOK_VERIFY_TOKEN, CALIDDA_BASE_URL, CALIDDA_USERNAME,
-CALIDDA_PASSWORD, POWERBI_DATASET_ID, POWERBI_REPORT_ID, POWERBI_MODEL_ID,
-POWERBI_RESOURCE_KEY, PUBLIC_URL (for image links), FRONTEND_URL (CORS).
+Bad pushback:
 
-REGEX VALIDATION: packages/core/src/validation/regex.ts exports extractDNI() (8
-digits), extractAge() (1-3 digits). Input sanitization in
-packages/core/src/validation/input-sanitizer.ts (removes emojis, normalizes
-whitespace).
+- Request: "Fix the button alignment"
+- Response: "Are you sure?" (overthinking trivial task without rubric
+  justification)
 
-ANALYTICS: trackEvent() in apps/backend/src/services/analytics.ts logs to
-analytics_events table (event_type: session_start, dni_collected,
-eligibility_passed/failed, products_offered). Reports in
-apps/backend/src/services/reports.ts generate Excel via
-ReportService.generateDailyReport().
+DEBUGGING_METHODOLOGY (high-rigor, unclear bugs):
 
-NOTIFIER: WhatsApp Web client (whatsapp-web.js). Auto-registers groups when
-receiving "@activate" command. groupMapping stored in
-data/notifier/group_mapping.json. getGroupJID() resolves channel (agent/dev) to
-group JID, checks env vars first (WHATSAPP_GROUP_AGENT, WHATSAPP_GROUP_DEV) then
-mapping file.
+- MUST: Reproduce in minimal isolated case before fixing
+- MUST: Form hypothesis → test incrementally → verify root cause
+- NEVER: Assume cause and fix without verification
+- NEVER: Treat unfamiliar syntax as bug (may be newer version)
+- WORKFLOW: Reproduce → Hypothesis → Test → Verify → Fix
 
-CONTEXT SYNC PATTERN: conversation state split between DB columns (phone_number,
-dni, segment, credit_line, nse, current_state, status) and context_data JSON
-column. buildStateContext() merges both into StateContext object.
-updateConversationState() writes to both destinations. This allows structured
-queries on DB columns while preserving arbitrary context in JSON.
+EXAMPLE_DEBUGGING:
 
-Business context:
+Issue: Svelte component not updating when prop changes Bad approach: See
+bind:value, assume it's wrong, change to controlled pattern Good approach:
 
-- Our company (Totem) is an ally of Calidda, a gas utility provider.
-- Calidda offers its customers a line of credit.
-- Our company sells household appliances that customers pay through their
-  monthly Calidda bill.
-- Payments, collections, and credit enforcement are handled entirely by Calidda.
-- Our company operates only in Lima Metropolitana and Callao.
+1. Create minimal repro (single component, single prop)
+2. Check if it's reactivity issue (is prop primitive vs object?)
+3. Query context7 for current Svelte 5 reactivity patterns
+4. Test hypothesis (is parent updating? is child receiving?)
+5. Fix verified root cause
 
-Some of the products offered:
+RESEARCH_REQUIREMENTS:
 
-- Smartphones
-- Kitchens
-- Refrigerators
-- Laptops
-- TVs
-- Other household appliances
+- MUST: Query context7 when:
+  - Working with Svelte/SvelteKit APIs, runes, or syntax → /sveltejs/kit or
+    /sveltejs/svelte
+  - Using external libraries/packages → query that library
+  - Encountering framework-specific patterns → query framework docs
+  - Uncertain about current best practices → research
+- MUST: Verify syntax/patterns for recently updated packages (Svelte 5+,
+  SvelteKit 5+)
+- EXAMPLE: Before changing $state syntax, query /sveltejs/svelte to confirm
+  current usage
 
-Client types:
+QUALITY_GATES (all rigor levels):
 
-FNB clients (premium):
+- MUST: Consider maintainability before adding code
+- MUST: Check for existing patterns/utilities before creating new
+- MUST: Verify changes don't break accessibility, performance, user flows
+- SHOULD: Suggest refactoring when detecting code smells
+- SHOULD: For medium/high-rigor: Check if change introduces coupling or tech
+  debt
 
-- Good payment history for over one year.
-- Up to date with Calidda payments.
-- Preferable clients.
+MONOREPO: Bun workspaces, 3 apps (backend/frontend/notifier), 3 packages
+(core/types/tsconfig) PACKAGE_DEPS: Use workspace:\* protocol in package.json
+for internal dependencies
 
-Gasodomestico clients:
+BACKEND: Hono + Bun + SQLite (bun:sqlite) at apps/backend/src/index.ts
 
-- Majority of users.
-- More restrictive rules.
-- Can only purchase specific product combinations.
+- Context obj c NOT req/res: app.get('/path', (c) => c.json({...}))
+- Middleware: app.use('/api/\*', requireAuth) then app.route('/api/catalog',
+  catalog)
+- Auth: Cookie sessions (Oslo), RBAC roles: admin|developer|sales_agent
+- Database: SQLite booleans are INTEGER 0/1, schema at db/schema.sql, seed via
+  cd apps/backend && bun run seed
 
-High-level bot objective:
+FRONTEND: SvelteKit 5 with Svelte 5 runes at apps/frontend/src
 
-- Qualify the client.
-- Determine eligibility. We first check if it is a FNB client.
-- Offer appropriate products.
-- Drive the conversation toward a sale.
-- Escalate to a human when necessary.
-- Avoid overwhelming or confusing the client.
-- Avoid exposing internal validation rules.
+- Dashboard for conversation monitoring, analytics, catalog management
+- SSR + client hydration, hooks.server.ts validates sessions
+- API calls via centralized client at lib/utils/api.ts (handles auth cookies)
 
-Core eligibility checks (internal, not exposed verbatim to users):
+NOTIFIER: Separate Node.js service at apps/notifier/src
 
-Step 1: Client identification
+- Async WhatsApp queue for internal team alerts
 
-- Confirm whether the caller is a Calidda client.
-- Collect DNI.
-- Query the appropriate platform (first FNB, then Gasodomestico as fallback).
+DATABASE: apps/backend/src/db/schema.sql
 
-Step 2: FNB client flow
+- Static files: /static/\* → data/uploads/catalog/{segment}/{category}/
 
-- Check available credit.
-- Offer products tailored to the credit line.
-- Ask clarifying questions before sending flyers.
-- If the client expresses interest in a category (e.g. smartphones), send up to
-  3 relevant flyers.
-- FNB clients may:
-  - Combine products.
-  - Request products outside the catalog.
-  - Exceed their available credit under special conditions.
-- These exceptional cases must be escalated to a human agent.
+ARCHITECTURE: Pure functional state machine + command pattern
 
-Step 3: Gasodomestico client flow
+STATE_MACHINE: packages/core/src/state-machine/transitions.ts
 
-- Gasodomestico clients can only purchase combinations.
-- Mandatory bundle includes a kitchen or a product picked by the sales team
-  (configurable).
-  - If strongly rejected, a therma may be offered as a last resort.
-  - This alternative should be used sparingly.
-- Eligibility checks:
-  - Age
-  - Available credit
-  - Socioeconomic stratum (1–5)
-    - Stratum 1–2:
-      - Minimum age: 40
-      - Max credit: 3000
-      - Max installments: 18
+- Flow:
+  INIT→CONFIRM_CLIENT→COLLECT_DNI→WAITING_PROVIDER→COLLECT_AGE→OFFER_PRODUCTS→HANDLE_OBJECTION→CLOSING
+- Signature: transition({ currentState, message, context }) → { nextState,
+  commands, updatedContext }
+- Business logic lives in @totem/core, backend ONLY executes commands
 
-    - Stratum 3:
-      - Minimum age: 30
-      - Max credit: 5000
-      - Max installments: 18
+COMMAND_PATTERN:
 
-    - Stratum 4–5:
-      - No age restriction
-      - Max credit: 5000
-      - Max installments: 60
+- Types: CHECK_FNB|CHECK_GASO (provider APIs), SEND_MESSAGE|SEND_IMAGES
+  (WhatsApp), NOTIFY_TEAM, TRACK_EVENT, ESCALATE
+- Executor: apps/backend/src/agent/engine.ts executeCommand() processes command
+  array
+- Pure data objects, backend has NO business logic
 
-  - Client must not be flagged as "cliente no está habilitado" (installation
-    still in progress).
-  - In technical data:
-    - No more than 1 service cut in the last 12 months.
+DEV_COMMANDS:
 
-- Only if all checks pass can products be offered.
-- Each product has two flyers: a main one and one with the specs of the product.
-- The agent should also inform the user (if they ask for it) of the amount of
-  installments (these are mentioned in the main flyer).
+- bun install
+- bun run dev:backend
+- bun run dev:frontend
+- bun run dev:notifier
+- cd apps/backend && bun run seed
 
-Communication rules:
+ADD_STATE:
 
-- The bot must only use native Spanish.
-- Do not expose all internal checks to the client.
-- It is acceptable to inform the client of their available credit.
-- The bot must remain polite, persuasive, and sales-oriented.
-- The bot must handle non-sales interactions gracefully and redirect or
-  disengage safely.
+- Frontend UI work (components, forms, interactions, accessibility): Read
+  interface-guidelines.md and svelte-frontend-patterns.md
+- Bot/backend work (state machine, conversation flow, eligibility rules,
+  provider APIs): Read bot-architecture.md
+- SvelteKit routing, SSR, load functions, form actions: Read
+  svelte-frontend-patterns.md
+- WhatsApp integration, webhook handling, command execution: Read
+  bot-architecture.md
