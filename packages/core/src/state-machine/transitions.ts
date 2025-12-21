@@ -73,7 +73,7 @@ function handleInit(context: any): StateOutput {
     };
 }
 
-function handleConfirmClient(message: string, context: any): StateOutput {
+function handleConfirmClient(message: string, _context: any): StateOutput {
     const lower = message.toLowerCase();
 
     // Positive responses
@@ -203,7 +203,7 @@ function handleCollectDNI(message: string, context: any): StateOutput {
     };
 }
 
-function handleWaitingProvider(context: any): StateOutput {
+function handleWaitingProvider(_context: any): StateOutput {
     // This state is transitioned by backend after provider check
     // If we somehow end up here with user input, just wait
     return {
@@ -436,7 +436,7 @@ function handleObjection(message: string, context: any): StateOutput {
     };
 }
 
-function handleClosing(context: any): StateOutput {
+function handleClosing(_context: any): StateOutput {
     return {
         nextState: "CLOSING",
         commands: [],
@@ -444,7 +444,7 @@ function handleClosing(context: any): StateOutput {
     };
 }
 
-function handleEscalated(context: any): StateOutput {
+function handleEscalated(_context: any): StateOutput {
     return {
         nextState: "ESCALATED",
         commands: [],

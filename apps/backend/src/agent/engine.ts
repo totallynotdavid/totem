@@ -128,7 +128,7 @@ async function handleCheckFNB(
 async function handleCheckGaso(
     phoneNumber: string,
     dni: string,
-    context: StateContext,
+    _context: StateContext,
 ): Promise<void> {
     const result = await GasoProvider.checkEligibility(dni);
 
