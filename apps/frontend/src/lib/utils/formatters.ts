@@ -6,15 +6,21 @@ export function formatPrice(price: number): string {
 }
 
 export function formatDate(date: string | Date): string {
-    return new Date(date).toLocaleDateString("es-PE");
+    return new Date(date).toLocaleDateString("es-PE", {
+        timeZone: "America/Lima", // GMT-5
+    });
 }
 
 export function formatDateTime(date: string | Date): string {
-    return new Date(date).toLocaleString("es-PE");
+    return new Date(date).toLocaleString("es-PE", {
+        timeZone: "America/Lima", // GMT-5
+    });
 }
 
 export function formatTime(date: string | Date): string {
-    return new Date(date).toLocaleTimeString("es-PE");
+    return new Date(date).toLocaleTimeString("es-PE", {
+        timeZone: "America/Lima", // GMT-5
+    });
 }
 
 export function formatPhone(phone: string): string {
