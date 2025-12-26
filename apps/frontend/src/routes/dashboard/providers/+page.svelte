@@ -3,7 +3,7 @@ import { onMount } from "svelte";
 import { auth } from "$lib/state/auth.svelte";
 import { fetchApi } from "$lib/utils/api";
 import { validateDni } from "$lib/utils/validation";
-import { formatPrice } from "$lib/utils/formatters";
+import { formatPrice, formatDate, formatTime } from "$lib/utils/formatters";
 import Input from "$lib/components/ui/input.svelte";
 import Button from "$lib/components/ui/button.svelte";
 import Badge from "$lib/components/ui/badge.svelte";
@@ -109,7 +109,7 @@ onMount(async () => {
 				<div>
 					<h2 class="text-2xl font-serif font-bold">Reporte de elegibilidad</h2>
 					<p class="text-sm text-ink-600 font-mono mt-1">
-						{new Date().toLocaleDateString()} — {new Date().toLocaleTimeString()}
+						{formatDate(new Date())} — {formatTime(new Date())}
 					</p>
 				</div>
 				<Badge variant={result.eligible ? "success" : "error"} class="px-4 py-2 border-2 text-sm">
