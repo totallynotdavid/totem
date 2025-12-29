@@ -63,16 +63,32 @@ const gasoHealth: ProviderHealth = {
 
 const BLOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
+const powerBIHealth: ProviderHealth = {
+    status: "healthy",
+    lastError: null,
+    blockedUntil: null,
+};
+
+let powerBIDownNotified = false; // Track if we've already notified about PowerBI being down
+
 function markProviderBlocked(health: ProviderHealth, errorMsg: string) {
+    const wasHealthy = health.status === "healthy";
     health.status = "blocked";
     health.lastError = errorMsg;
     health.blockedUntil = new Date(Date.now() + BLOCK_DURATION_MS);
+    return wasHealthy; // Return true if this is first block (to trigger notification)
 }
 
 function markProviderHealthy(health: ProviderHealth) {
+    const wasBlocked = health.status === "blocked";
     health.status = "healthy";
     health.lastError = null;
     health.blockedUntil = null;
+    
+    // Reset notification flag when PowerBI comes back online
+    if (health === powerBIHealth && wasBlocked) {
+        powerBIDownNotified = false;
+    }
 }
 
 function isProviderAvailable(health: ProviderHealth): boolean {
@@ -98,33 +114,44 @@ export function getProvidersHealth() {
             lastError: gasoHealth.lastError,
             blockedUntil: gasoHealth.blockedUntil?.toISOString() || null,
         },
+        powerbi: {
+            status: powerBIHealth.status,
+            available: isProviderAvailable(powerBIHealth),
+            lastError: powerBIHealth.lastError,
+            blockedUntil: powerBIHealth.blockedUntil?.toISOString() || null,
+        },
     };
 }
 
 async function getFNBSession(): Promise<FNBSession> {
     if (fnbSession && fnbSession.expiresAt > new Date()) return fnbSession;
 
-    const response = await fetch(
-        `${process.env.CALIDDA_BASE_URL}/FNB_Services/api/Seguridad/autenticar`,
-        {
-            method: "POST",
-            headers: {
-                "content-type": "application/json",
-                origin: "https://appweb.calidda.com.pe",
-                referer: "https://appweb.calidda.com.pe/WebFNB/login",
-                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            },
-            body: JSON.stringify({
-                usuario: process.env.CALIDDA_USERNAME,
-                password: process.env.CALIDDA_PASSWORD,
-                captcha: "exitoso",
-                Latitud: "",
-                Longitud: "",
-            }),
+    const authUrl = `${process.env.CALIDDA_BASE_URL}/FNB_Services/api/Seguridad/autenticar`;
+    console.log(`[Calidda] Attempting auth at: ${authUrl}`);
+    console.log(`[Calidda] Username: ${process.env.CALIDDA_USERNAME}`);
+
+    const response = await fetch(authUrl, {
+        method: "POST",
+        headers: {
+            "content-type": "application/json",
+            origin: "https://appweb.calidda.com.pe",
+            referer: "https://appweb.calidda.com.pe/WebFNB/login",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
-    );
+        body: JSON.stringify({
+            usuario: process.env.CALIDDA_USERNAME,
+            password: process.env.CALIDDA_PASSWORD,
+            captcha: "exitoso",
+            Latitud: "",
+            Longitud: "",
+        }),
+    });
+
+    console.log(`[Calidda] Auth response status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Calidda] Auth failed - Response body: ${errorText}`);
         const errorMsg = `FNB Auth HTTP ${response.status}`;
         markProviderBlocked(fnbHealth, errorMsg);
         throw new Error(errorMsg);
@@ -162,6 +189,7 @@ export const FNBProvider = {
     async checkCredit(dni: string): Promise<ProviderCheckResult> {
         // Check if provider is blocked
         if (!isProviderAvailable(fnbHealth)) {
+            console.log(`[FNB] Provider blocked, returning unavailable for DNI ${dni}`);
             return {
                 eligible: false,
                 credit: 0,
@@ -170,6 +198,7 @@ export const FNBProvider = {
         }
 
         try {
+            console.log(`[FNB] Checking credit for DNI ${dni}...`);
             const session = await getFNBSession();
             const params = new URLSearchParams({
                 numeroDocumento: dni,
@@ -187,19 +216,26 @@ export const FNBProvider = {
                 },
             });
 
-            if (!res.ok) throw new Error(`FNB Query Failed: ${res.status}`);
+            if (!res.ok) {
+                console.error(`[FNB] Query failed with status ${res.status}`);
+                throw new Error(`FNB Query Failed: ${res.status}`);
+            }
             const data = (await res.json()) as FNBCreditResponse;
 
             if (!(data.valid && data.data)) {
+                console.log(`[FNB] No data found for DNI ${dni}`);
                 return { eligible: false, credit: 0, name: undefined };
             }
 
+            const credit = parseFloat(data.data.lineaCredito || "0");
+            console.log(`[FNB] Found credit for DNI ${dni}: S/ ${credit}, Name: ${data.data.nombre}`);
             return {
                 eligible: true,
-                credit: parseFloat(data.data.lineaCredito || "0"),
+                credit,
                 name: data.data.nombre,
             };
-        } catch (_error) {
+        } catch (error) {
+            console.error(`[FNB] Error checking credit for DNI ${dni}:`, error);
             return { eligible: false, credit: 0, reason: "api_error" };
         }
     },
@@ -316,6 +352,16 @@ async function queryPowerBI(
             `[PowerBI Error] ${res.status} ${res.statusText} - Property: ${propertyName}, DNI: ${dni}`,
         );
         console.error(`[PowerBI Error] Response: ${errorText}`);
+        
+        // Mark PowerBI as blocked on auth failures
+        if (res.status === 401 || res.status === 403) {
+            const errorMsg = `PowerBI Auth Failed: ${res.status} ${res.statusText}`;
+            const wasHealthy = markProviderBlocked(powerBIHealth, errorMsg);
+            if (wasHealthy) {
+                console.error(`[PowerBI] BLOCKED for 30min - Reason: ${errorMsg}`);
+            }
+        }
+        
         return undefined;
     }
 
@@ -342,6 +388,59 @@ export const GasoProvider = {
             };
         }
 
+        // If PowerBI is blocked, use Calidda FNB as fallback
+        if (!isProviderAvailable(powerBIHealth)) {
+            const shouldNotify = !powerBIDownNotified;
+            powerBIDownNotified = true;
+            
+            console.log(`[GASO] PowerBI unavailable, using Calidda FNB as fallback for DNI ${dni}`);
+            
+            // Check if Calidda is also blocked before attempting fallback
+            if (!isProviderAvailable(fnbHealth)) {
+                console.error(`[GASO] Both PowerBI and Calidda are unavailable!`);
+                if (shouldNotify) {
+                    return {
+                        eligible: false,
+                        credit: 0,
+                        reason: "all_providers_down",
+                    };
+                }
+                return {
+                    eligible: false,
+                    credit: 0,
+                    reason: "provider_unavailable",
+                };
+            }
+            
+            try {
+                const fnbResult = await FNBProvider.checkCredit(dni);
+                // If Calidda returns data, use it as GASO eligibility
+                if (fnbResult.eligible && fnbResult.credit > 0) {
+                    return {
+                        eligible: true,
+                        credit: fnbResult.credit,
+                        name: fnbResult.name,
+                        reason: shouldNotify ? "powerbi_down_first_detection" : undefined,
+                        nse: undefined, // NSE not available from Calidda
+                    };
+                }
+                // If not found in Calidda either, return not eligible
+                return {
+                    eligible: false,
+                    credit: 0,
+                    reason: shouldNotify ? "powerbi_down_not_found" : "not_found_in_fallback",
+                    name: fnbResult.name,
+                };
+            } catch (error) {
+                console.error("[GASO] Calidda fallback failed:", error);
+                return {
+                    eligible: false,
+                    credit: 0,
+                    reason: shouldNotify ? "powerbi_down_fallback_error" : "fallback_error",
+                };
+            }
+        }
+
         try {
             const [estado, nombre, saldoStr, nseStr] = await Promise.all([
                 queryPowerBI(dni, "Estado", VISUAL_IDS.estado),
@@ -350,11 +449,52 @@ export const GasoProvider = {
                 queryPowerBI(dni, "NSE", VISUAL_IDS.nse),
             ]);
 
+            // If ALL queries returned undefined, PowerBI is completely down - use fallback
+            if (!estado && !nombre && !saldoStr && !nseStr) {
+                console.log(`[GASO] PowerBI returned no data (all undefined), attempting Calidda fallback for DNI ${dni}`);
+                
+                // Check if Calidda is available
+                if (!isProviderAvailable(fnbHealth)) {
+                    console.error(`[GASO] Both PowerBI and Calidda are unavailable!`);
+                    return {
+                        eligible: false,
+                        credit: 0,
+                        reason: "all_providers_down",
+                    };
+                }
+                
+                try {
+                    const fnbResult = await FNBProvider.checkCredit(dni);
+                    if (fnbResult.eligible && fnbResult.credit > 0) {
+                        return {
+                            eligible: true,
+                            credit: fnbResult.credit,
+                            name: fnbResult.name,
+                            reason: "powerbi_failed_used_fallback",
+                            nse: undefined,
+                        };
+                    }
+                    return {
+                        eligible: false,
+                        credit: 0,
+                        reason: "not_found_in_fallback",
+                        name: fnbResult.name,
+                    };
+                } catch (error) {
+                    console.error("[GASO] Calidda fallback failed:", error);
+                    return {
+                        eligible: false,
+                        credit: 0,
+                        reason: "fallback_error",
+                    };
+                }
+            }
+
             // Check Estado field - primary eligibility gate
             if (!estado || estado === "--" || estado === "NO APLICA") {
                 // Parse credit for context even if not eligible
                 let credit = 0;
-                if (saldoStr && saldoStr !== "undefined") {
+                if (saldoStr && typeof saldoStr === "string" && saldoStr !== "undefined") {
                     const clean = saldoStr
                         .replace("S/", "")
                         .trim()
@@ -376,7 +516,7 @@ export const GasoProvider = {
 
             // Estado is "APLICA FNB" or similar positive value - client is eligible
             let credit = 0;
-            if (saldoStr && saldoStr !== "undefined") {
+            if (saldoStr && typeof saldoStr === "string" && saldoStr !== "undefined") {
                 const clean = saldoStr
                     .replace("S/", "")
                     .trim()

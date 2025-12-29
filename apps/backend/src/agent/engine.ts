@@ -194,30 +194,42 @@ async function handleCheckGaso(
     const isSimulation = conv.is_simulation === 1;
     const result = await GasoProvider.checkEligibility(dni);
 
+    // Check if PowerBI is down and we used fallback (notify dev team once)
+    if (!isSimulation && (result.reason?.startsWith("powerbi_down") || result.reason === "powerbi_failed_used_fallback")) {
+        await notifyTeam(
+            "dev",
+            `[ALERT] PowerBI is DOWN - Using Calidda fallback\n` +
+            `Reason: ${result.reason}\n` +
+            `DNI: ${dni}\n` +
+            `Eligible: ${result.eligible}\n` +
+            `Credit: S/ ${result.credit}\n` +
+            `Phone: ${phoneNumber}`,
+        );
+    }
+
     if (!result.eligible) {
         // Check if it's an API error (provider unavailable)
-        if (result.reason === "api_error" || result.reason === "provider_unavailable") {
+        if (result.reason === "api_error" || result.reason === "provider_unavailable" || result.reason === "all_providers_down") {
             // Notify team about provider issues (skip in simulation)
             if (!isSimulation) {
                 await notifyTeam(
                     "dev",
-                    `⚠️ GASO Provider unavailable\nDNI: ${dni}\nReason: ${result.reason}\nPhone: ${phoneNumber}`,
+                    `[ALERT] GASO Provider unavailable\nDNI: ${dni}\nReason: ${result.reason}\nPhone: ${phoneNumber}`,
                 );
             }
 
             // Escalate to human since we can't verify eligibility
-            const { message: errorMsg, updatedContext: variantCtx } = T.selectVariantWithContext(
+            const { message: handoffMsg, updatedContext: variantCtx } = T.selectVariantWithContext(
                 T.HANDOFF_TO_HUMAN,
                 "HANDOFF_TO_HUMAN",
                 context,
             );
             updateConversationState(phoneNumber, "ESCALATED", variantCtx);
             
-            const errorMessage = "Disculpa, estamos teniendo problemas técnicos para verificar tu información. Un agente se comunicará contigo pronto. 🙏";
             if (isSimulation) {
-                WhatsAppService.logMessage(phoneNumber, "outbound", "text", errorMessage, "sent");
+                WhatsAppService.logMessage(phoneNumber, "outbound", "text", handoffMsg, "sent");
             } else {
-                await WhatsAppService.sendMessage(phoneNumber, errorMessage);
+                await WhatsAppService.sendMessage(phoneNumber, handoffMsg);
             }
             
             escalateConversation(phoneNumber, "gaso_provider_unavailable");
