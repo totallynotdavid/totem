@@ -1,6 +1,7 @@
 import type { TransitionInput, StateOutput, Command } from "./types.ts";
 import { extractDNI, extractAge } from "../validation/regex.ts";
 import { sanitizeInput } from "../validation/input-sanitizer.ts";
+import { formatFirstName } from "../validation/format-name.ts";
 import { checkGasoEligibility } from "../eligibility/gaso-logic.ts";
 import * as T from "../templates/standard.ts";
 import * as S from "../templates/sales.ts";
@@ -93,7 +94,7 @@ function handleInit(context: any): StateOutput {
     return {
         nextState: "CONFIRM_CLIENT",
         commands,
-        updatedContext: { 
+        updatedContext: {
             sessionStartedAt: new Date().toISOString(),
             ...variantUpdate,
         },
@@ -105,7 +106,7 @@ function handleConfirmClient(message: string, context: any): StateOutput {
 
     // Check if user volunteered DNI early (e.g., "Sí, mi DNI es 72345678")
     const earlyDNI = extractDNI(message);
-    
+
     // NEGATIVE CHECK FIRST - specific "no" + verb patterns
     if (
         /no\s+(tengo|soy)/.test(lower) || // "no tengo" or "no soy"
@@ -137,9 +138,41 @@ function handleConfirmClient(message: string, context: any): StateOutput {
         /\b(claro|ok|vale|dale|afirmativo|correcto|sep|bueno)(\s|,|!|\?|$)/.test(lower) || // common affirmations
         /(soy|tengo)\s+(cliente|c[ií]lidda|gas)/.test(lower) // "soy cliente" or "tengo cálidda"
     ) {
-        // If they already provided DNI, skip straight to provider check
+        // SMART RESUME: If we already have DNI and credit info from a previous session
+        if (context.dni && context.segment && context.creditLine !== undefined) {
+            const firstName = context.clientName ? formatFirstName(context.clientName) : '';
+            const resumeMsg = firstName
+                ? `¡Excelente ${firstName}! Sigamos viendo opciones para ti.`
+                : `¡Excelente! Sigamos viendo opciones para ti.`;
+
+            // If it's FNB, we can skip straight to offering products
+            if (context.segment === 'fnb') {
+                return {
+                    nextState: "OFFER_PRODUCTS",
+                    commands: [
+                        { type: "SEND_MESSAGE", content: resumeMsg },
+                        {
+                            type: "SEND_MESSAGE",
+                            content: `Anteriormente buscabas ${context.lastInterestCategory || "productos"}. ¿Quieres ver opciones o prefieres otra cosa?`
+                        }
+                    ],
+                    updatedContext: { isCaliddaClient: true }
+                };
+            }
+
+            // If it's Gaso, we might still need age if it wasn't preserved,
+            // but for now let's at least skip DNI.
+            return {
+                nextState: "COLLECT_AGE",
+                commands: [
+                    { type: "SEND_MESSAGE", content: resumeMsg },
+                ],
+                updatedContext: { isCaliddaClient: true }
+            };
+        }
+
+        // If they already provided DNI in THIS message, skip straight to provider check
         if (earlyDNI) {
-            // Don't send "checking" message - let provider respond fast if it can
             return {
                 nextState: "WAITING_PROVIDER",
                 commands: [
@@ -153,7 +186,7 @@ function handleConfirmClient(message: string, context: any): StateOutput {
                 updatedContext: { isCaliddaClient: true, dni: earlyDNI },
             };
         }
-        
+
         const { message: yesMsg, updatedContext: variantCtx } = selectVariant(
             T.CONFIRM_CLIENT_YES,
             "CONFIRM_CLIENT_YES",
@@ -195,7 +228,7 @@ function handleCollectDNI(message: string, context: any): StateOutput {
     if (dni) {
         // Detect tone for future interactions
         const userTone = detectTone(message);
-        
+
         // Don't send "checking" message immediately - let provider respond fast if it can
         // Only send patience messages if user messages during wait (handled in WAITING_PROVIDER)
         return {
@@ -208,8 +241,8 @@ function handleCollectDNI(message: string, context: any): StateOutput {
                     metadata: { dni },
                 },
             ],
-            updatedContext: { 
-                dni, 
+            updatedContext: {
+                dni,
                 userTone,
                 messageCountInState: 0, // Reset for next state
                 lastBotMessageTime: new Date().toISOString(),
@@ -221,11 +254,11 @@ function handleCollectDNI(message: string, context: any): StateOutput {
 
     // Detect if user needs patience (explicit check for flexibility)
     const needsPatience = detectNeedsPatience(message);
-    
+
     // Check if user is expressing they can't provide DNI right now or will send it later
     const cantProvideNow = /(no\s+(lo\s+)?tengo|no\s+tengo\s+a\s+la\s+mano|voy\s+a\s+busca|d[e\u00e9]jame\s+busca|un\s+momento|espera|buscando|no\s+me\s+acuerdo|no\s+s[e\u00e9]|no\s+lo\s+encuentro)/.test(lower);
     const willSendLater = /(te\s+(mando|env[i\u00ed]o|escribo)|en\s+un\s+rato|m[a\u00e1]s\s+tarde|luego|despu[e\u00e9]s|ahora\s+no|ahorita\s+no)/.test(lower);
-    
+
     // If they say they'll send it later, just wait silently
     if (willSendLater) {
         return {
@@ -248,11 +281,11 @@ function handleCollectDNI(message: string, context: any): StateOutput {
             return {
                 nextState: "COLLECT_DNI",
                 commands: [{ type: "SEND_MESSAGE", content: waitMsg }],
-                updatedContext: { 
-                    askedToWait: true, 
+                updatedContext: {
+                    askedToWait: true,
                     messageCountInState,
                     lastBotMessageTime: new Date().toISOString(),
-                    ...variantCtx 
+                    ...variantCtx
                 },
             };
         }
@@ -311,7 +344,7 @@ function handleWaitingProvider(context: any): StateOutput {
     // If user is still messaging while waiting, they're getting impatient
     // Check if they've been waiting too long or sent multiple messages
     const messageCount = (context.waitingMessageCount || 0) + 1;
-    
+
     // After 3 frustrated attempts to communicate, escalate silently
     if (messageCount > 2) {
         const { message: handoffMsg, updatedContext: variantCtx } = selectVariantWithContext(
@@ -323,24 +356,24 @@ function handleWaitingProvider(context: any): StateOutput {
         return {
             nextState: "ESCALATED",
             commands: [
-                { 
-                    type: "SEND_MESSAGE", 
+                {
+                    type: "SEND_MESSAGE",
                     content: handoffMsg,
                 },
-                { 
-                    type: "ESCALATE", 
-                    reason: "provider_check_timeout_multiple_messages" 
+                {
+                    type: "ESCALATE",
+                    reason: "provider_check_timeout_multiple_messages"
                 },
             ],
-            updatedContext: { 
-                waitingMessageCount: messageCount, 
+            updatedContext: {
+                waitingMessageCount: messageCount,
                 isFrustrated: true,
                 lastBotMessageTime: new Date().toISOString(),
-                ...variantCtx 
+                ...variantCtx
             },
         };
     }
-    
+
     // First message - acknowledge they're still here with categorized patience variant
     if (messageCount === 1) {
         const { message: checkingMsg, updatedContext: variantCtx } = selectVariantWithContext(
@@ -352,19 +385,19 @@ function handleWaitingProvider(context: any): StateOutput {
         return {
             nextState: "WAITING_PROVIDER",
             commands: [
-                { 
-                    type: "SEND_MESSAGE", 
+                {
+                    type: "SEND_MESSAGE",
                     content: checkingMsg,
                 },
             ],
-            updatedContext: { 
+            updatedContext: {
                 waitingMessageCount: messageCount,
                 lastBotMessageTime: new Date().toISOString(),
-                ...variantCtx 
+                ...variantCtx
             },
         };
     }
-    
+
     // Second message - empathetic variant recognizing frustration
     const { message: empathyMsg, updatedContext: variantCtx } = selectVariantWithContext(
         T.CHECKING_SYSTEM,
@@ -375,15 +408,15 @@ function handleWaitingProvider(context: any): StateOutput {
     return {
         nextState: "WAITING_PROVIDER",
         commands: [
-            { 
-                type: "SEND_MESSAGE", 
+            {
+                type: "SEND_MESSAGE",
                 content: empathyMsg,
             },
         ],
-        updatedContext: { 
+        updatedContext: {
             waitingMessageCount: messageCount,
             lastBotMessageTime: new Date().toISOString(),
-            ...variantCtx 
+            ...variantCtx
         },
     };
 }
@@ -541,7 +574,11 @@ function handleOfferProducts(message: string, context: any): StateOutput {
 
     // Check for purchase confirmation (customer wants to buy)
     // Only trigger if they've already been shown products (offeredCategory exists)
-    if (context.offeredCategory && /\b(s[ií]|me lo llevo|lo quiero|comprarlo|comprar|lo compro|perfecto|dale)\b/.test(lower)) {
+    const isInterestPhrase = /\b(me interesa|interesad|lo quiero|lo compro|me lo llevo|comprar|comprarlo)\b/.test(lower);
+    const isOrdinalSelection = /\b(primer|segund|tercer|cuart|quint)\w*/.test(lower);
+    const isAffirmative = /\b(s[ií]|ok|dale|perfecto|vale|bueno)\b/.test(lower);
+
+    if (context.offeredCategory && (isInterestPhrase || isOrdinalSelection || isAffirmative)) {
         const { message: confirmMsg, updatedContext: variantCtx } = selectVariant(
             S.CONFIRM_PURCHASE,
             "CONFIRM_PURCHASE",
@@ -557,12 +594,16 @@ function handleOfferProducts(message: string, context: any): StateOutput {
                 {
                     type: "NOTIFY_TEAM",
                     channel: "sales",
-                    message: `Cliente ${context.phoneNumber} confirmó interés de compra en ${context.offeredCategory || 'productos'}`,
+                    message: `Cliente ${context.phoneNumber} confirmó interés de compra en ${context.offeredCategory || 'productos'} (Mensaje: "${message}")`,
                 },
                 {
                     type: "TRACK_EVENT",
                     eventType: "purchase_intent_confirmed",
-                    metadata: { category: context.offeredCategory, segment: context.segment },
+                    metadata: {
+                        category: context.offeredCategory,
+                        segment: context.segment,
+                        selectionType: isOrdinalSelection ? "ordinal" : "phrase"
+                    },
                 },
             ],
             updatedContext: { purchaseConfirmed: true, ...variantCtx },
@@ -574,7 +615,7 @@ function handleOfferProducts(message: string, context: any): StateOutput {
     if (/(caro|costoso|precio|plata|dinero|pagar)/.test(lower)) {
         // Detect if user is frustrated about pricing
         const frustrated = detectFrustration(message);
-        
+
         const { message: priceMsg, updatedContext: variantCtx } = selectVariantWithContext(
             S.PRICE_CONCERN,
             "PRICE_CONCERN",
@@ -589,10 +630,10 @@ function handleOfferProducts(message: string, context: any): StateOutput {
                     content: priceMsg,
                 },
             ],
-            updatedContext: { 
+            updatedContext: {
                 isFrustrated: frustrated,
                 lastBotMessageTime: new Date().toISOString(),
-                ...variantCtx 
+                ...variantCtx
             },
         };
     }
@@ -600,20 +641,27 @@ function handleOfferProducts(message: string, context: any): StateOutput {
     // Check for uncertainty/confusion (not outright rejection)
     const isUncertain = /(no\s+estoy\s+seguro|no\s+s[eé]|nose|mmm|ehh|tal\s+vez)/.test(lower);
     if (isUncertain) {
-        const { message: interestMsg, updatedContext: variantCtx } = selectVariant(
-            S.ASK_PRODUCT_INTEREST,
-            "ASK_PRODUCT_INTEREST",
-            context,
-        );
+        let responseMsg = "";
+        if (context.offeredCategory) {
+            responseMsg = "¿Te gustaría llevarte alguno de los que te mostré o prefieres ver otra cosa?";
+        } else {
+            const { message: interestMsg } = selectVariant(
+                S.ASK_PRODUCT_INTEREST,
+                "ASK_PRODUCT_INTEREST",
+                context,
+            );
+            responseMsg = interestMsg;
+        }
+
         return {
             nextState: "OFFER_PRODUCTS",
             commands: [
                 {
                     type: "SEND_MESSAGE",
-                    content: interestMsg,
+                    content: responseMsg,
                 },
             ],
-            updatedContext: variantCtx,
+            updatedContext: {},
         };
     }
 
@@ -671,8 +719,8 @@ function handleOfferProducts(message: string, context: any): StateOutput {
                 {
                     type: "TRACK_EVENT",
                     eventType: "products_offered",
-                    metadata: { 
-                        category: context.llmExtractedCategory, 
+                    metadata: {
+                        category: context.llmExtractedCategory,
                         segment: context.segment,
                         extractionMethod: "llm"
                     },
@@ -689,22 +737,22 @@ function handleOfferProducts(message: string, context: any): StateOutput {
 
     if (categoryMatch) {
         let category = categoryMatch[0];
-        
+
         // Normalize brand names to category
-        if (category.startsWith("iphone") || category.startsWith("redmi") || 
+        if (category.startsWith("iphone") || category.startsWith("redmi") ||
             category.startsWith("samsung") || category.startsWith("xiaomi") ||
-            category.startsWith("celular") || 
+            category.startsWith("celular") ||
             category.startsWith("smartphone"))
             category = "celulares";
-        else if (category.startsWith("cocina")) 
+        else if (category.startsWith("cocina"))
             category = "cocinas";
         else if (category.startsWith("laptop") || category.startsWith("notebook") ||
-                 category.startsWith("computadora"))
+            category.startsWith("computadora"))
             category = "laptops";
         else if (category.startsWith("refri") || category.startsWith("heladera"))
             category = "refrigeradoras";
         else if (category.startsWith("tv") || category.startsWith("televi") || category.startsWith("television") ||
-                 category.startsWith("pantalla"))
+            category.startsWith("pantalla"))
             category = "televisores";
         else if (category.startsWith("terma") || category.startsWith("calentador"))
             category = "termas";
@@ -761,7 +809,7 @@ function handleObjection(message: string, context: any): StateOutput {
     if (context.llmDetectedQuestion) {
         // If requires human, escalate; otherwise answer and continue
         if (context.llmRequiresHuman) {
-        const {message: handoffMsg, updatedContext: variantCtx} = selectVariantWithContext(
+            const { message: handoffMsg, updatedContext: variantCtx } = selectVariantWithContext(
                 T.HANDOFF_TO_HUMAN,
                 "HANDOFF_TO_HUMAN",
                 context,
