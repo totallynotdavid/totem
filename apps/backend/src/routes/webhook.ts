@@ -37,13 +37,15 @@ webhook.post("/", async (c) => {
 
         if (message.type !== "text") {
             if (message.type === "image" || message.type === "document") {
-                await WhatsAppService.sendMessage(phoneNumber, IMAGE_REJECTED);
+                const msg = IMAGE_REJECTED[Math.floor(Math.random() * IMAGE_REJECTED.length)] ?? IMAGE_REJECTED[0] ?? "";
+                await WhatsAppService.sendMessage(phoneNumber, msg);
             }
             // Generic rejection for audio/video/stickers/etc
             else {
+                const msg = NON_TEXT_REJECTED[Math.floor(Math.random() * NON_TEXT_REJECTED.length)] ?? NON_TEXT_REJECTED[0] ?? "";
                 await WhatsAppService.sendMessage(
                     phoneNumber,
-                    NON_TEXT_REJECTED,
+                    msg,
                 );
             }
 
