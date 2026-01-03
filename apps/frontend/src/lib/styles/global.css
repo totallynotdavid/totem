@@ -3,13 +3,13 @@
 @plugin "@tailwindcss/forms";
 
 :root {
-    background-color: var(--color-cream-100);
-    color: var(--color-ink-900);
+  background-color: var(--color-cream-100);
+  color: var(--color-ink-900);
 }
 
 body {
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -18,5 +18,5 @@ h3,
 h4,
 h5,
 h6 {
-    font-family: var(--font-serif);
+  font-family: var(--font-serif);
 }
