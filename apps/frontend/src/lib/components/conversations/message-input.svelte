@@ -23,7 +23,7 @@ function handleKeydown(e: KeyboardEvent) {
 			bind:value
 			{disabled}
 			onkeydown={handleKeydown}
-			class="flex-1 bg-white p-4 text-lg font-serif outline-none border-b border-ink-900/30 focus:border-ink-900 placeholder-ink-300"
+			class="flex-1 bg-transparent p-4 text-lg font-serif outline-none border-b border-ink-900/30 focus:border-ink-900 placeholder-ink-300 transition-colors"
 			placeholder="Escriba su mensaje..."
 		/>
 		<Button onclick={onSend} disabled={disabled || !value.trim()}>
@@ -31,6 +31,6 @@ function handleKeydown(e: KeyboardEvent) {
 		</Button>
 	</div>
 	<p class="text-xs text-ink-400 mt-2 font-mono">
-		Enter para enviar • Shift+Enter para salto de línea
+		Enter para enviar • Shift+Enter para añadir una nueva línea
 	</p>
 </div>

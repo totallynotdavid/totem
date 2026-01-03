@@ -78,33 +78,35 @@ onMount(() => {
 
 <PageTitle title="Conversaciones" />
 
-<div class="flex h-[calc(100vh-80px)]">
+<div class="flex h-[calc(100vh-65px)] overflow-hidden bg-white">
 	<ConversationList
 		{conversations}
 		{selectedPhone}
 		onSelect={(phone) => selectedPhone = phone}
 	/>
 
-	<div class="hidden md:flex flex-col flex-1 bg-cream-50 relative">
+	<div class="hidden md:flex flex-col flex-1 bg-cream-100 relative min-w-0">
 		{#if selectedPhone && conversationDetail}
 			{@const conv = conversationDetail.conversation}
 			{@const msgs = conversationDetail.messages}
 
-			<ConversationHeader
-				conversation={conv}
-				phone={selectedPhone}
-				onTakeover={handleTakeover}
-				onLoadInSimulator={handleLoadInSimulator}
-			/>
+            <div class="flex flex-1 min-h-0 flex-col">
+                <ConversationHeader
+                    conversation={conv}
+                    phone={selectedPhone}
+                    onTakeover={handleTakeover}
+                    onLoadInSimulator={handleLoadInSimulator}
+                />
 
-			<MessageThread messages={msgs} />
+                <MessageThread messages={msgs} />
 
-			{#if conv.status === "human_takeover"}
-				<MessageInput
-					bind:value={messageText}
-					onSend={handleSendMessage}
-				/>
-			{/if}
+                {#if conv.status === "human_takeover"}
+                    <MessageInput
+                        bind:value={messageText}
+                        onSend={handleSendMessage}
+                    />
+                {/if}
+            </div>
 		{:else}
 			<div class="flex-1 flex flex-col items-center justify-center text-ink-300 opacity-50">
 				<span class="text-9xl mb-4 font-serif italic">&larr;</span>

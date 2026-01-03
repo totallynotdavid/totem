@@ -17,7 +17,7 @@ type Props = {
 let { messages }: Props = $props();
 </script>
 
-<div class="flex-1 overflow-y-auto p-8 space-y-6">
+<div class="flex-1 overflow-y-auto p-8 space-y-4">
 	{#if messages.length === 0}
 		<div class="flex justify-center py-12">
 			<span class="text-xs text-ink-300 uppercase tracking-widest border-b border-ink-200 pb-1">

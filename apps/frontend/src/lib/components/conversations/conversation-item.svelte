@@ -13,26 +13,34 @@ let { conversation, isSelected, onclick }: Props = $props();
 
 <button
 	{onclick}
-	class="w-full text-left p-6 border-b border-cream-100 hover:bg-cream-50 transition-colors group border-l-4 {isSelected ? 'bg-cream-100 border-l-ink-900' : 'border-l-transparent'}"
+	class="w-full text-left px-6 py-4 border-b border-ink-900/5 hover:bg-white transition-all group relative {isSelected ? 'bg-white' : 'bg-transparent'}"
 >
-	<div class="flex justify-between items-center mb-2">
-		<span class="font-mono text-sm font-semibold tracking-wide">
+    {#if isSelected}
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-ink-900"></div>
+    {/if}
+
+	<div class="flex justify-between items-baseline mb-1">
+		<span class="font-serif text-base text-ink-900 {isSelected ? 'font-medium' : ''}">
 			{formatPhone(conversation.phone_number)}
 		</span>
-		<span
-			class="text-[10px] px-2 py-0.5 border font-bold {conversation.status === 'human_takeover' ? 'bg-red-600 text-white border-red-600' : 'text-ink-400 border-ink-200'}"
-		>
-			{conversation.status === "human_takeover" ? "MANUAL" : "AUTO"}
-		</span>
+        {#if conversation.status === "human_takeover"}
+            <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+        {/if}
 	</div>
 
-	<div class="text-sm font-serif text-ink-600 truncate opacity-80 group-hover:opacity-100 transition-opacity mb-1">
-		{conversation.client_name || "Sin nombre"} • {conversation.current_state}
+	<div class="text-xs font-sans text-ink-500 truncate mb-1 tracking-wide">
+		{conversation.client_name || "Sin nombre"}
 	</div>
+
+    <div class="flex items-center gap-2">
+        <span class="text-[10px] uppercase tracking-widest font-bold text-ink-300 group-hover:text-ink-400 transition-colors">
+            {conversation.current_state}
+        </span>
+    </div>
 
 	{#if conversation.handover_reason}
-		<div class="text-xs text-red-700 bg-red-50 px-2 py-1 mt-2 border-l-2 border-red-600">
-			{conversation.handover_reason}
+		<div class="text-[10px] text-red-600 mt-1 font-mono truncate">
+			⚠ {conversation.handover_reason}
 		</div>
 	{/if}
 </button>

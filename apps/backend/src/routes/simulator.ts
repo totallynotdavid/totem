@@ -7,6 +7,42 @@ import type { Conversation } from "@totem/types";
 
 const simulator = new Hono();
 
+// List all test conversations
+simulator.get("/conversations", (c) => {
+    const conversations = db
+        .prepare(
+            `SELECT * FROM conversations 
+             WHERE is_simulation = 1 
+             ORDER BY last_activity_at DESC`
+        )
+        .all() as Conversation[];
+
+    return c.json(conversations);
+});
+
+// Create new test conversation
+simulator.post("/conversations", async (c) => {
+    const { phoneNumber } = await c.req.json();
+
+    if (!phoneNumber) {
+        return c.json({ error: "phoneNumber required" }, 400);
+    }
+
+    // Check if already exists
+    const existing = db
+        .prepare("SELECT * FROM conversations WHERE phone_number = ?")
+        .get(phoneNumber) as Conversation | undefined;
+
+    if (existing) {
+        return c.json({ error: "Conversation already exists" }, 400);
+    }
+
+    // Create new test conversation
+    const conv = getOrCreateConversation(phoneNumber, true);
+
+    return c.json(conv);
+});
+
 // Send message in simulator
 simulator.post("/message", async (c) => {
     const { phoneNumber, message } = await c.req.json();

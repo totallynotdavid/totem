@@ -11,12 +11,12 @@ type Props = {
 let { conversations, selectedPhone, onSelect }: Props = $props();
 </script>
 
-<div class="w-full md:w-96 border-r border-ink-900/10 bg-white flex flex-col">
+<div class="w-full md:w-96 xl:w-96 border-r border-ink-900/10 bg-white flex flex-col shrink-0">
 	<div class="p-6 border-b border-ink-900/10">
 		<span class="text-xs font-bold tracking-widest uppercase text-ink-400 mb-1 block">
-			Bandeja de entrada
+			Conversaciones activas
 		</span>
-		<h2 class="text-2xl font-serif">Activos</h2>
+    <h2 class="text-2xl font-serif">Bandeja de entrada</h2>
 	</div>
 
 	<div class="overflow-y-auto flex-1">
