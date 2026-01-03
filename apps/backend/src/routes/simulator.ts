@@ -88,6 +88,32 @@ simulator.post("/reset/:phone", (c) => {
     return c.json({ status: "reset" });
 });
 
+// Delete simulator conversation
+simulator.delete("/conversations/:phone", (c) => {
+    const phoneNumber = c.req.param("phone");
+
+    // Verify it's a simulation conversation before deleting
+    const conv = db
+        .prepare("SELECT is_simulation FROM conversations WHERE phone_number = ?")
+        .get(phoneNumber) as { is_simulation: number } | undefined;
+
+    if (!conv) {
+        return c.json({ error: "Conversation not found" }, 404);
+    }
+
+    if (conv.is_simulation !== 1) {
+        return c.json({ error: "Can only delete simulation conversations" }, 403);
+    }
+
+    // Delete conversation from database
+    db.prepare("DELETE FROM conversations WHERE phone_number = ?").run(phoneNumber);
+
+    // Clear message history
+    WhatsAppService.clearMessageHistory(phoneNumber);
+
+    return c.json({ status: "deleted" });
+});
+
 // Load conversation into simulator (for replay/debugging)
 simulator.post("/load", async (c) => {
     const { sourcePhone } = await c.req.json();

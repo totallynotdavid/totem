@@ -71,7 +71,7 @@ async function deleteConversation(phone: string) {
     
     loading = true;
     try {
-        await fetchApi(`/api/simulator/reset/${phone}`, { method: "POST" });
+        await fetchApi(`/api/simulator/conversations/${phone}`, { method: "DELETE" });
         
         if (selectedPhone === phone) {
             selectedPhone = null;
