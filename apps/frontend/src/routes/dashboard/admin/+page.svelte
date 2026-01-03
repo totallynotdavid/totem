@@ -1,27 +1,29 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { auth } from "$lib/state/auth.svelte";
 import { fetchApi } from "$lib/utils/api";
 import PageHeader from "$lib/components/shared/page-header.svelte";
 import UserForm from "$lib/components/admin/user-form.svelte";
 import UserTable from "$lib/components/admin/user-table.svelte";
 import StatsCard from "$lib/components/admin/stats-card.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
+import type { PageData } from "./$types";
+
+let { data }: { data: PageData } = $props();
 
 let users = $state<any[]>([]);
 
 async function loadUsers() {
-    const data = await fetchApi<{ users: any[] }>("/api/admin/users");
-    users = data.users;
+    const response = await fetchApi<{ users: any[] }>("/api/admin/users");
+    users = response.users;
 }
 
 onMount(() => {
-    if (!auth.isAuthenticated) {
+    if (!data.user) {
         goto("/login");
         return;
     }
-    if (!auth.isAdmin) {
+    if (data.user.role !== "admin") {
         goto("/dashboard");
         return;
     }

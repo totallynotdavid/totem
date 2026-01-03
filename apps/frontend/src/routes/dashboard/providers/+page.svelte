@@ -48,9 +48,6 @@ async function handleQuery() {
 }
 
 onMount(async () => {
-    if (!auth.isAuthenticated) {
-        window.location.href = "/login";
-    }
     await loadHealth();
 });
 </script>

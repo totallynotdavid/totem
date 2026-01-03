@@ -64,7 +64,7 @@ async function downloadReport() {
 }
 
 onMount(() => {
-    if (!auth.isAuthenticated) {
+    if (!data.user) {
         window.location.href = "/login";
         return;
     }
