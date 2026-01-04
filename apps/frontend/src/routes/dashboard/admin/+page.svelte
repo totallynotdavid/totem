@@ -33,7 +33,7 @@ onMount(() => {
 
 <PageTitle title="Administración" />
 
-<div class="max-w-6xl mx-auto p-8 md:p-12 min-h-screen">
+<div class="max-w-7xl mx-auto p-8 md:p-12 min-h-screen">
 	<PageHeader title="Gestión de usuarios" subtitle="Configuración" />
 
 	<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">

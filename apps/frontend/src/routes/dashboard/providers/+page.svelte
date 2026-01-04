@@ -54,7 +54,7 @@ onMount(async () => {
 
 <PageTitle title="Proveedores" />
 
-<div class="p-8 md:p-12 max-w-4xl mx-auto">
+<div class="p-8 md:p-12 max-w-7xl mx-auto">
 	<PageHeader title="Historial crediticio" subtitle="Base de datos">
 		{#snippet actions()}
 			{#if healthStatus}
