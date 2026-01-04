@@ -1,6 +1,5 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { auth } from "$lib/state/auth.svelte";
 import { fetchApi } from "$lib/utils/api";
 import { validateDni } from "$lib/utils/validation";
 import { formatPrice, formatDate, formatTime } from "$lib/utils/formatters";
@@ -8,6 +7,7 @@ import Input from "$lib/components/ui/input.svelte";
 import Button from "$lib/components/ui/button.svelte";
 import Badge from "$lib/components/ui/badge.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
+import PageHeader from "$lib/components/shared/page-header.svelte";
 
 let dni = $state("");
 let loading = $state(false);
@@ -55,27 +55,22 @@ onMount(async () => {
 <PageTitle title="Proveedores" />
 
 <div class="p-8 md:p-12 max-w-4xl mx-auto">
-	<div class="mb-12 border-b border-cream-200 pb-6 flex justify-between items-end">
-		<div>
-			<span class="text-xs font-bold tracking-widest uppercase text-ink-400 mb-2 block">
-				Base de datos
-			</span>
-			<h1 class="text-4xl font-serif text-ink-900">Historial crediticio</h1>
-		</div>
-
-		{#if healthStatus}
-			<div class="flex gap-4 text-xs font-mono">
-				<div class="flex items-center gap-2">
-					<span class="w-2 h-2 rounded-full {healthStatus.providers.fnb.available ? 'bg-green-500' : 'bg-red-500'}"></span>
-					<span>Sistema FNB</span>
+	<PageHeader title="Historial crediticio" subtitle="Base de datos">
+		{#snippet actions()}
+			{#if healthStatus}
+				<div class="flex gap-4 text-xs font-mono">
+					<div class="flex items-center gap-2">
+						<span class="w-2 h-2 rounded-full {healthStatus.providers.fnb.available ? 'bg-green-500' : 'bg-red-500'}"></span>
+						<span>Sistema FNB</span>
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="w-2 h-2 rounded-full {healthStatus.providers.gaso.available ? 'bg-green-500' : 'bg-red-500'}"></span>
+						<span>Sistema Gaso</span>
+					</div>
 				</div>
-				<div class="flex items-center gap-2">
-					<span class="w-2 h-2 rounded-full {healthStatus.providers.gaso.available ? 'bg-green-500' : 'bg-red-500'}"></span>
-					<span>Sistema Gaso</span>
-				</div>
-			</div>
-		{/if}
-	</div>
+			{/if}
+		{/snippet}
+	</PageHeader>
 
 	<div class="bg-white p-8 border border-cream-200 shadow-sm mb-8">
 		<label for="dni" class="block text-sm font-bold uppercase tracking-wider mb-4">
