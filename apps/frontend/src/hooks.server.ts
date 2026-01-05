@@ -9,8 +9,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   if (sessionToken) {
     try {
-      // Use Vite proxy in development, relative path in production
-      const response = await fetch("http://localhost:3000/api/auth/me", {
+      // Backend URL from environment variable
+      const backendUrl = process.env.BACKEND_URL || "http://localhost:3000";
+      const response = await fetch(`${backendUrl}/api/auth/me`, {
         headers: {
           cookie: `session=${sessionToken}`,
         },

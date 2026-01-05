@@ -1,4 +1,5 @@
 import type { PageServerLoad } from "./$types";
+import { fetchBackend } from "$lib/utils/server-fetch";
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const sessionToken = cookies.get("session");
@@ -7,7 +8,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   }
 
   try {
-    const response = await fetch("http://localhost:3000/api/catalog", {
+    const response = await fetchBackend("/api/catalog", {
       headers: { cookie: `session=${sessionToken}` },
     });
 

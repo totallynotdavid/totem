@@ -1,8 +1,10 @@
 node_modules
 .env
+.env.production
 
 # build and dev generated files
 *.tsbuildinfo
+.wwebjs_cache
 dist
 data
 

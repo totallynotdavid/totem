@@ -23,6 +23,7 @@
         "@tailwindcss/vite": "^4.1.17",
         "@totem/tsconfig": "workspace:*",
         "svelte": "^5.46.1",
+        "svelte-adapter-bun": "^1.0.1",
         "svelte-check": "^4.3.5",
         "tailwindcss": "^4.1.17",
         "uuid": "^13.0.0",
