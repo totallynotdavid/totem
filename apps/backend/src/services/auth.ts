@@ -8,6 +8,13 @@ import type { Context } from "hono";
 import { setCookie, deleteCookie } from "hono/cookie";
 import process from "node:process";
 
+const cookieSecure = (() => {
+  const flag = process.env.COOKIE_SECURE;
+  if (flag === "true") return true;
+  if (flag === "false") return false;
+  return process.env.NODE_ENV === "production";
+})();
+
 export interface Session {
   id: string;
   userId: string;
@@ -109,20 +116,18 @@ export function setSessionTokenCookie(
   token: string,
   expiresAt: Date,
 ): void {
-  const isProd = process.env.NODE_ENV === "production";
   setCookie(c, "session", token, {
     httpOnly: true,
     sameSite: "Lax",
     expires: expiresAt,
     path: "/",
-    secure: isProd,
+    secure: cookieSecure,
   });
 }
 
 export function deleteSessionTokenCookie(c: Context): void {
-  const isProd = process.env.NODE_ENV === "production";
   deleteCookie(c, "session", {
     path: "/",
-    secure: isProd,
+    secure: cookieSecure,
   });
 }
