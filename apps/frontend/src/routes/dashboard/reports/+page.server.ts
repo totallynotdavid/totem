@@ -1,4 +1,5 @@
 import type { PageServerLoad } from "./$types";
+import { fetchBackend } from "$lib/utils/server-fetch";
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const sessionToken = cookies.get("session");
@@ -8,10 +9,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
   try {
     const [userRes, countRes] = await Promise.all([
-      fetch("http://localhost:3000/api/auth/me", {
+      fetchBackend("/api/auth/me", {
         headers: { cookie: `session=${sessionToken}` },
       }),
-      fetch("http://localhost:3000/api/reports/today-count", {
+      fetchBackend("/api/reports/today-count", {
         headers: { cookie: `session=${sessionToken}` },
       }),
     ]);

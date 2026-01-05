@@ -1,4 +1,5 @@
 import type { PageServerLoad } from "./$types";
+import { fetchBackend } from "$lib/utils/server-fetch";
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
   const sessionToken = cookies.get("session");
@@ -8,10 +9,10 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
   try {
     const [convRes, userRes] = await Promise.all([
-      fetch(`http://localhost:3000/api/conversations/${params.phone}`, {
+      fetchBackend(`/api/conversations/${params.phone}`, {
         headers: { cookie: `session=${sessionToken}` },
       }),
-      fetch("http://localhost:3000/api/auth/me", {
+      fetchBackend("/api/auth/me", {
         headers: { cookie: `session=${sessionToken}` },
       }),
     ]);
@@ -33,8 +34,8 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     // Load order if conversation exists
     let orderData = null;
     if (data.conversation) {
-      const orderRes = await fetch(
-        `http://localhost:3000/api/orders/by-conversation/${params.phone}`,
+      const orderRes = await fetchBackend(
+        `/api/orders/by-conversation/${params.phone}`,
         { headers: { cookie: `session=${sessionToken}` } },
       );
       if (orderRes.ok) {
