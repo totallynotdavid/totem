@@ -8,12 +8,9 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
   }
 
   try {
-    const res = await fetchBackend(
-      `/api/orders/${params.orderId}`,
-      {
-        headers: { cookie: `session=${sessionToken}` },
-      },
-    );
+    const res = await fetchBackend(`/api/orders/${params.orderId}`, {
+      headers: { cookie: `session=${sessionToken}` },
+    });
 
     if (!res.ok) {
       return { order: null };
