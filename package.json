@@ -8,6 +8,7 @@
     ],
     "scripts": {
         "clean": "bun x shx rm -rf apps/*/node_modules node_modules",
+        "dev": "bun x concurrently -n notifier,backend,frontend -c cyan,green,blue \"bun run dev:notifier\" \"bun run dev:backend\" \"bun run dev:frontend\"",
         "dev:backend": "cd apps/backend && bun run dev",
         "dev:frontend": "cd apps/frontend && bun run dev",
         "dev:notifier": "cd apps/notifier && bun run dev",
