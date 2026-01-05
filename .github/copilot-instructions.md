@@ -8,7 +8,9 @@ Principles we MUST follow when writing code:
 - Functions should fail fast.
 - Files and modules must not be god files. Modularization is encouraged where it
   makes sense and makes the codebase maintanable.
-- As a general rule, files should not be more than 70 lines long. If we have to add comments to subdivide a file, that's a sign it should be split into multiple files.
+- As a general rule, files should not be more than 70 lines long. If we have to
+  add comments to subdivide a file, that's a sign it should be split into
+  multiple files.
 
 BUSINESS_CONTEXT: WhatsApp Sales Bot for Totem, a Calidda gas company ally in
 Peru.
