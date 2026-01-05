@@ -19,7 +19,7 @@ let { product, canEdit, onStockUpdate, onclick }: Props = $props();
 	class="group flex flex-col h-full bg-white hover:bg-cream-50 p-4 transition-all duration-300 border border-transparent hover:border-ink-200 {canEdit ? 'cursor-pointer' : ''}"
 	onclick={onclick}
 >
-	<div class="aspect-square w-full bg-white mb-3 overflow-hidden relative mix-blend-multiply">
+	<div class="aspect-square w-full bg-white mb-3 overflow-hidden relative mix-blend-multiply border border-ink-900/5">
 		<img
 			src="/static/{product.image_main_path}"
 			alt={product.name}
@@ -27,7 +27,7 @@ let { product, canEdit, onStockUpdate, onclick }: Props = $props();
 			onerror={(e) => {
 				const target = e.currentTarget;
 				if (target instanceof HTMLImageElement) {
-					target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f3ef' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23888' font-size='14'%3ENo image%3C/text%3E%3C/svg%3E";
+					target.src = "/placeholder.svg";
 				}
 			}}
 		/>
