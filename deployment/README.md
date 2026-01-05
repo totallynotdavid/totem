@@ -13,9 +13,10 @@ Edit `.env.production` with your secrets:
 NODE_ENV=production
 BACKEND_URL=http://localhost:3001
 PORT=3001
-DATABASE_PATH=./data/database.sqlite
+DB_PATH=./data/database.sqlite
 JWT_SECRET=
-WHATSAPP_API_TOKEN=
+WHATSAPP_TOKEN=
+WHATSAPP_PHONE_ID=
 ```
 
 Service commands:
