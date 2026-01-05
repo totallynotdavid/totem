@@ -29,7 +29,7 @@ $: crumbs = (() => {
     let label = breadcrumbLabels[currentPath];
     
     // For conversation detail pages, use phone number or client name from page data
-    if (!label && segments[i - 1] === "conversations" && segment.startsWith("+")) {
+    if (!label && segments[i - 1] === "conversations" && segment?.startsWith("+")) {
       const pageData = $page.data as any;
       label = pageData?.conversation?.client_name || segment;
     }
