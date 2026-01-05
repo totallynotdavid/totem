@@ -31,7 +31,7 @@ export function seedDatabase(db: Database) {
       agentHash,
       "sales_agent",
       "María González",
-      "+51987654321",
+      "+51914509251",
       1,
       adminId,
     );
@@ -45,7 +45,7 @@ export function seedDatabase(db: Database) {
       agentHash,
       "sales_agent",
       "Carlos Pérez",
-      "+51987654322",
+      "+51919284799",
       1,
       adminId,
     );

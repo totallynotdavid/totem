@@ -49,6 +49,9 @@ export async function initializeWhatsAppClient() {
 
   client.on("ready", () => {
     console.log("WhatsApp client ready");
+    if (IS_DEV) {
+      console.log("[DevMode] Message forwarding to backend enabled");
+    }
   });
 
   client.on("authenticated", () => {
@@ -61,9 +64,11 @@ export async function initializeWhatsAppClient() {
 
   // Auto-register groups with @activate command
   client.on("message", async (msg) => {
-    // Forward messages to backend in dev mode (skip group messages and commands)
-    if (IS_DEV && msg.from.endsWith("@c.us") && !msg.body.startsWith("@")) {
-      console.log(`[DevMode] Forwarding message from ${msg.from}: ${msg.body.substring(0, 50)}...`);
+    // Forward messages to backend in dev mode (exclude groups and commands)
+    const isGroupMessage = msg.from.endsWith("@g.us");
+    const isCommand = msg.body.startsWith("@");
+    
+    if (IS_DEV && !isGroupMessage && !isCommand) {
       await forwardToBackend(msg);
       return;
     }

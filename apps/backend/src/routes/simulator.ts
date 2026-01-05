@@ -245,7 +245,7 @@ simulator.post("/load", async (c) => {
   const sourceMessages = WhatsAppService.getMessageHistory(sourcePhone, 1000);
 
   // Use fixed simulator phone
-  const simulatorPhone = "51900000001";
+  const simulatorPhone = "51999999999";
 
   // Reset simulator first
   resetSession(simulatorPhone);

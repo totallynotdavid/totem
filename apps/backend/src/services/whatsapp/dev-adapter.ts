@@ -14,7 +14,7 @@ export const DevAdapter: WhatsAppAdapter = {
       });
 
       if (!response.ok) {
-        console.error("[DevAdapter] Send failed:", await response.text());
+        console.error("[DevAdapter] Send failed:", response.status, await response.text());
         return false;
       }
 

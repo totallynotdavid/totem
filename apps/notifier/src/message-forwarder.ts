@@ -4,7 +4,23 @@ import type { Message } from "whatsapp-web.js";
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
 export async function forwardToBackend(msg: Message): Promise<void> {
-  const phoneNumber = msg.from.replace("@c.us", "");
+  // Extract phone number - handle both @c.us and @lid formats
+  let phoneNumber = msg.from.replace("@c.us", "").replace("@lid", "");
+  
+  // For @lid format, try to get the actual phone number from contact
+  if (msg.from.endsWith("@lid")) {
+    try {
+      const contact = await msg.getContact();
+      if (contact.number) {
+        phoneNumber = contact.number;
+      }
+    } catch (e) {
+      console.warn("[Forwarder] Could not get contact number from LID, using LID as-is");
+    }
+  }
+
+  // Map whatsapp-web.js message types to Cloud API format
+  const messageType = msg.type === "chat" ? "text" : msg.type;
 
   // Build payload matching WhatsApp Cloud API webhook format
   const payload = {
@@ -18,7 +34,7 @@ export async function forwardToBackend(msg: Message): Promise<void> {
                   from: phoneNumber,
                   id: msg.id._serialized,
                   timestamp: msg.timestamp,
-                  type: msg.type,
+                  type: messageType,
                   text: msg.type === "chat" ? { body: msg.body } : undefined,
                 },
               ],
@@ -37,7 +53,7 @@ export async function forwardToBackend(msg: Message): Promise<void> {
     });
 
     if (!response.ok) {
-      console.error("[Forwarder] Backend rejected:", await response.text());
+      console.error("[Forwarder] Backend rejected:", response.status, await response.text());
     }
   } catch (error) {
     console.error("[Forwarder] Failed to forward to backend:", error);
