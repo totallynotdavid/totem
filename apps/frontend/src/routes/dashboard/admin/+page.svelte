@@ -18,7 +18,7 @@ const tabs = [
 <PageTitle title="Administración" />
 
 <div class="max-w-7xl mx-auto p-8 md:p-12 min-h-screen">
-    <PageHeader title="Panel de Administración" subtitle="Control y Gestión" />
+    <PageHeader title="Panel de administración" subtitle="Control y gestión" />
 
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-cream-200 mb-8 overflow-x-auto">
