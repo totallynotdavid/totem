@@ -1,5 +1,6 @@
 import { db } from "../db/index.ts";
 import type { Product, Segment, StockStatus } from "@totem/types";
+import { imageStorage } from "./image-storage.ts";
 
 type CreateProductData = {
   id: string;
@@ -131,7 +132,24 @@ export const CatalogService = {
     return result.changes;
   },
 
-  updateImages: (id: string, mainId?: string, specsId?: string): Product => {
+  updateImages: async (
+    id: string,
+    mainId?: string,
+    specsId?: string,
+  ): Promise<Product> => {
+    const existing = CatalogService.getById(id);
+    if (!existing) {
+      throw new Error("Product not found");
+    }
+
+    // Delete old images if being replaced
+    if (mainId && existing.image_main_id) {
+      await imageStorage.delete(existing.image_main_id);
+    }
+    if (specsId && existing.image_specs_id) {
+      await imageStorage.delete(existing.image_specs_id);
+    }
+
     if (mainId && specsId) {
       db.prepare(
         `UPDATE catalog_products SET image_main_id = ?, image_specs_id = ?, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id = ?`,
@@ -148,7 +166,15 @@ export const CatalogService = {
     return CatalogService.getById(id)!;
   },
 
-  delete: (id: string): void => {
+  delete: async (id: string): Promise<void> => {
+    const product = CatalogService.getById(id);
+    if (product) {
+      // Clean up associated images
+      await imageStorage.delete(product.image_main_id);
+      if (product.image_specs_id) {
+        await imageStorage.delete(product.image_specs_id);
+      }
+    }
     db.prepare("DELETE FROM catalog_products WHERE id = ?").run(id);
   },
 

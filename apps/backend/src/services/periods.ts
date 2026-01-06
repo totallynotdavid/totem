@@ -80,13 +80,18 @@ export const PeriodService = {
     return PeriodService.getById(id)!;
   },
 
-  delete: (id: string): void => {
+  delete: (id: string): { success: boolean; message?: string } => {
     // Only allow deleting draft periods with no products
     const period = PeriodService.getById(id);
-    if (!period) return;
+    if (!period) {
+      return { success: false, message: "Período no encontrado" };
+    }
 
     if (period.status !== "draft") {
-      throw new Error("Solo se pueden eliminar períodos en borrador");
+      return {
+        success: false,
+        message: "Solo se pueden eliminar períodos en borrador",
+      };
     }
 
     const productCount = db
@@ -96,9 +101,13 @@ export const PeriodService = {
       .get(id) as { count: number };
 
     if (productCount.count > 0) {
-      throw new Error("No se puede eliminar un período con productos");
+      return {
+        success: false,
+        message: "No se puede eliminar un período con productos",
+      };
     }
 
     db.prepare("DELETE FROM catalog_periods WHERE id = ?").run(id);
+    return { success: true };
   },
 };

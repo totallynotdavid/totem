@@ -103,15 +103,14 @@ periods.delete("/:id", requireCatalogWrite, (c) => {
   const id = c.req.param("id");
   const user = c.get("user");
 
-  try {
-    PeriodService.delete(id);
-    logAction(user.id, "delete_period", "period", id);
-    return c.json({ success: true });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Error desconocido";
-    return c.json({ error: message }, 400);
+  const result = PeriodService.delete(id);
+
+  if (!result.success) {
+    return c.json({ error: result.message }, 400);
   }
+
+  logAction(user.id, "delete_period", "period", id);
+  return c.json({ success: true });
 });
 
 export default periods;

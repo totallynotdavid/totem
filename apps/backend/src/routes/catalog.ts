@@ -191,7 +191,7 @@ catalog.post("/:id/images", requireCatalogWrite, async (c) => {
     specsId = await imageStorage.store(buffer);
   }
 
-  const product = CatalogService.updateImages(id, mainId, specsId);
+  const product = await CatalogService.updateImages(id, mainId, specsId);
 
   logAction(user.id, "update_product_images", "product", id, {
     mainImage: !!mainFile,
@@ -252,11 +252,11 @@ catalog.post("/bulk-update", requireCatalogWrite, async (c) => {
 });
 
 // Delete product
-catalog.delete("/:id", requireCatalogWrite, (c) => {
+catalog.delete("/:id", requireCatalogWrite, async (c) => {
   const id = c.req.param("id");
   const user = c.get("user");
 
-  CatalogService.delete(id);
+  await CatalogService.delete(id);
 
   logAction(user.id, "delete_product", "product", id);
 
