@@ -1,26 +1,33 @@
 import { Hono } from "hono";
 import { CatalogService } from "../services/catalog.ts";
+import { PeriodService } from "../services/periods.ts";
 import { BulkImportService } from "../services/bulk-import.ts";
 import { extractProductData } from "../services/vision-extractor.ts";
+import { imageStorage } from "../services/image-storage.ts";
 import { logAction } from "../services/audit.ts";
 import { requireRole } from "../middleware/auth.ts";
-import sharp from "sharp";
-import fs from "node:fs";
-import path from "node:path";
 
 const catalog = new Hono();
 
 // Middleware: write operations require admin, developer, or supervisor
 const requireCatalogWrite = requireRole("admin", "developer", "supervisor");
 
-// List all products (all authenticated users can view)
+// List products - optionally filter by period or segment
 catalog.get("/", (c) => {
+  const periodId = c.req.query("period_id");
   const segment = c.req.query("segment");
 
-  if (segment && (segment === "fnb" || segment === "gaso")) {
-    return c.json(CatalogService.getBySegment(segment));
+  // If period specified, get products for that period
+  if (periodId) {
+    return c.json(CatalogService.getByPeriod(periodId));
   }
 
+  // If segment specified without period, get active period products
+  if (segment && (segment === "fnb" || segment === "gaso")) {
+    return c.json(CatalogService.getActiveBySegment(segment));
+  }
+
+  // Default: all products
   return c.json(CatalogService.getAll());
 });
 
@@ -34,62 +41,53 @@ catalog.post("/", requireCatalogWrite, async (c) => {
     return c.json({ error: "Image required" }, 400);
   }
 
+  const periodId = body.period_id as string;
   const segment = body.segment as string;
   const category = body.category as string;
   const name = body.name as string;
   const price = body.price as string;
   const installments = body.installments as string;
 
-  if (!segment || !category || !name || !price) {
+  if (!periodId || !segment || !category || !name || !price) {
     return c.json({ error: "Missing required fields" }, 400);
   }
 
-  // Optimize main image
-  const buffer = await file.arrayBuffer();
-  const optimized = await sharp(Buffer.from(buffer))
-    .resize(1024, 1024, { fit: "inside" })
-    .jpeg({ quality: 85 })
-    .toBuffer();
+  // Verify period exists and is draft
+  const period = PeriodService.getById(periodId);
+  if (!period) {
+    return c.json({ error: "Período no encontrado" }, 404);
+  }
+  if (period.status !== "draft") {
+    return c.json(
+      { error: "Solo se pueden agregar productos a períodos en borrador" },
+      400,
+    );
+  }
 
-  // Save main image
-  const fileName = `${Date.now()}_${file.name.replace(/\.[^.]+$/, "")}.jpg`;
-  const dir = path.join(
-    process.cwd(),
-    "data",
-    "uploads",
-    "catalog",
-    segment,
-    category,
-  );
-  fs.mkdirSync(dir, { recursive: true });
-  await Bun.write(path.join(dir, fileName), optimized);
+  // Store main image
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const imageMainId = await imageStorage.store(buffer);
 
   // Handle specs image if provided
-  let specsPath: string | null = null;
+  let imageSpecsId: string | null = null;
   const specsFile = body.specsImage as File | undefined;
   if (specsFile) {
-    const specsBuffer = await specsFile.arrayBuffer();
-    const specsOptimized = await sharp(Buffer.from(specsBuffer))
-      .resize(1024, 1024, { fit: "inside" })
-      .jpeg({ quality: 85 })
-      .toBuffer();
-
-    const specsFileName = `${Date.now()}_specs_${specsFile.name.replace(/\.[^.]+$/, "")}.jpg`;
-    await Bun.write(path.join(dir, specsFileName), specsOptimized);
-    specsPath = `catalog/${segment}/${category}/${specsFileName}`;
+    const specsBuffer = Buffer.from(await specsFile.arrayBuffer());
+    imageSpecsId = await imageStorage.store(specsBuffer);
   }
 
   const id = `${segment.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
   const product = CatalogService.create({
     id,
+    period_id: periodId,
     segment: segment as any,
     category,
     name,
     description: (body.description as string) || null,
     price: parseFloat(price),
     installments: installments ? parseInt(installments, 10) : null,
-    image_main_path: `catalog/${segment}/${category}/${fileName}`,
-    image_specs_path: specsPath,
+    image_main_id: imageMainId,
+    image_specs_id: imageSpecsId,
     created_by: user.id,
   });
 
@@ -97,6 +95,7 @@ catalog.post("/", requireCatalogWrite, async (c) => {
     name,
     segment,
     category,
+    period_id: periodId,
   });
 
   return c.json(product);
@@ -158,9 +157,18 @@ catalog.post("/:id/images", requireCatalogWrite, async (c) => {
   const user = c.get("user");
   const body = await c.req.parseBody();
 
-  const existingProduct = CatalogService.getAll().find((p) => p.id === id);
+  const existingProduct = CatalogService.getById(id);
   if (!existingProduct) {
     return c.json({ error: "Product not found" }, 404);
+  }
+
+  // Check if product's period is still draft
+  const period = PeriodService.getById(existingProduct.period_id);
+  if (period && period.status !== "draft") {
+    return c.json(
+      { error: "Solo se pueden editar productos en períodos en borrador" },
+      400,
+    );
   }
 
   const mainFile = body.mainImage as File | undefined;
@@ -170,44 +178,20 @@ catalog.post("/:id/images", requireCatalogWrite, async (c) => {
     return c.json({ error: "At least one image required" }, 400);
   }
 
-  let mainPath: string | undefined;
-  let specsPath: string | undefined;
-
-  const dir = path.join(
-    process.cwd(),
-    "data",
-    "uploads",
-    "catalog",
-    existingProduct.segment,
-    existingProduct.category,
-  );
-  fs.mkdirSync(dir, { recursive: true });
+  let mainId: string | undefined;
+  let specsId: string | undefined;
 
   if (mainFile) {
-    const buffer = await mainFile.arrayBuffer();
-    const optimized = await sharp(Buffer.from(buffer))
-      .resize(1024, 1024, { fit: "inside" })
-      .jpeg({ quality: 85 })
-      .toBuffer();
-
-    const fileName = `${Date.now()}_${mainFile.name.replace(/\.[^.]+$/, "")}.jpg`;
-    await Bun.write(path.join(dir, fileName), optimized);
-    mainPath = `catalog/${existingProduct.segment}/${existingProduct.category}/${fileName}`;
+    const buffer = Buffer.from(await mainFile.arrayBuffer());
+    mainId = await imageStorage.store(buffer);
   }
 
   if (specsFile) {
-    const buffer = await specsFile.arrayBuffer();
-    const optimized = await sharp(Buffer.from(buffer))
-      .resize(1024, 1024, { fit: "inside" })
-      .jpeg({ quality: 85 })
-      .toBuffer();
-
-    const fileName = `${Date.now()}_specs_${specsFile.name.replace(/\.[^.]+$/, "")}.jpg`;
-    await Bun.write(path.join(dir, fileName), optimized);
-    specsPath = `catalog/${existingProduct.segment}/${existingProduct.category}/${fileName}`;
+    const buffer = Buffer.from(await specsFile.arrayBuffer());
+    specsId = await imageStorage.store(buffer);
   }
 
-  const product = CatalogService.updateImages(id, mainPath, specsPath);
+  const product = CatalogService.updateImages(id, mainId, specsId);
 
   logAction(user.id, "update_product_images", "product", id, {
     mainImage: !!mainFile,

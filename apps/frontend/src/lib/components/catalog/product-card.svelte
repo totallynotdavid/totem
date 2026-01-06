@@ -21,7 +21,7 @@ let { product, canEdit, onStockUpdate, onclick }: Props = $props();
 >
 	<div class="aspect-square w-full bg-white mb-3 overflow-hidden relative mix-blend-multiply border border-ink-900/5">
 		<img
-			src="/static/{product.image_main_path}"
+			src="/static/images/{product.image_main_id}.jpg"
 			alt={product.name}
 			class="w-full h-full object-contain transition-transform duration-500"
 			onerror={(e) => {

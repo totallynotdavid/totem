@@ -355,7 +355,7 @@ async function handleSendImages(
   const segment = context.segment || "fnb";
   const creditLine = context.creditLine || 0;
 
-  let products = CatalogService.getBySegment(segment).filter((p) =>
+  let products = CatalogService.getActiveBySegment(segment).filter((p) =>
     p.category.toLowerCase().includes(category.toLowerCase()),
   );
 
@@ -402,7 +402,7 @@ async function handleSendImages(
     } else {
       await WhatsAppService.sendImage(
         phoneNumber,
-        product.image_main_path,
+        `images/${product.image_main_id}.jpg`,
         caption,
       );
     }

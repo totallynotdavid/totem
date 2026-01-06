@@ -42,6 +42,7 @@ import conversations from "./routes/conversations.ts";
 import analytics from "./routes/analytics.ts";
 import admin from "./routes/admin.ts";
 import catalog from "./routes/catalog.ts";
+import periods from "./routes/periods.ts";
 import orders from "./routes/orders.ts";
 
 import { getProvidersHealth } from "./services/providers.ts";
@@ -162,6 +163,7 @@ app.use("/api/*", requireAuth);
 app.route("/api/simulator", simulator);
 app.route("/api/conversations", conversations);
 app.route("/api/catalog", catalog);
+app.route("/api/periods", periods);
 app.route("/api/orders", orders);
 
 // Analytics routes
