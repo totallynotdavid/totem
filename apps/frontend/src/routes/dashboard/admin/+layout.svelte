@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores";
+import { page } from "$app/state";
 import PageHeader from "$lib/components/shared/page-header.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
 
@@ -12,7 +12,7 @@ const tabs = [
 ];
 
 function isActive(path: string) {
-  const current = $page.url.pathname;
+  const current = page.url.pathname;
   if (path === "/dashboard/admin/users") {
     return current.includes("/dashboard/admin/users");
   }
@@ -44,6 +44,5 @@ function isActive(path: string) {
         </nav>
     </div>
 
-    <!-- Content -->
     {@render children()}
 </div>

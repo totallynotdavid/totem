@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { page } from "$app/stores";
+import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { fetchApi } from "$lib/utils/api";
 import { toast } from "$lib/state/toast.svelte";
@@ -15,7 +15,7 @@ let user = $state<any>(null);
 let originalRole = $state<string>("");
 let saving = $state(false);
 
-const userId = $page.params.userId;
+const userId = page.params.userId;
 
 async function loadUser() {
   try {

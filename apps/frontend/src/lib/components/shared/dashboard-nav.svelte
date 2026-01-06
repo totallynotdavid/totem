@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores";
+import { page } from "$app/state";
 import { auth } from "$lib/state/auth.svelte";
 
 const breadcrumbLabels: Record<string, string> = {
@@ -20,7 +20,7 @@ const breadcrumbLabels: Record<string, string> = {
 };
 
 $: crumbs = (() => {
-  const path = $page.url.pathname;
+  const path = page.url.pathname;
   const segments = path.split("/").filter(Boolean);
   let currentPath = "";
   const trail: { label: string; href: string }[] = [];
@@ -38,7 +38,7 @@ $: crumbs = (() => {
       segments[i - 1] === "conversations" &&
       segment?.startsWith("+")
     ) {
-      const pageData = $page.data as any;
+      const pageData = page.data as any;
       label = pageData?.conversation?.client_name || segment;
     }
 
