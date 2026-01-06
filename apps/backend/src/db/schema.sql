@@ -17,19 +17,31 @@ CREATE TABLE IF NOT EXISTS session (
     expires_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS catalog_periods (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    year_month TEXT NOT NULL UNIQUE,
+    status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'active', 'archived')),
+    published_at INTEGER,
+    created_by TEXT REFERENCES users(id),
+    created_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
+);
+
 CREATE TABLE IF NOT EXISTS catalog_products (
     id TEXT PRIMARY KEY,
+    period_id TEXT REFERENCES catalog_periods(id),
     segment TEXT NOT NULL CHECK(segment IN ('fnb', 'gaso')),
     category TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     price REAL NOT NULL,
     installments INTEGER,
-    image_main_path TEXT NOT NULL,
-    image_specs_path TEXT,
+    image_main_id TEXT NOT NULL,
+    image_specs_id TEXT,
     is_active INTEGER DEFAULT 1 CHECK(is_active IN (0, 1)),
     stock_status TEXT DEFAULT 'in_stock' CHECK(stock_status IN ('in_stock', 'low_stock', 'out_of_stock')),
     created_by TEXT REFERENCES users(id),
+    created_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000),
     updated_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
 );
 
@@ -131,8 +143,12 @@ CREATE TABLE IF NOT EXISTS system_settings (
 
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(last_activity_at DESC);
 CREATE INDEX IF NOT EXISTS idx_conversations_status ON conversations(status);
+CREATE INDEX IF NOT EXISTS idx_periods_status ON catalog_periods(status);
+CREATE INDEX IF NOT EXISTS idx_periods_year_month ON catalog_periods(year_month DESC);
+CREATE INDEX IF NOT EXISTS idx_products_period ON catalog_products(period_id);
 CREATE INDEX IF NOT EXISTS idx_products_segment ON catalog_products(segment);
 CREATE INDEX IF NOT EXISTS idx_products_active ON catalog_products(is_active, stock_status);
+CREATE INDEX IF NOT EXISTS idx_products_active_segment ON catalog_products(segment, is_active, stock_status, period_id);
 CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone_number, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analytics_phone ON analytics_events(phone_number);
 CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);

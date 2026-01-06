@@ -16,12 +16,13 @@ import {
 
 type Props = {
   product: Product | null;
+  periodId: string;
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
 };
 
-let { product, open, onClose, onSuccess }: Props = $props();
+let { product, periodId, open, onClose, onSuccess }: Props = $props();
 
 let formData = $state({
   name: "",
@@ -136,6 +137,7 @@ async function handleSave() {
       const form = createFormData({
         image: mainImage,
         specsImage,
+        period_id: periodId,
         name: formData.name.trim(),
         price: formData.price,
         segment: formData.segment,

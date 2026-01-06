@@ -1,6 +1,7 @@
 export type Segment = "fnb" | "gaso";
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 export type UserRole = "admin" | "developer" | "supervisor" | "sales_agent";
+export type PeriodStatus = "draft" | "active" | "archived";
 
 export type ConversationState =
   | "INIT"
@@ -54,18 +55,30 @@ export type Conversation = {
 
 export type Product = {
   id: string;
+  period_id: string;
   segment: Segment;
   category: string;
   name: string;
   description: string | null;
   price: number;
   installments: number | null;
-  image_main_path: string;
-  image_specs_path: string | null;
+  image_main_id: string;
+  image_specs_id: string | null;
   is_active: number;
   stock_status: StockStatus;
   created_by: string;
+  created_at: string;
   updated_at: string;
+};
+
+export type CatalogPeriod = {
+  id: string;
+  name: string;
+  year_month: string;
+  status: PeriodStatus;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
 };
 
 export type Message = {
