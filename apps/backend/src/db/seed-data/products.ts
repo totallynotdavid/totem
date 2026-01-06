@@ -1,5 +1,3 @@
-import type { BundleComposition, InstallmentSchedule } from "@totem/types";
-
 /** Base product templates extracted from GASO catalog */
 export const BASE_PRODUCTS = [
   // Cocinas

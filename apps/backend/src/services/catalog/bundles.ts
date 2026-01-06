@@ -1,5 +1,5 @@
 import { db } from "../../db/index.ts";
-import type { Bundle, StockStatus } from "@totem/types";
+import type { Bundle } from "@totem/types";
 import { imageStorage } from "../image-storage.ts";
 
 type BundleFilters = {

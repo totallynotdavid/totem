@@ -1,5 +1,5 @@
 import { db } from "../../db/index.ts";
-import type { FnbOffering, StockStatus } from "@totem/types";
+import type { FnbOffering } from "@totem/types";
 import { imageStorage } from "../image-storage.ts";
 
 type FnbFilters = {
