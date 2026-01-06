@@ -18,7 +18,10 @@ import {
 import { WhatsAppService } from "../services/whatsapp/index.ts";
 import { trackEvent } from "../services/analytics.ts";
 import { notifyTeam } from "../services/notifier.ts";
-import { BundleService, FnbOfferingService } from "../services/catalog/index.ts";
+import {
+  BundleService,
+  FnbOfferingService,
+} from "../services/catalog/index.ts";
 import * as LLM from "../services/llm.ts";
 import * as T from "@totem/core";
 import { selectVariant, formatFirstName } from "@totem/core";
@@ -89,9 +92,10 @@ async function executeTransition(
   // 2. Extract product category (in OFFER_PRODUCTS state)
   if (state === "OFFER_PRODUCTS" && !context.offeredCategory) {
     // Get available categories from database for this segment
-    const availableCategories = context.segment === "fnb"
-      ? FnbOfferingService.getAvailableCategories()
-      : BundleService.getAvailableCategories();
+    const availableCategories =
+      context.segment === "fnb"
+        ? FnbOfferingService.getAvailableCategories()
+        : BundleService.getAvailableCategories();
 
     const category = await LLM.extractEntity(message, "product_category", {
       availableCategories,
@@ -378,7 +382,13 @@ async function handleSendImages(
       const caption = `${bundle.name}\nPrecio: S/ ${bundle.price.toFixed(2)}${installmentText ? `\n${installmentText}` : ""}`;
 
       if (isSimulation) {
-        WhatsAppService.logMessage(phoneNumber, "outbound", "image", caption, "sent");
+        WhatsAppService.logMessage(
+          phoneNumber,
+          "outbound",
+          "image",
+          caption,
+          "sent",
+        );
       } else {
         await WhatsAppService.sendImage(
           phoneNumber,
@@ -404,7 +414,13 @@ async function handleSendImages(
       const caption = `${snapshot.name}\nPrecio: S/ ${offering.price.toFixed(2)}${offering.installments ? `\nCuotas: ${offering.installments} meses` : ""}`;
 
       if (isSimulation) {
-        WhatsAppService.logMessage(phoneNumber, "outbound", "image", caption, "sent");
+        WhatsAppService.logMessage(
+          phoneNumber,
+          "outbound",
+          "image",
+          caption,
+          "sent",
+        );
       } else {
         await WhatsAppService.sendImage(
           phoneNumber,
@@ -431,7 +447,13 @@ async function sendNoStockMessage(
   updateConversationState(phoneNumber, conv.current_state, variantCtx);
 
   if (isSimulation) {
-    WhatsAppService.logMessage(phoneNumber, "outbound", "text", noStockMsg, "sent");
+    WhatsAppService.logMessage(
+      phoneNumber,
+      "outbound",
+      "text",
+      noStockMsg,
+      "sent",
+    );
   } else {
     await WhatsAppService.sendMessage(phoneNumber, noStockMsg);
   }

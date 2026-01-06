@@ -1,5 +1,9 @@
 import { Hono } from "hono";
-import { ProductService, BundleService, FnbOfferingService } from "../services/catalog/index.ts";
+import {
+  ProductService,
+  BundleService,
+  FnbOfferingService,
+} from "../services/catalog/index.ts";
 import { PeriodService } from "../services/periods.ts";
 import { imageStorage } from "../services/image-storage.ts";
 import { logAction } from "../services/audit.ts";
@@ -34,7 +38,14 @@ catalog.post("/products", requireCatalogWrite, async (c) => {
   }
 
   const id = `prod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const product = ProductService.create({ id, name, category, brand, model, specs_json });
+  const product = ProductService.create({
+    id,
+    name,
+    category,
+    brand,
+    model,
+    specs_json,
+  });
 
   logAction(user.id, "create_product", "product", id, { name, category });
   return c.json(product);
@@ -61,10 +72,12 @@ catalog.get("/bundles", (c) => {
     return c.json(BundleService.getByPeriod(periodId));
   }
 
-  return c.json(BundleService.getAvailable({
-    maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-    category: category || undefined,
-  }));
+  return c.json(
+    BundleService.getAvailable({
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      category: category || undefined,
+    }),
+  );
 });
 
 catalog.get("/bundles/categories", (c) => {
@@ -92,7 +105,14 @@ catalog.post("/bundles", requireCatalogWrite, async (c) => {
   const compositionJson = body.composition_json as string;
   const installmentsJson = body.installments_json as string;
 
-  if (!periodId || !name || !price || !primaryCategory || !compositionJson || !installmentsJson) {
+  if (
+    !periodId ||
+    !name ||
+    !price ||
+    !primaryCategory ||
+    !compositionJson ||
+    !installmentsJson
+  ) {
     return c.json({ error: "Missing required fields" }, 400);
   }
 
@@ -119,7 +139,11 @@ catalog.post("/bundles", requireCatalogWrite, async (c) => {
     created_by: user.id,
   });
 
-  logAction(user.id, "create_bundle", "bundle", id, { name, price, primaryCategory });
+  logAction(user.id, "create_bundle", "bundle", id, {
+    name,
+    price,
+    primaryCategory,
+  });
   return c.json(bundle);
 });
 
@@ -175,7 +199,11 @@ catalog.post("/bundles/bulk-update", requireCatalogWrite, async (c) => {
   }
 
   const count = BundleService.bulkUpdate(ids, updates);
-  logAction(user.id, "bulk_update_bundles", "bundle", null, { count, ids, updates });
+  logAction(user.id, "bulk_update_bundles", "bundle", null, {
+    count,
+    ids,
+    updates,
+  });
   return c.json({ success: true, count });
 });
 
@@ -190,10 +218,12 @@ catalog.get("/fnb", (c) => {
     return c.json(FnbOfferingService.getByPeriod(periodId));
   }
 
-  return c.json(FnbOfferingService.getAvailable({
-    maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-    category: category || undefined,
-  }));
+  return c.json(
+    FnbOfferingService.getAvailable({
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      category: category || undefined,
+    }),
+  );
 });
 
 catalog.get("/fnb/categories", (c) => {
@@ -246,7 +276,11 @@ catalog.post("/fnb", requireCatalogWrite, async (c) => {
     created_by: user.id,
   });
 
-  logAction(user.id, "create_fnb_offering", "fnb_offering", id, { productId, price, category });
+  logAction(user.id, "create_fnb_offering", "fnb_offering", id, {
+    productId,
+    price,
+    category,
+  });
   return c.json(offering);
 });
 
@@ -302,7 +336,11 @@ catalog.post("/fnb/bulk-update", requireCatalogWrite, async (c) => {
   }
 
   const count = FnbOfferingService.bulkUpdate(ids, updates);
-  logAction(user.id, "bulk_update_fnb", "fnb_offering", null, { count, ids, updates });
+  logAction(user.id, "bulk_update_fnb", "fnb_offering", null, {
+    count,
+    ids,
+    updates,
+  });
   return c.json({ success: true, count });
 });
 

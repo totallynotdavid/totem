@@ -1,4 +1,8 @@
-import { BundleService, FnbOfferingService, ProductService } from "./catalog/index.ts";
+import {
+  BundleService,
+  FnbOfferingService,
+  ProductService,
+} from "./catalog/index.ts";
 import { PeriodService } from "./periods.ts";
 import { db } from "../db/index.ts";
 
@@ -23,7 +27,10 @@ export const BulkImportService = {
       .filter((l) => l.length > 0);
 
     if (lines.length < 2) {
-      return { successCount: 0, errors: ["CSV vacío o solo contiene encabezado"] };
+      return {
+        successCount: 0,
+        errors: ["CSV vacío o solo contiene encabezado"],
+      };
     }
 
     const dataRows = lines.slice(1);
@@ -42,9 +49,25 @@ export const BulkImportService = {
           continue;
         }
 
-        const [periodId, name, price, primaryCategory, imageId, compositionJson, installmentsJson] = cols;
+        const [
+          periodId,
+          name,
+          price,
+          primaryCategory,
+          imageId,
+          compositionJson,
+          installmentsJson,
+        ] = cols;
 
-        if (!periodId || !name || !price || !primaryCategory || !imageId || !compositionJson || !installmentsJson) {
+        if (
+          !periodId ||
+          !name ||
+          !price ||
+          !primaryCategory ||
+          !imageId ||
+          !compositionJson ||
+          !installmentsJson
+        ) {
           errors.push(`Fila ${idx + 2}: Faltan campos requeridos`);
           continue;
         }
@@ -98,7 +121,10 @@ export const BulkImportService = {
       .filter((l) => l.length > 0);
 
     if (lines.length < 2) {
-      return { successCount: 0, errors: ["CSV vacío o solo contiene encabezado"] };
+      return {
+        successCount: 0,
+        errors: ["CSV vacío o solo contiene encabezado"],
+      };
     }
 
     const dataRows = lines.slice(1);
@@ -117,7 +143,8 @@ export const BulkImportService = {
           continue;
         }
 
-        const [periodId, productId, price, category, imageId, installments] = cols;
+        const [periodId, productId, price, category, imageId, installments] =
+          cols;
 
         if (!periodId || !productId || !price || !category || !imageId) {
           errors.push(`Fila ${idx + 2}: Faltan campos requeridos`);
@@ -146,7 +173,9 @@ export const BulkImportService = {
           continue;
         }
 
-        const parsedInstallments = installments ? Number.parseInt(installments, 10) : undefined;
+        const parsedInstallments = installments
+          ? Number.parseInt(installments, 10)
+          : undefined;
 
         try {
           const id = `fnb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

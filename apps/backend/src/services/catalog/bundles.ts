@@ -19,9 +19,11 @@ function formatBundle(row: any): Bundle {
 export const BundleService = {
   /** Get all bundles for a period (dashboard) */
   getByPeriod: (periodId: string): Bundle[] => {
-    const rows = db.prepare(
-      "SELECT * FROM catalog_bundles WHERE period_id = ? ORDER BY primary_category, price",
-    ).all(periodId) as any[];
+    const rows = db
+      .prepare(
+        "SELECT * FROM catalog_bundles WHERE period_id = ? ORDER BY primary_category, price",
+      )
+      .all(periodId) as any[];
     return rows.map(formatBundle);
   },
 
@@ -54,7 +56,9 @@ export const BundleService = {
   },
 
   getById: (id: string): Bundle | null => {
-    const row = db.prepare("SELECT * FROM catalog_bundles WHERE id = ?").get(id) as any;
+    const row = db
+      .prepare("SELECT * FROM catalog_bundles WHERE id = ?")
+      .get(id) as any;
     return row ? formatBundle(row) : null;
   },
 
@@ -90,18 +94,28 @@ export const BundleService = {
     return BundleService.getById(data.id)!;
   },
 
-  update: (id: string, updates: Partial<Pick<Bundle, "name" | "price" | "is_active" | "stock_status" | "notes">>): Bundle => {
+  update: (
+    id: string,
+    updates: Partial<
+      Pick<Bundle, "name" | "price" | "is_active" | "stock_status" | "notes">
+    >,
+  ): Bundle => {
     const entries = Object.entries(updates).filter(([, v]) => v !== undefined);
     if (entries.length === 0) return BundleService.getById(id)!;
 
     const fields = entries.map(([k]) => `${k} = ?`).join(", ");
     const values = entries.map(([, v]) => v);
 
-    db.prepare(`UPDATE catalog_bundles SET ${fields}, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id = ?`).run(...values, id);
+    db.prepare(
+      `UPDATE catalog_bundles SET ${fields}, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id = ?`,
+    ).run(...values, id);
     return BundleService.getById(id)!;
   },
 
-  bulkUpdate: (ids: string[], updates: Partial<Pick<Bundle, "is_active" | "stock_status">>): number => {
+  bulkUpdate: (
+    ids: string[],
+    updates: Partial<Pick<Bundle, "is_active" | "stock_status">>,
+  ): number => {
     const entries = Object.entries(updates).filter(([, v]) => v !== undefined);
     if (entries.length === 0 || ids.length === 0) return 0;
 
@@ -109,9 +123,11 @@ export const BundleService = {
     const values = entries.map(([, v]) => v);
     const placeholders = ids.map(() => "?").join(",");
 
-    const result = db.prepare(
-      `UPDATE catalog_bundles SET ${fields}, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id IN (${placeholders})`,
-    ).run(...values, ...ids);
+    const result = db
+      .prepare(
+        `UPDATE catalog_bundles SET ${fields}, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id IN (${placeholders})`,
+      )
+      .run(...values, ...ids);
     return result.changes;
   },
 
@@ -120,7 +136,9 @@ export const BundleService = {
     if (!existing) throw new Error("Bundle not found");
 
     await imageStorage.delete(existing.image_id);
-    db.prepare(`UPDATE catalog_bundles SET image_id = ?, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id = ?`).run(newImageId, id);
+    db.prepare(
+      `UPDATE catalog_bundles SET image_id = ?, updated_at = unixepoch('now', 'subsec') * 1000 WHERE id = ?`,
+    ).run(newImageId, id);
     return BundleService.getById(id)!;
   },
 
@@ -133,12 +151,14 @@ export const BundleService = {
   },
 
   getAvailableCategories: (): string[] => {
-    const rows = db.prepare(`
+    const rows = db
+      .prepare(`
       SELECT DISTINCT b.primary_category as category FROM catalog_bundles b
       JOIN catalog_periods p ON b.period_id = p.id
       WHERE p.status = 'active' AND b.is_active = 1 AND b.stock_status != 'out_of_stock'
       ORDER BY b.primary_category
-    `).all() as Array<{ category: string }>;
+    `)
+      .all() as Array<{ category: string }>;
     return rows.map((r) => r.category);
   },
 };
