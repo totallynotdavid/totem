@@ -2,7 +2,6 @@
 type Column<T> = {
     header: string;
     key?: keyof T;
-    // Render function for custom cell content
     render?: (item: T) => string | any; 
     class?: string;
     align?: "left" | "center" | "right";
