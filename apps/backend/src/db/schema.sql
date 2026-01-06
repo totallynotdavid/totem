@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS catalog_periods (
 
 CREATE TABLE IF NOT EXISTS catalog_products (
     id TEXT PRIMARY KEY,
-    period_id TEXT NOT NULL REFERENCES catalog_periods(id),
+    period_id TEXT REFERENCES catalog_periods(id),
     segment TEXT NOT NULL CHECK(segment IN ('fnb', 'gaso')),
     category TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -148,6 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_periods_year_month ON catalog_periods(year_month 
 CREATE INDEX IF NOT EXISTS idx_products_period ON catalog_products(period_id);
 CREATE INDEX IF NOT EXISTS idx_products_segment ON catalog_products(segment);
 CREATE INDEX IF NOT EXISTS idx_products_active ON catalog_products(is_active, stock_status);
+CREATE INDEX IF NOT EXISTS idx_products_active_segment ON catalog_products(segment, is_active, stock_status, period_id);
 CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone_number, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analytics_phone ON analytics_events(phone_number);
 CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
