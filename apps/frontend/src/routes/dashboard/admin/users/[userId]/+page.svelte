@@ -90,9 +90,6 @@ onMount(loadUser);
 
 <div class="max-w-3xl mx-auto p-8 md:p-12">
     <div class="mb-8">
-        <button onclick={() => goto("/dashboard/admin")} class="text-xs text-ink-400 hover:text-ink-600 mb-2 flex items-center gap-1">
-            <span>&larr;</span> Volver a lista
-        </button>
         {#if user}
             <div class="flex items-center gap-4">
                 <h1 class="text-3xl font-serif text-ink-900">{user.name}</h1>

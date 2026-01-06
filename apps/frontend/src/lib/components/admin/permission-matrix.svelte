@@ -41,19 +41,19 @@ const permissions: Record<string, { label: string; included: boolean }[]> = {
 const currentPermissions = $derived(permissions[role] || []);
 </script>
 
-<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-2">
-  <p class="text-xs font-bold uppercase tracking-widest text-ink-400 mb-3">
-    Capacidades del rol: <span class="inline-flex items-center px-2 py-0.5 bg-ink-100 text-ink-800 border border-ink-200 text-[10px] font-bold tracking-wider rounded">{role}</span>
+<div class="mt-4">
+  <p class="text-xs font-bold uppercase tracking-widest text-ink-400 mb-3 flex items-center gap-2">
+    Capacidades del rol <span class="text-ink-600 border-b border-ink-200">{role}</span>
   </p>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">
     {#each currentPermissions as perm}
       <div class="flex items-center gap-2 text-sm">
         {#if perm.included}
-          <span class="text-green-600">✓</span>
+          <span class="text-green-600 font-bold">✓</span>
           <span class="text-ink-900">{perm.label}</span>
         {:else}
-          <span class="text-gray-400">×</span>
-          <span class="text-gray-500 line-through">{perm.label}</span>
+          <span class="text-gray-300">×</span>
+          <span class="text-gray-400 line-through decoration-gray-300">{perm.label}</span>
         {/if}
       </div>
     {/each}

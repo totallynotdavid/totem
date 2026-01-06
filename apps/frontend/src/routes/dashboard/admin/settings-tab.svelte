@@ -3,7 +3,6 @@ import { onMount } from "svelte";
 import { fetchApi } from "$lib/utils/api";
 import { toast } from "$lib/state/toast.svelte";
 import Button from "$lib/components/ui/button.svelte";
-import Badge from "$lib/components/ui/badge.svelte";
 
 let settings = $state<Record<string, string>>({});
 let loading = $state(true);
@@ -87,38 +86,34 @@ function toggleSetting(key: string) {
                 <!-- Force Provider Status -->
                 <div class="pt-6 flex items-center justify-between">
                     <div>
-                        <p class="font-bold text-ink-900 mb-1">API FNB (Calidda)</p>
-                        <p class="text-xs text-ink-500">Controla manualmente si el sistema consulta la API de Calidda.</p>
+                        <p class="font-bold text-ink-900 mb-1">Suspender servicio API FNB (Calidda)</p>
+                        <p class="text-xs text-ink-500">Al activar, el bot dejará de consultar este servicio y usará el fallback si es posible.</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <Badge variant={settings["force_fnb_down"] === "true" ? "error" : "success"}>
-                            {settings["force_fnb_down"] === "true" ? "FORZAR APAGADO" : "OPERATIVO HABILITADO"}
-                        </Badge>
-                         <button 
-                            onclick={() => toggleSetting("force_fnb_down")}
-                            class="text-xs underline text-ink-500 hover:text-ink-900 ml-2"
-                        >
-                            Cambiar
-                        </button>
-                    </div>
+                    <button 
+                        role="switch" 
+                        aria-checked={settings["force_fnb_down"] === "true"}
+                        onclick={() => toggleSetting("force_fnb_down")}
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ink-900 focus:ring-offset-2 {settings["force_fnb_down"] === "true" ? 'bg-red-600' : 'bg-gray-200'}"
+                    >
+                        <span class="sr-only">Suspender FNB</span>
+                        <span class="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition {settings["force_fnb_down"] === "true" ? 'translate-x-6' : 'translate-x-1'}"></span>
+                    </button>
                 </div>
 
                  <div class="pt-6 flex items-center justify-between">
                     <div>
-                        <p class="font-bold text-ink-900 mb-1">API PowerBI (GASO)</p>
-                        <p class="text-xs text-ink-500">Controla manualmente si el sistema consulta PowerBI.</p>
+                        <p class="font-bold text-ink-900 mb-1">Suspender servicio API PowerBI (GASO)</p>
+                        <p class="text-xs text-ink-500">Al activar, se simulará que PowerBI está caído (triggering fallback a FNB).</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <Badge variant={settings["force_gaso_down"] === "true" ? "error" : "success"}>
-                            {settings["force_gaso_down"] === "true" ? "FORZAR APAGADO" : "OPERATIVO HABILITADO"}
-                        </Badge>
-                         <button 
-                            onclick={() => toggleSetting("force_gaso_down")}
-                            class="text-xs underline text-ink-500 hover:text-ink-900 ml-2"
-                        >
-                            Cambiar
-                        </button>
-                    </div>
+                    <button 
+                        role="switch" 
+                        aria-checked={settings["force_gaso_down"] === "true"}
+                        onclick={() => toggleSetting("force_gaso_down")}
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ink-900 focus:ring-offset-2 {settings["force_gaso_down"] === "true" ? 'bg-red-600' : 'bg-gray-200'}"
+                    >
+                        <span class="sr-only">Suspender GASO</span>
+                        <span class="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition {settings["force_gaso_down"] === "true" ? 'translate-x-6' : 'translate-x-1'}"></span>
+                    </button>
                 </div>
             </div>
         {/if}
