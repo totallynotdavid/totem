@@ -14,7 +14,7 @@ import {
   detectNeedsPatience,
   isAcknowledgment,
 } from "../messaging/context-analyzer.ts";
-import { detectTone } from "../messaging/tone-detector.ts";
+import { matchProductSelection } from "../matching/product-selection.ts";
 
 export function transition(input: TransitionInput): StateOutput {
   const message = sanitizeInput(input.message);
@@ -609,38 +609,45 @@ function handleOfferProducts(message: string, context: any): StateOutput {
     };
   }
 
-  // Priority 3: LLM detected specific product selection (e.g., "El Galaxy A26")
-  if (context.llmDetectedProductSelection && context.offeredCategory) {
-    const { message: confirmMsg, updatedContext: variantCtx } = selectVariant(
-      S.CONFIRM_PURCHASE,
-      "CONFIRM_PURCHASE",
-      context,
+  // Priority 3: Smart product selection matching (exact name, ordinal, fuzzy brand)
+  if (context.sentProducts && context.sentProducts.length > 0) {
+    const selectedProduct = matchProductSelection(
+      message,
+      context.sentProducts,
     );
-    return {
-      nextState: "CLOSING",
-      commands: [
-        {
-          type: "SEND_MESSAGE",
-          content: confirmMsg,
-        },
-        {
-          type: "NOTIFY_TEAM",
-          channel: "sales",
-          message: `Cliente ${context.phoneNumber} seleccionó producto específico en ${context.offeredCategory} (Mensaje: "${message}")`,
-        },
-        {
-          type: "TRACK_EVENT",
-          eventType: "purchase_intent_confirmed",
-          metadata: {
-            category: context.offeredCategory,
-            segment: context.segment,
-            selectionType: "specific_product",
-            userMessage: message,
+    if (selectedProduct) {
+      const { message: confirmMsg, updatedContext: variantCtx } = selectVariant(
+        S.CONFIRM_PURCHASE,
+        "CONFIRM_PURCHASE",
+        context,
+      );
+      return {
+        nextState: "CLOSING",
+        commands: [
+          {
+            type: "SEND_MESSAGE",
+            content: confirmMsg,
           },
-        },
-      ],
-      updatedContext: { purchaseConfirmed: true, ...variantCtx },
-    };
+          {
+            type: "NOTIFY_TEAM",
+            channel: "sales",
+            message: `Cliente ${context.phoneNumber} seleccionó "${selectedProduct.name}" (${context.offeredCategory}) (Mensaje: "${message}")`,
+          },
+          {
+            type: "TRACK_EVENT",
+            eventType: "purchase_intent_confirmed",
+            metadata: {
+              category: context.offeredCategory,
+              segment: context.segment,
+              selectionType: "smart_match",
+              selectedProduct: selectedProduct.name,
+              userMessage: message,
+            },
+          },
+        ],
+        updatedContext: { purchaseConfirmed: true, ...variantCtx },
+      };
+    }
   }
 
   // Check for purchase confirmation (customer wants to buy)
