@@ -23,6 +23,7 @@
     let baseProducts = $derived(data.baseProducts);
     let bundle: Bundle | null = $derived(data.bundle);
     let periodId = $derived(data.periodId);
+    let segment = $derived(data.segment);
 
     let formData = $state({
         name: "",
@@ -188,6 +189,7 @@
             if (!bundle) {
                 const payload = createFormData({
                     ...payloadRaw,
+                    segment,
                     image,
                 });
                 await fetchApi("/api/catalog/bundles", {
