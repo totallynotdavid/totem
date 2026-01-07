@@ -15,6 +15,7 @@ import {
   isAcknowledgment,
 } from "../messaging/context-analyzer.ts";
 import { matchProductSelection } from "../matching/product-selection.ts";
+import { detectTone } from "../messaging/tone-detector.ts";
 
 export function transition(input: TransitionInput): StateOutput {
   const message = sanitizeInput(input.message);
