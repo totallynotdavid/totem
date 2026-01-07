@@ -98,7 +98,7 @@ const columns = [
 </SectionShell>
 
 {#snippet refreshAction()}
-    <Button variant="outline" size="sm" onclick={loadLogs} disabled={loading}>
+    <Button variant="secondary" onclick={loadLogs} disabled={loading}>
         {#if loading}
             Cargando...
         {:else}
