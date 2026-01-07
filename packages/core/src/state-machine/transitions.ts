@@ -609,6 +609,40 @@ function handleOfferProducts(message: string, context: any): StateOutput {
     };
   }
 
+  // Priority 3: LLM detected specific product selection (e.g., "El Galaxy A26")
+  if (context.llmDetectedProductSelection && context.offeredCategory) {
+    const { message: confirmMsg, updatedContext: variantCtx } = selectVariant(
+      S.CONFIRM_PURCHASE,
+      "CONFIRM_PURCHASE",
+      context,
+    );
+    return {
+      nextState: "CLOSING",
+      commands: [
+        {
+          type: "SEND_MESSAGE",
+          content: confirmMsg,
+        },
+        {
+          type: "NOTIFY_TEAM",
+          channel: "sales",
+          message: `Cliente ${context.phoneNumber} seleccionó producto específico en ${context.offeredCategory} (Mensaje: "${message}")`,
+        },
+        {
+          type: "TRACK_EVENT",
+          eventType: "purchase_intent_confirmed",
+          metadata: {
+            category: context.offeredCategory,
+            segment: context.segment,
+            selectionType: "specific_product",
+            userMessage: message,
+          },
+        },
+      ],
+      updatedContext: { purchaseConfirmed: true, ...variantCtx },
+    };
+  }
+
   // Check for purchase confirmation (customer wants to buy)
   // Only trigger if they've already been shown products (offeredCategory exists)
   const isInterestPhrase =

@@ -33,6 +33,7 @@ export type StateContext = {
   llmRequiresHuman?: boolean;
   extractedCategory?: string; // Category extracted by backend (matcher or LLM)
   usedLLM?: boolean; // Whether LLM was used for extraction
+  llmDetectedProductSelection?: boolean; // LLM detected specific product mention
   llmObjectionIntensity?: "mild" | "strong";
   // Variation tracking to prevent repetition
   usedVariantKeys?: Record<string, number>;

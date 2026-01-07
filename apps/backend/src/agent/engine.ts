@@ -74,7 +74,7 @@ async function executeTransition(
 
   // SELECTIVE LLM ENRICHMENT (backend pre-processing)
 
-  // 1. Detect questions at any state (except INIT)
+  // 1. Detect questions and product selections at any state (except INIT)
   if (state !== "INIT" && state !== "WAITING_PROVIDER") {
     const intent = await LLM.classifyIntent(message);
 
@@ -89,6 +89,10 @@ async function executeTransition(
       context.llmDetectedQuestion = true;
       context.llmGeneratedAnswer = questionResponse.answer;
       context.llmRequiresHuman = questionResponse.requiresHuman;
+    } else if (intent === "product_selection" && state === "OFFER_PRODUCTS") {
+      // Client mentioned specific product or ordinal selection
+      // Mark this for the state machine to recognize as purchase intent
+      context.llmDetectedProductSelection = true;
     }
   }
 
