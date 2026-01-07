@@ -167,8 +167,8 @@ function seedBundles(db: Database) {
   if (check.count > 0) return;
 
   const stmt = db.prepare(`
-    INSERT INTO catalog_bundles (id, period_id, name, price, primary_category, categories_json, image_id, composition_json, installments_json, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO catalog_bundles (id, period_id, segment, name, price, primary_category, categories_json, image_id, composition_json, installments_json, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const b of BUNDLES_SEED) {
@@ -176,6 +176,7 @@ function seedBundles(db: Database) {
     stmt.run(
       id,
       periodId,
+      "gaso",
       b.name,
       b.price,
       b.primary_category,
@@ -203,8 +204,8 @@ function seedFnbBundles(db: Database) {
   if (check.count > 0) return;
 
   const stmt = db.prepare(`
-    INSERT INTO catalog_bundles (id, period_id, name, price, primary_category, categories_json, image_id, composition_json, installments_json, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO catalog_bundles (id, period_id, segment, name, price, primary_category, categories_json, image_id, composition_json, installments_json, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const b of FNB_BUNDLES_SEED) {
@@ -212,6 +213,7 @@ function seedFnbBundles(db: Database) {
     stmt.run(
       id,
       periodId,
+      "fnb",
       b.name,
       b.price,
       b.primary_category,

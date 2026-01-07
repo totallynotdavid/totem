@@ -93,6 +93,7 @@ export const BulkImportService = {
           BundleService.create({
             id,
             period_id: periodId,
+            segment: "gaso",
             name,
             price: parsedPrice,
             primary_category: primaryCategory,

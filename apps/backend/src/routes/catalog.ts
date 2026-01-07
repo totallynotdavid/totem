@@ -61,27 +61,30 @@ catalog.patch("/products/:id", requireCatalogWrite, async (c) => {
   return c.json(product);
 });
 
-// ============ BUNDLES (GASO) ============
+// ============ BUNDLES (GASO & FnB with segment filtering) ============
 
 catalog.get("/bundles", (c) => {
   const periodId = c.req.query("period_id");
   const maxPrice = c.req.query("max_price");
   const category = c.req.query("category");
+  const segment = c.req.query("segment") as "gaso" | "fnb" | undefined;
 
   if (periodId) {
-    return c.json(BundleService.getByPeriod(periodId));
+    return c.json(BundleService.getByPeriod(periodId, segment));
   }
 
   return c.json(
     BundleService.getAvailable({
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       category: category || undefined,
+      segment,
     }),
   );
 });
 
 catalog.get("/bundles/categories", (c) => {
-  return c.json(BundleService.getAvailableCategories());
+  const segment = c.req.query("segment") as "gaso" | "fnb" | undefined;
+  return c.json(BundleService.getAvailableCategories(segment));
 });
 
 catalog.get("/bundles/:id", (c) => {
@@ -129,6 +132,7 @@ catalog.post("/bundles", requireCatalogWrite, async (c) => {
   const bundle = BundleService.create({
     id,
     period_id: periodId,
+    segment: "gaso",
     name,
     price: parseFloat(price),
     primary_category: primaryCategory,

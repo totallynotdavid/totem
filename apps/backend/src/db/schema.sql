@@ -38,10 +38,11 @@ CREATE TABLE IF NOT EXISTS products (
     created_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
 );
 
--- GASO bundles (promotional packages with snapshotted composition)
+-- GASO & FnB bundles (promotional packages with snapshotted composition)
 CREATE TABLE IF NOT EXISTS catalog_bundles (
     id TEXT PRIMARY KEY,
     period_id TEXT NOT NULL REFERENCES catalog_periods(id),
+    segment TEXT NOT NULL CHECK(segment IN ('gaso', 'fnb')),
     name TEXT NOT NULL,
     price REAL NOT NULL,
     primary_category TEXT NOT NULL,
@@ -176,7 +177,7 @@ CREATE INDEX IF NOT EXISTS idx_periods_status ON catalog_periods(status);
 CREATE INDEX IF NOT EXISTS idx_periods_year_month ON catalog_periods(year_month DESC);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_bundles_period ON catalog_bundles(period_id);
-CREATE INDEX IF NOT EXISTS idx_bundles_filtering ON catalog_bundles(period_id, is_active, stock_status, primary_category, price);
+CREATE INDEX IF NOT EXISTS idx_bundles_filtering ON catalog_bundles(period_id, segment, is_active, stock_status, primary_category, price);
 CREATE INDEX IF NOT EXISTS idx_fnb_period ON catalog_fnb_offerings(period_id);
 CREATE INDEX IF NOT EXISTS idx_fnb_filtering ON catalog_fnb_offerings(period_id, is_active, stock_status, category, price);
 CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone_number, created_at DESC);

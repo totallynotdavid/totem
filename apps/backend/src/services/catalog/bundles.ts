@@ -6,6 +6,7 @@ type BundleFilters = {
   periodId?: string;
   maxPrice?: number;
   category?: string;
+  segment?: "gaso" | "fnb";
 };
 
 function formatBundle(row: any): Bundle {
@@ -18,12 +19,18 @@ function formatBundle(row: any): Bundle {
 
 export const BundleService = {
   /** Get all bundles for a period (dashboard) */
-  getByPeriod: (periodId: string): Bundle[] => {
-    const rows = db
-      .prepare(
-        "SELECT * FROM catalog_bundles WHERE period_id = ? ORDER BY primary_category, price",
-      )
-      .all(periodId) as any[];
+  getByPeriod: (periodId: string, segment?: "gaso" | "fnb"): Bundle[] => {
+    let query = "SELECT * FROM catalog_bundles WHERE period_id = ?";
+    const params: any[] = [periodId];
+
+    if (segment) {
+      query += " AND segment = ?";
+      params.push(segment);
+    }
+
+    query += " ORDER BY primary_category, price";
+
+    const rows = db.prepare(query).all(...params) as any[];
     return rows.map(formatBundle);
   },
 
@@ -37,6 +44,11 @@ export const BundleService = {
         AND b.stock_status != 'out_of_stock'
     `;
     const params: any[] = [];
+
+    if (filters.segment) {
+      query += " AND b.segment = ?";
+      params.push(filters.segment);
+    }
 
     if (filters.maxPrice !== undefined) {
       query += " AND b.price <= ?";
@@ -65,6 +77,7 @@ export const BundleService = {
   create: (data: {
     id: string;
     period_id: string;
+    segment: "gaso" | "fnb";
     name: string;
     price: number;
     primary_category: string;
@@ -76,11 +89,12 @@ export const BundleService = {
     created_by: string | null;
   }): Bundle => {
     db.prepare(`
-      INSERT INTO catalog_bundles (id, period_id, name, price, primary_category, categories_json, image_id, composition_json, installments_json, notes, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO catalog_bundles (id, period_id, segment, name, price, primary_category, categories_json, image_id, composition_json, installments_json, notes, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.id,
       data.period_id,
+      data.segment,
       data.name,
       data.price,
       data.primary_category,
@@ -150,15 +164,24 @@ export const BundleService = {
     db.prepare("DELETE FROM catalog_bundles WHERE id = ?").run(id);
   },
 
-  getAvailableCategories: (): string[] => {
-    const rows = db
-      .prepare(`
+  getAvailableCategories: (segment?: "gaso" | "fnb"): string[] => {
+    let query = `
       SELECT DISTINCT b.primary_category as category FROM catalog_bundles b
       JOIN catalog_periods p ON b.period_id = p.id
       WHERE p.status = 'active' AND b.is_active = 1 AND b.stock_status != 'out_of_stock'
-      ORDER BY b.primary_category
-    `)
-      .all() as Array<{ category: string }>;
+    `;
+    const params: any[] = [];
+
+    if (segment) {
+      query += " AND b.segment = ?";
+      params.push(segment);
+    }
+
+    query += " ORDER BY b.primary_category";
+
+    const rows = db.prepare(query).all(...params) as Array<{
+      category: string;
+    }>;
     return rows.map((r) => r.category);
   },
 };

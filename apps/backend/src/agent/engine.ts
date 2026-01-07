@@ -104,7 +104,7 @@ async function executeTransition(
       const availableCategories =
         context.segment === "fnb"
           ? FnbOfferingService.getAvailableCategories()
-          : BundleService.getAvailableCategories();
+          : BundleService.getAvailableCategories("gaso");
 
       const category = await LLM.extractEntity(message, "product_category", {
         availableCategories,
@@ -376,6 +376,7 @@ async function handleSendImages(
     const bundles = BundleService.getAvailable({
       maxPrice: creditLine,
       category,
+      segment: "gaso",
     }).slice(0, 3);
 
     if (bundles.length === 0) {
@@ -488,7 +489,7 @@ async function handleNoStock(
     const availableCategories =
       segment === "fnb"
         ? FnbOfferingService.getAvailableCategories()
-        : BundleService.getAvailableCategories();
+        : BundleService.getAvailableCategories("gaso");
 
     responseMessage = await LLM.suggestAlternative(
       requestedCategory,
