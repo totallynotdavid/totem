@@ -133,6 +133,11 @@ onMount(() => {
 				selected={currentPeriod}
 				onSelect={handlePeriodChange}
 			/>
+      {#if auth.isAdmin}
+        <Button variant="ghost" size="sm" onclick={() => goto("/dashboard/admin/periods")}>
+          Gestionar
+        </Button>
+      {/if}
 			{#if canEdit || (activeTab === "inventory" && auth.isAdmin)}
 				<Button onclick={openCreatePage}>
           {#if activeTab === "inventory"}
