@@ -7,6 +7,7 @@ import { updateConversationState } from "../context.ts";
 import { trackEvent } from "../../services/analytics.ts";
 import { selectVariant, formatFirstName } from "@totem/core";
 import * as T from "@totem/core";
+import { handleCheckGaso } from "./gaso-check.ts";
 
 export async function handleCheckFNB(
   conv: Conversation,
@@ -53,7 +54,6 @@ export async function handleCheckFNB(
     });
   } else {
     // Try Gaso as fallback
-    const { handleCheckGaso } = await import("./gaso-check.ts");
     await handleCheckGaso(conv, dni, context);
   }
 }

@@ -2,6 +2,7 @@ import type { StateContext } from "@totem/core";
 import type { Conversation } from "@totem/types";
 import { BundleService } from "../../services/catalog/index.ts";
 import { WhatsAppService } from "../../services/whatsapp/index.ts";
+import { handleNoStock } from "./no-stock.ts";
 
 /**
  * Sends bundle images to customer with installment details
@@ -74,7 +75,6 @@ export async function handleSendImages(
   });
 
   if (!sent) {
-    const { handleNoStock } = await import("./no-stock.ts");
     await handleNoStock(conv, category, context);
     return;
   }
