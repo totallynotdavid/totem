@@ -105,12 +105,12 @@ async function handleSave() {
 }
 </script>
 
-<PageTitle title={product ? "Editar Producto Base" : "Nuevo Producto Base"} />
+<PageTitle title={product ? "Editar producto base" : "Nuevo producto base"} />
 
 <div class="max-w-4xl mx-auto p-8 md:p-12">
     <div class="mb-8 flex items-center justify-between">
         <div>
-            <h1 class="text-3xl font-serif text-ink-900">{product ? product.name : "Nuevo Producto Base"}</h1>
+            <h1 class="text-3xl font-serif text-ink-900">{product ? product.name : "Nuevo producto base"}</h1>
             <p class="text-ink-500 mt-2">Gestiona la información del producto base (plantilla).</p>
         </div>
         <Button variant="ghost" onclick={goBack}>Cancelar</Button>
