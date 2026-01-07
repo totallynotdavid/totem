@@ -113,7 +113,7 @@ export type InstallmentSchedule = {
   "60m"?: number;
 };
 
-/** GASO bundle (promotional package) */
+/** Bundles are promotional packages */
 export type Bundle = {
   id: string;
   period_id: string;
@@ -125,23 +125,6 @@ export type Bundle = {
   composition_json: string;
   installments_json: string;
   notes: string;
-  is_active: number;
-  stock_status: StockStatus;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-/** FNB offering (individual product sale) */
-export type FnbOffering = {
-  id: string;
-  period_id: string;
-  product_id: string;
-  product_snapshot_json: string;
-  price: number;
-  category: string;
-  installments: number | null;
-  image_id: string;
   is_active: number;
   stock_status: StockStatus;
   created_by: string | null;

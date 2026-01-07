@@ -3,7 +3,7 @@ export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 export type UserRole = "admin" | "developer" | "supervisor" | "sales_agent";
 export type PeriodStatus = "draft" | "active" | "archived";
 
-// Catalog types (new bundle-based architecture)
+// Catalog types
 export type {
   Product,
   ProductSpecs,
@@ -13,7 +13,6 @@ export type {
   BundleComposition,
   InstallmentSchedule,
   Bundle,
-  FnbOffering,
   CategoryConfig,
   CategoryKey,
 } from "./catalog.ts";
