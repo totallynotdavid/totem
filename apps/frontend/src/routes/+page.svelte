@@ -4,9 +4,7 @@ import { goto } from "$app/navigation";
 import { auth } from "$lib/state/auth.svelte";
 import PageTitle from "$lib/components/shared/page-title.svelte";
 
-onMount(async () => {
-  await auth.checkAuth();
-
+onMount(() => {
   if (auth.isAuthenticated) {
     goto("/dashboard");
   } else {

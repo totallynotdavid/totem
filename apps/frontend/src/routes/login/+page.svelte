@@ -38,8 +38,7 @@ async function handleSubmit() {
   }
 }
 
-onMount(async () => {
-  await auth.checkAuth();
+onMount(() => {
   if (auth.isAuthenticated) {
     goto("/dashboard");
   }
