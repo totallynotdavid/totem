@@ -238,7 +238,9 @@
     <div class="mb-8 flex items-center justify-between">
         <div>
             <h1 class="text-3xl font-serif text-ink-900">
-                {bundle ? "Editar bundle GASO" : "Nuevo bundle GASO"}
+                {bundle
+                    ? `Editar ${segment === "fnb" ? "Oferta FnB" : "Paquete"}`
+                    : `Nuevo ${segment === "fnb" ? "Oferta FnB" : "Paquete"}`}
             </h1>
             <p class="text-ink-500 mt-2">
                 Configura la composición, precios y cuotas del paquete.
@@ -353,7 +355,7 @@
         <!-- Installments Section -->
         <div class="border-t border-ink-100 pt-6">
             <h4 class="text-lg font-bold text-ink-900 mb-4">
-                Cuotas mensuales (GASO)
+                Cuotas mensuales
             </h4>
             <p class="text-sm text-ink-500 mb-4">
                 Define el valor de la cuota mensual para cada plazo disponible.
