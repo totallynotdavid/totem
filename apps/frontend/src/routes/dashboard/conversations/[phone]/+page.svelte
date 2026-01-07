@@ -357,9 +357,7 @@ function goBack() {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: Messages -->
         <div class="lg:col-span-2 bg-white border border-cream-200 flex flex-col" style="height: 600px;">
-          <div class="flex-1 overflow-hidden">
-            <MessageThread {messages} />
-          </div>
+          <MessageThread {messages} />
           {#if isHumanTakeover}
             <div class="border-t border-cream-200">
               <MessageInput
