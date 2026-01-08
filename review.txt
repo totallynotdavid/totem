@@ -1,17 +1,8 @@
 # Analysis
 
-1. Data flow analysis
+1. Flow issues
 
-Flow 1: inbound message (the user)
-Path: webhook.ts -> debouncer.ts -> engine.ts -> transitions.ts (core) -> dispatcher.ts -> WhatsAppService.
-
-A couple problems:
-- engine.ts is doing too much. It handles maintenance checks, session timeouts, LLM classification, extraction, and calls the state machine.
-- the LLM calls in engine.ts happen sequentially before the state transition. If OpenAI or Gemini hangs, your webhook hangs.
-
-Suggestion: engine.ts should be a pipeline of small, isolated functions, not one giant async function.
-
-Flow 2: agent operations (the salesperson)
+Flow 1: agent operations (the salesperson)
 Path: frontend -> routes/conversations.ts -> db/connection.ts.
 The problem: the routes/conversations.ts file is manually constructing SQL queries, handling file system logic for contracts, and executing business logic (reassignment). The data flow is frontend -> HTTP handler -> raw SQL. This makes the route handler massive and hard to maintain. Routes are strictly for HTTP I/O. They validate inputs and call a module.
 
@@ -35,7 +26,7 @@ return c.json(result);
 });
 ```
 
-Flow 3: catalog management (the admin)
+Flow 2: catalog management (the admin)
 Path: frontend -> routes/catalog.ts -> services/catalog/bundles.ts.
 The problem: BundleService.getAvailable constructs SQL strings via concatenation (query +=). While not an immediate security risk due to parameter binding, it is fragile and hard to read.
 
