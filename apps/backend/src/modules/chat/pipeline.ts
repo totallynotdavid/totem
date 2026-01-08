@@ -66,9 +66,9 @@ async function executeTransition(
   }
 
   if (state !== "INIT" && state !== "WAITING_PROVIDER") {
-    const intent = await LLM.classifyIntent(message);
+    const isQuestionResult = await LLM.isQuestion(message);
 
-    if (intent === "question") {
+    if (isQuestionResult) {
       const questionResponse = await LLM.answerQuestion(message, {
         segment: context.segment,
         creditLine: context.creditLine,

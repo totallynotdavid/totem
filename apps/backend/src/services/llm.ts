@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import process from "node:process";
 import {
   buildClassifyIntentPrompt,
+  buildIsQuestionPrompt,
   buildExtractEntityPrompt,
   buildAnswerQuestionPrompt,
   buildSuggestAlternativePrompt,
@@ -15,6 +16,33 @@ const client = new OpenAI({
 
 const MODEL = "gemini-2.5-flash-lite";
 
+/**
+ * Simple binary check: is this message a question?
+ * More focused than classifyIntent, faster and more accurate.
+ */
+export async function isQuestion(message: string): Promise<boolean> {
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: buildIsQuestionPrompt() },
+        { role: "user", content: message },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+    });
+    const choice = completion.choices[0];
+    const content = choice?.message.content;
+    const res = JSON.parse(content || "{}");
+    return res.isQuestion === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @deprecated Use isQuestion for new code
+ */
 export async function classifyIntent(
   message: string,
 ): Promise<"yes" | "no" | "question" | "product_selection" | "unclear"> {
@@ -63,7 +91,7 @@ export async function extractEntity(
     const choice = completion.choices[0];
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
-    return res.value ? String(res.value) : null;
+    return res.category ?? res.value ?? null;
   } catch {
     return null;
   }

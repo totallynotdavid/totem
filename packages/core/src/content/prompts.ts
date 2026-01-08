@@ -1,53 +1,81 @@
 /**
- * LLM System Prompts - Optimized for precision and minimal context
+ * LLM System Prompts — Optimized for precision and minimal context
  *
  * Structure: Role → Task → Constraints → Output
- * No examples (prevents overfitting), no tone in classification prompts
+ * Single responsibility per function
  */
 
 // Minimal context for generative prompts only
-const CORE_CONTEXT = `Totem: vende electrodomésticos (celulares, cocinas, refrigeradoras, laptops, TVs, termas) en Lima/Callao.
+const CORE_CONTEXT = `Totem vende electrodomésticos (celulares, cocinas, refrigeradoras, laptops, TVs, termas) en Lima/Callao.
 Pago: cuotas mensuales en recibo de Calidda.`;
 
 /**
- * Intent classification - pure, no personality
+ * Binary question detection — single responsibility
+ */
+export function buildIsQuestionPrompt(): string {
+    return `¿El mensaje es una pregunta?
+
+Una pregunta es: contiene "?", o usa palabras interrogativas (qué, cuánto, cómo, dónde, cuándo, por qué), o pide información.
+
+NO es pregunta: afirmaciones, saludos, selecciones de producto, expresiones de interés.
+
+JSON: {"isQuestion": boolean}`;
+}
+
+/**
+ * Legacy intent classification — kept for backwards compatibility
+ * @deprecated Use buildIsQuestionPrompt for new code
  */
 export function buildClassifyIntentPrompt(): string {
     return `Clasifica la intención del mensaje en español.
 
 CATEGORÍAS:
-- "yes": afirmación (sí, claro, ok, dale, correcto)
-- "no": negación (no, nada, no gracias, paso)
-- "question": pregunta (contiene ? o interrogativos: qué/cuánto/cómo/dónde)
-- "product_selection": menciona producto específico (marca/modelo) o posición (el primero, el 2)
+- "yes": afirmación (sí, claro, ok, vale, dale, por supuesto, afirmativo, correcto)
+- "no": negación (no, nada, no gracias, paso, negativo)
+- "question": pregunta (contiene ? o interrogativos: qué, cuánto, cómo, dónde)
+- "product_selection": menciona producto específico o posición (el primero, el 2)
 - "unclear": todo lo demás
 
 JSON: {"intent": "yes"|"no"|"question"|"product_selection"|"unclear"}`;
 }
 
 /**
- * Category extraction - focused on single entity type
+ * Category extraction — focused on product categories only
+ */
+export function buildExtractCategoryPrompt(availableCategories: string[]): string {
+    return `Extrae la categoría de producto mencionada.
+
+CATEGORÍAS VÁLIDAS: ${availableCategories.join(", ")}
+
+Mapea términos a categorías:
+- Marcas celular (Samsung, iPhone, Xiaomi, Galaxy) → celulares
+- "refri", "refrigeradora", "frigo" → refrigeradoras
+- "tele", "TV", "televisor" → televisores
+- "laptop", "portátil", "computadora" → laptops
+- "cocina", "estufa" → cocinas
+- "terma", "calentador" → termas
+
+Devuelve la categoría exacta de la lista o null si no hay coincidencia.
+
+JSON: {"category": "categoria" | null}`;
+}
+
+/**
+ * Legacy entity extraction — kept for backwards compatibility
+ * @deprecated Use buildExtractCategoryPrompt for new code
  */
 export function buildExtractEntityPrompt(
     entity: string,
     availableCategories?: string[],
 ): string {
     if (entity === "product_category" && availableCategories?.length) {
-        return `Extrae la categoría de producto mencionada.
-
-CATEGORÍAS VÁLIDAS: ${availableCategories.join(", ")}
-
-Mapea marcas/términos coloquiales a categorías (ej: iPhone→celulares, refri→refrigeradoras).
-Si no hay coincidencia, devuelve null.
-
-JSON: {"category": "categoria_exacta" | null}`;
+        return buildExtractCategoryPrompt(availableCategories);
     }
-
     return `Extrae "${entity}" del mensaje. JSON: {"value": string | null}`;
 }
 
 /**
- * Question answering - minimal context, clear escalation rules
+ * Question answering — defaults to NOT escalating
  */
 export function buildAnswerQuestionPrompt(context: {
     segment?: string;
@@ -55,22 +83,32 @@ export function buildAnswerQuestionPrompt(context: {
     state?: string;
 }): string {
     const creditInfo = context.creditLine
-        ? `Cliente: S/ ${context.creditLine} disponibles.`
+        ? `Cliente tiene S/ ${context.creditLine} de línea de crédito.`
         : "";
 
-    return `${CORE_CONTEXT}
+    return `Eres un asesor de Totem, aliado de Calidda en Perú. Vendes electrodomésticos (celulares, cocinas, refrigeradoras, laptops, TVs, termas) con pago en cuotas mensuales en el recibo de Calidda. Solo entregas en Lima y Callao.
 ${creditInfo}
 
-PUEDES RESPONDER: funcionamiento (cuotas en recibo), productos disponibles, zonas (Lima/Callao), proceso de compra.
-ESCALAR (requiresHuman: true): montos exactos, tasas de interés, garantías de aprobación, reclamos, descuentos.
+RESPONDE TÚ (requiresHuman: false) preguntas sobre:
+- Financiamiento: cuotas se pagan en recibo de Calidda, sin intereses visibles
+- Productos disponibles: celulares, cocinas, refrigeradoras, laptops, TVs, termas
+- Zonas de entrega: solo Lima Metropolitana y Callao
+- Proceso de compra: verificamos elegibilidad, mostramos productos, un asesor llama para finalizar
 
-Responde breve (2 líneas máx), cierra preguntando por producto de interés.
+ESCALA (requiresHuman: true) ÚNICAMENTE si el cliente:
+- Pide monto EXACTO de cuota mensual
+- Pregunta tasa de interés específica
+- Exige garantía de aprobación ("¿me van a aprobar?")
+- Hace un reclamo o queja formal
+- Pide descuento o modificar políticas
+
+DEFAULT: requiresHuman es false. Responde breve (2 líneas), cierra preguntando qué producto le interesa.
 
 JSON: {"answer": "respuesta", "requiresHuman": boolean}`;
 }
 
 /**
- * Alternative suggestion - no examples, relies on temperature
+ * Alternative suggestion — minimal prompt
  */
 export function buildSuggestAlternativePrompt(
     requestedCategory: string,
@@ -78,25 +116,21 @@ export function buildSuggestAlternativePrompt(
 ): string {
     return `${CORE_CONTEXT}
 
-Cliente pidió "${requestedCategory}" (no disponible).
-Opciones: ${availableCategories.join(", ")}
+"${requestedCategory}" no disponible. Opciones: ${availableCategories.join(", ")}.
 
-Sugiere alternativa relevante o ofrece ver todas. Breve (1-2 líneas).
+Sugiere alternativa relevante (1-2 líneas), natural y amigable.
 
 JSON: {"suggestion": "respuesta"}`;
 }
 
 /**
- * Backlog response - sanitized input, human-readable time
+ * Backlog response — sanitized input, human-readable time
  */
 export function buildHandleBacklogPrompt(
     message: string,
     ageMinutes: number,
 ): string {
-    // Sanitize message to prevent prompt injection
     const sanitized = message.replace(/["\n\r]/g, " ").slice(0, 200);
-
-    // Format time naturally
     const timeAgo =
         ageMinutes < 60
             ? `${ageMinutes} minutos`
@@ -108,11 +142,11 @@ export function buildHandleBacklogPrompt(
 
 Mensaje recibido hace ${timeAgo}: "${sanitized}"
 
-Genera respuesta que: reconoce brevemente la demora, responde al mensaje, continúa la conversación.
-Breve (2-3 líneas), natural, sin emojis excesivos.
+Responde: reconoce demora brevemente, responde al mensaje, continúa conversación.
+2-3 líneas máximo, natural.
 
 JSON: {"response": "respuesta"}`;
 }
 
-// Legacy export for backwards compatibility
+// Legacy export
 export const SALES_CONTEXT = CORE_CONTEXT;
