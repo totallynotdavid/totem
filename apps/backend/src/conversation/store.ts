@@ -116,7 +116,11 @@ export function updateConversation(
   const fields = Object.keys(updates)
     .map((k) => `${k} = ?`)
     .join(", ");
-  const values = [...Object.values(updates), phoneNumber] as (string | number | null)[];
+  const values = [...Object.values(updates), phoneNumber] as (
+    | string
+    | number
+    | null
+  )[];
 
   db.prepare(`UPDATE conversations SET ${fields} WHERE phone_number = ?`).run(
     ...values,
@@ -130,11 +134,7 @@ export function escalateConversation(
   phoneNumber: string,
   reason: string,
 ): void {
-  updateConversation(
-    phoneNumber,
-    { phase: "escalated", reason },
-    {},
-  );
+  updateConversation(phoneNumber, { phase: "escalated", reason }, {});
 }
 
 /**

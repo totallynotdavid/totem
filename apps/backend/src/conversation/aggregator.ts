@@ -58,10 +58,7 @@ function add(
     );
   } else {
     // Start new pending entry
-    const timeoutId = setTimeout(
-      () => flush(phoneNumber),
-      DEBOUNCE_WINDOW_MS,
-    );
+    const timeoutId = setTimeout(() => flush(phoneNumber), DEBOUNCE_WINDOW_MS);
     pending.set(phoneNumber, {
       messages: [message],
       timeoutId,

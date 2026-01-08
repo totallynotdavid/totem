@@ -21,7 +21,9 @@ export type SendBundleParams = {
  * Send bundle images to customer with installment details
  * @returns true if bundles were sent, false if no bundles available
  */
-export async function sendBundleImages(params: SendBundleParams): Promise<boolean> {
+export async function sendBundleImages(
+  params: SendBundleParams,
+): Promise<boolean> {
   const { phoneNumber, segment, category, creditLine, isSimulation } = params;
 
   const bundles = BundleService.getAvailable({

@@ -3,7 +3,10 @@
  */
 
 import type { ConversationMetadata, TransitionResult } from "../types.ts";
-import { selectVariant, selectVariantWithContext } from "../../messaging/variation-selector.ts";
+import {
+  selectVariant,
+  selectVariantWithContext,
+} from "../../messaging/variation-selector.ts";
 import { extractDNI } from "../../validation/regex.ts";
 import * as T from "../../templates/standard.ts";
 
@@ -74,11 +77,7 @@ export function transitionCollectingDni(
   }
 
   // Invalid DNI format
-  const { message: response } = selectVariant(
-    T.INVALID_DNI,
-    "INVALID_DNI",
-    {},
-  );
+  const { message: response } = selectVariant(T.INVALID_DNI, "INVALID_DNI", {});
 
   return {
     type: "stay",

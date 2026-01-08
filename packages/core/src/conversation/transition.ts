@@ -7,10 +7,7 @@
  * - Type-safe: Uses discriminated unions for states
  */
 
-import type {
-  TransitionInput,
-  TransitionResult,
-} from "./types.ts";
+import type { TransitionInput, TransitionResult } from "./types.ts";
 import { transitionGreeting } from "./phases/greeting.ts";
 import { transitionConfirmingClient } from "./phases/confirming-client.ts";
 import { transitionCollectingDni } from "./phases/collecting-dni.ts";

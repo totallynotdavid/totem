@@ -141,13 +141,14 @@ async function runEnrichmentLoop(
   }
 
   // Safety: too many loops, escalate
-  console.error(
-    `[Handler] Max enrichment loops exceeded for ${phoneNumber}`,
-  );
+  console.error(`[Handler] Max enrichment loops exceeded for ${phoneNumber}`);
   return {
     type: "escalate",
     reason: "enrichment_loop_exceeded",
-    notify: { channel: "dev", message: `Max enrichment loops for ${phoneNumber}` },
+    notify: {
+      channel: "dev",
+      message: `Max enrichment loops for ${phoneNumber}`,
+    },
   };
 }
 
@@ -219,7 +220,13 @@ async function sendMessage(
   isSimulation: boolean,
 ): Promise<void> {
   if (isSimulation) {
-    WhatsAppService.logMessage(phoneNumber, "outbound", "text", content, "sent");
+    WhatsAppService.logMessage(
+      phoneNumber,
+      "outbound",
+      "text",
+      content,
+      "sent",
+    );
   } else {
     await WhatsAppService.sendMessage(phoneNumber, content);
   }
@@ -231,7 +238,10 @@ async function executeImages(
   phase: ConversationPhase,
   isSimulation: boolean,
 ): Promise<void> {
-  if (phase.phase !== "offering_products" && phase.phase !== "handling_objection") {
+  if (
+    phase.phase !== "offering_products" &&
+    phase.phase !== "handling_objection"
+  ) {
     console.warn("[Handler] Images requested outside offering phase");
     return;
   }

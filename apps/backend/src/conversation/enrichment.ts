@@ -114,7 +114,10 @@ async function executeFetchCategories(
       categories,
     };
   } catch (error) {
-    console.error(`[Enrichment] Fetch categories failed for ${segment}:`, error);
+    console.error(
+      `[Enrichment] Fetch categories failed for ${segment}:`,
+      error,
+    );
     // Fallback to empty array - phase will handle gracefully
     return {
       type: "categories_fetched",
@@ -196,7 +199,12 @@ async function executeExtractCategory(
 
 async function executeAnswerQuestion(
   message: string,
-  context: { segment?: string; credit?: number; phase: string; availableCategories: string[] },
+  context: {
+    segment?: string;
+    credit?: number;
+    phase: string;
+    availableCategories: string[];
+  },
   phoneNumber: string,
 ): Promise<EnrichmentResult> {
   try {

@@ -81,7 +81,8 @@ export function transitionOfferingProducts(
     return {
       type: "advance",
       nextPhase: { phase: "closing", purchaseConfirmed: false },
-      response: "Entendido. ¡Gracias por tu tiempo! Si cambias de opinión, aquí estaré.",
+      response:
+        "Entendido. ¡Gracias por tu tiempo! Si cambias de opinión, aquí estaré.",
       track: {
         eventType: "offer_rejected",
         metadata: {},
@@ -248,8 +249,7 @@ function isPurchaseConfirmation(lower: string): boolean {
   return (
     /(quiero|me\s+interesa|lo\s+quiero|s[ií]\s*,?\s*(quiero|me\s+interesa)|confirmo|listo|dale|va)/.test(
       lower,
-    ) &&
-    !/(no\s+quiero|no\s+me\s+interesa)/.test(lower)
+    ) && !/(no\s+quiero|no\s+me\s+interesa)/.test(lower)
   );
 }
 

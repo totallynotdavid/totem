@@ -44,7 +44,8 @@ webhook.post("/", async (c) => {
     const text = message.text.body;
     const messageId = message.id;
     // WhatsApp timestamp is in seconds, convert to milliseconds
-    const timestamp = (message.timestamp || Math.floor(Date.now() / 1000)) * 1000;
+    const timestamp =
+      (message.timestamp || Math.floor(Date.now() / 1000)) * 1000;
 
     // Log inbound message
     WhatsAppService.logMessage(

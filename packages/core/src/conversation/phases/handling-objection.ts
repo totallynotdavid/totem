@@ -62,7 +62,9 @@ export function transitionHandlingObjection(
   }
 
   // User accepts
-  if (/\b(s[ií]|ok|claro|dale|bueno|ver|muestrame|quiero\s+ver)\b/.test(lower)) {
+  if (
+    /\b(s[ií]|ok|claro|dale|bueno|ver|muestrame|quiero\s+ver)\b/.test(lower)
+  ) {
     return {
       type: "advance",
       nextPhase: {

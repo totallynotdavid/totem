@@ -48,11 +48,7 @@ export function transitionCheckingEligibility(
 
       const firstName = formatFirstName(enrichment.name || "");
       const variants = S.FNB_APPROVED(firstName, enrichment.credit);
-      const { message: response } = selectVariant(
-        variants,
-        "FNB_APPROVED",
-        {},
-      );
+      const { message: response } = selectVariant(variants, "FNB_APPROVED", {});
 
       return {
         type: "advance",

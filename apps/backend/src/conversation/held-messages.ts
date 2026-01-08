@@ -30,7 +30,9 @@ export function holdMessage(
      VALUES (?, ?, ?, ?)`,
   ).run(phoneNumber, text, messageId, whatsappTimestamp);
 
-  console.log(`[HeldMessages] Stored message from ${phoneNumber} during maintenance`);
+  console.log(
+    `[HeldMessages] Stored message from ${phoneNumber} during maintenance`,
+  );
 }
 
 /**
