@@ -7,19 +7,20 @@ import type { ReplayData, ReplayMetadata } from "@totem/types";
 
 export type Role = "admin" | "developer" | "sales_agent";
 
+export function isValidRole(role: string): role is Role {
+  return role === "admin" || role === "developer" || role === "sales_agent";
+}
+
 export function listConversations(
   status: string | null | undefined,
   role: Role,
   userId: string,
 ) {
-  const isSalesAgent = role === "sales_agent";
-  const statusFilter = status ?? null;
-
-  if (isSalesAgent) {
-    if (statusFilter) {
+  if (role === "sales_agent") {
+    if (status) {
       return getAll<Conversation>(
         "SELECT * FROM conversations WHERE is_simulation = 0 AND assigned_agent = ? AND status = ? ORDER BY last_activity_at DESC LIMIT 100",
-        [userId, statusFilter],
+        [userId, status],
       );
     }
     return getAll<Conversation>(
@@ -28,10 +29,10 @@ export function listConversations(
     );
   }
 
-  if (statusFilter) {
+  if (status) {
     return getAll<Conversation>(
       "SELECT * FROM conversations WHERE is_simulation = 0 AND status = ? ORDER BY last_activity_at DESC LIMIT 100",
-      [statusFilter],
+      [status],
     );
   }
 

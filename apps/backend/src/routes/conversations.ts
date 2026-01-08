@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { logAction } from "../services/audit.ts";
 import * as ConversationRead from "../modules/conversation/read.ts";
-import type { Role } from "../modules/conversation/read.ts";
+import { isValidRole } from "../modules/conversation/read.ts";
 import * as ConversationWrite from "../modules/conversation/write.ts";
 import * as ConversationMedia from "../modules/conversation/media.ts";
 import { assignNextAgent } from "../modules/conversation/assignment.ts";
@@ -11,7 +11,12 @@ const conversations = new Hono();
 conversations.get("/", (c) => {
   const user = c.get("user");
   const status = c.req.query("status");
-  const rows = ConversationRead.listConversations(status, user.role as Role, user.id);
+  
+  if (!isValidRole(user.role)) {
+    return c.json({ error: "Invalid role" }, 403);
+  }
+  
+  const rows = ConversationRead.listConversations(status, user.role, user.id);
   return c.json(rows);
 });
 
@@ -38,16 +43,17 @@ conversations.post("/:phone/message", async (c) => {
   const { content } = await c.req.json();
   const user = c.get("user");
 
-  try {
-    const result = await ConversationWrite.sendManualMessage(
-      phoneNumber,
-      content,
-      user.id,
-    );
-    return c.json(result);
-  } catch (error) {
-    return c.json({ error: (error as Error).message }, 400);
+  const result = await ConversationWrite.sendManualMessage(
+    phoneNumber,
+    content,
+    user.id,
+  );
+
+  if (!result.success) {
+    return c.json({ error: result.error }, 400);
   }
+
+  return c.json(result);
 });
 
 conversations.post("/:phone/release", (c) => {
@@ -60,16 +66,13 @@ conversations.post("/:phone/release", (c) => {
 conversations.post("/:phone/decline-assignment", async (c) => {
   const phoneNumber = c.req.param("phone");
   const user = c.get("user");
-  const result = await ConversationWrite.declineAssignment(
-    phoneNumber,
-    user.id,
-  );
+  const result = ConversationWrite.declineAssignment(phoneNumber, user.id);
 
   if (!result.success) {
     return c.json({ error: result.error }, 403);
   }
 
-  if (result.shouldReassign && result.clientName !== undefined) {
+  if (result.clientName !== undefined) {
     await assignNextAgent(phoneNumber, result.clientName);
   }
 

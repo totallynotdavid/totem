@@ -44,9 +44,9 @@ export async function sendManualMessage(
   phoneNumber: string,
   content: string,
   userId: string,
-) {
+): Promise<{ success: boolean; error?: string }> {
   if (!content) {
-    throw new Error("Message content required");
+    return { success: false, error: "Message content required" };
   }
 
   await WhatsAppService.sendMessage(phoneNumber, content);
@@ -57,10 +57,10 @@ export async function sendManualMessage(
   return { success: true };
 }
 
-export async function declineAssignment(
+export function declineAssignment(
   phoneNumber: string,
   userId: string,
-): Promise<{ success: boolean; error?: string; shouldReassign?: boolean; clientName?: string | null }> {
+): { success: boolean; error?: string; clientName?: string | null } {
   const conv = getOne<{
     assigned_agent: string | null;
     client_name: string | null;
@@ -81,7 +81,7 @@ export async function declineAssignment(
 
   logAction(userId, "decline_assignment", "conversation", phoneNumber);
 
-  return { success: true, shouldReassign: true, clientName: conv.client_name };
+  return { success: true, clientName: conv.client_name };
 }
 
 export function updateAgentData(
@@ -117,15 +117,19 @@ export function updateAgentData(
     return { success: true };
   }
 
-  const fields = Object.keys(validUpdates)
-    .map((k) => `${k} = ?`)
-    .join(", ");
-  const values = Object.values(validUpdates);
+  const setClauses: string[] = [];
+  const values: any[] = [];
 
-  db.prepare(`UPDATE conversations SET ${fields} WHERE phone_number = ?`).run(
-    ...values,
-    phoneNumber,
-  );
+  for (const [key, value] of Object.entries(validUpdates)) {
+    setClauses.push(`${key} = ?`);
+    values.push(value);
+  }
+
+  values.push(phoneNumber);
+
+  db.prepare(
+    `UPDATE conversations SET ${setClauses.join(", ")} WHERE phone_number = ?`,
+  ).run(...values);
 
   logAction(
     userId,
