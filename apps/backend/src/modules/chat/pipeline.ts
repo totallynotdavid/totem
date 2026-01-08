@@ -11,7 +11,6 @@ import {
 import { isMaintenanceMode } from "../settings/system.ts";
 import * as LLM from "../llm/index.ts";
 import { BundleService } from "../../services/catalog/index.ts";
-import { logLLMError } from "../../services/llm-errors.ts";
 
 const MAINTENANCE_MESSAGE =
   "¡Hola! 👋 En este momento estamos realizando mejoras en nuestro sistema. " +
@@ -63,46 +62,29 @@ async function executeTransition(
   let backlogResponse: string | null = null;
   if (metadata?.isBacklog && state === "INIT") {
     const ageMinutes = Math.floor(metadata.oldestMessageAge / 60000);
-    const result = await LLM.handleBacklogResponse(message, ageMinutes);
-    if (result.success) {
-      backlogResponse = result.data;
-    } else {
-      logLLMError(
-        conv.phone_number,
-        "handleBacklogResponse",
-        result.error,
-        state,
-        {
-          ageMinutes,
-        },
-      );
-      backlogResponse = "¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?";
-    }
+    backlogResponse = await LLM.handleBacklogResponse(
+      message,
+      ageMinutes,
+      conv.phone_number,
+      state,
+    );
   }
 
   if (state !== "INIT" && state !== "WAITING_PROVIDER") {
-    const isQuestionResult = await LLM.isQuestion(message);
+    const isQuestionResult = await LLM.isQuestion(
+      message,
+      conv.phone_number,
+      state,
+    );
 
-    if (!isQuestionResult.success) {
-      logLLMError(
+    if (isQuestionResult) {
+      const shouldEscalate = await LLM.shouldEscalate(
+        message,
         conv.phone_number,
-        "isQuestion",
-        isQuestionResult.error,
         state,
       );
-    } else if (isQuestionResult.data) {
-      const escalateResult = await LLM.shouldEscalate(message);
 
-      if (!escalateResult.success) {
-        logLLMError(
-          conv.phone_number,
-          "shouldEscalate",
-          escalateResult.error,
-          state,
-        );
-        context.llmDetectedQuestion = true;
-        context.llmRequiresHuman = true;
-      } else if (escalateResult.data) {
+      if (shouldEscalate) {
         context.llmDetectedQuestion = true;
         context.llmRequiresHuman = true;
       } else {
@@ -111,32 +93,20 @@ async function executeTransition(
             ? BundleService.getAvailableCategories("fnb")
             : BundleService.getAvailableCategories("gaso");
 
-        const answerResult = await LLM.answerQuestion(message, {
-          segment: context.segment,
-          creditLine: context.creditLine,
-          state,
-          availableCategories,
-        });
-
-        if (!answerResult.success) {
-          logLLMError(
-            conv.phone_number,
-            "answerQuestion",
-            answerResult.error,
+        const answer = await LLM.answerQuestion(
+          message,
+          {
+            segment: context.segment,
+            creditLine: context.creditLine,
             state,
-            {
-              segment: context.segment,
-              creditLine: context.creditLine,
-            },
-          );
-          context.llmDetectedQuestion = true;
-          context.llmGeneratedAnswer = "Déjame ayudarte con eso...";
-          context.llmRequiresHuman = false;
-        } else {
-          context.llmDetectedQuestion = true;
-          context.llmGeneratedAnswer = answerResult.data;
-          context.llmRequiresHuman = false;
-        }
+            availableCategories,
+          },
+          conv.phone_number,
+        );
+
+        context.llmDetectedQuestion = true;
+        context.llmGeneratedAnswer = answer;
+        context.llmRequiresHuman = false;
       }
     }
   }
@@ -153,23 +123,15 @@ async function executeTransition(
           ? BundleService.getAvailableCategories("fnb")
           : BundleService.getAvailableCategories("gaso");
 
-      const categoryResult = await LLM.extractCategory(
+      const category = await LLM.extractCategory(
         message,
         availableCategories,
+        conv.phone_number,
+        state,
       );
 
-      if (!categoryResult.success) {
-        logLLMError(
-          conv.phone_number,
-          "extractCategory",
-          categoryResult.error,
-          state,
-          {
-            availableCategories,
-          },
-        );
-      } else if (categoryResult.data) {
-        context.extractedCategory = categoryResult.data;
+      if (category) {
+        context.extractedCategory = category;
         context.usedLLM = true;
       }
     }

@@ -8,9 +8,14 @@ import {
   getCategoryMetadata,
 } from "@totem/core";
 import { client, MODEL } from "./client.ts";
-import { classifyLLMError, type LLMResult } from "./types.ts";
+import { classifyLLMError } from "./types.ts";
+import { logLLMError } from "../../services/llm-errors.ts";
 
-export async function isQuestion(message: string): Promise<LLMResult<boolean>> {
+export async function isQuestion(
+  message: string,
+  phoneNumber: string,
+  state?: string,
+): Promise<boolean> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -24,15 +29,18 @@ export async function isQuestion(message: string): Promise<LLMResult<boolean>> {
     const choice = completion.choices[0];
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
-    return { success: true, data: res.isQuestion === true };
+    return res.isQuestion === true;
   } catch (e) {
-    return { success: false, error: classifyLLMError(e) };
+    logLLMError(phoneNumber, "isQuestion", classifyLLMError(e), state);
+    return false;
   }
 }
 
 export async function shouldEscalate(
   message: string,
-): Promise<LLMResult<boolean>> {
+  phoneNumber: string,
+  state?: string,
+): Promise<boolean> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -46,16 +54,19 @@ export async function shouldEscalate(
     const choice = completion.choices[0];
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
-    return { success: true, data: res.shouldEscalate === true };
+    return res.shouldEscalate === true;
   } catch (e) {
-    return { success: false, error: classifyLLMError(e) };
+    logLLMError(phoneNumber, "shouldEscalate", classifyLLMError(e), state);
+    return false;
   }
 }
 
 export async function extractCategory(
   message: string,
   availableCategories: string[],
-): Promise<LLMResult<string | null>> {
+  phoneNumber: string,
+  state?: string,
+): Promise<string | null> {
   try {
     const metadata = getCategoryMetadata(availableCategories);
 
@@ -74,9 +85,12 @@ export async function extractCategory(
     const choice = completion.choices[0];
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
-    return { success: true, data: res.category ?? null };
+    return res.category ?? null;
   } catch (e) {
-    return { success: false, error: classifyLLMError(e) };
+    logLLMError(phoneNumber, "extractCategory", classifyLLMError(e), state, {
+      availableCategories,
+    });
+    return null;
   }
 }
 
@@ -88,7 +102,8 @@ export async function answerQuestion(
     state?: string;
     availableCategories?: string[];
   },
-): Promise<LLMResult<string>> {
+  phoneNumber: string,
+): Promise<string> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -107,19 +122,27 @@ export async function answerQuestion(
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
 
-    return {
-      success: true,
-      data: res.answer || "Déjame ayudarte con eso...",
-    };
+    return res.answer || "Déjame ayudarte con eso...";
   } catch (e) {
-    return { success: false, error: classifyLLMError(e) };
+    logLLMError(
+      phoneNumber,
+      "answerQuestion",
+      classifyLLMError(e),
+      context.state,
+      {
+        segment: context.segment,
+        creditLine: context.creditLine,
+      },
+    );
+    return "Déjame ayudarte con eso...";
   }
 }
 
 export async function suggestAlternative(
   requestedCategory: string,
   availableCategories: string[],
-): Promise<LLMResult<string>> {
+  phoneNumber: string,
+): Promise<string> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -144,21 +167,31 @@ export async function suggestAlternative(
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
 
-    return {
-      success: true,
-      data:
-        res.suggestion ||
-        `No tenemos ${requestedCategory} ahora. ¿Te gustaría ver ${availableCategories[0] || "otras opciones"}?`,
-    };
+    return (
+      res.suggestion ||
+      `No tenemos ${requestedCategory} ahora. ¿Te gustaría ver ${availableCategories[0] || "otras opciones"}?`
+    );
   } catch (e) {
-    return { success: false, error: classifyLLMError(e) };
+    logLLMError(
+      phoneNumber,
+      "suggestAlternative",
+      classifyLLMError(e),
+      undefined,
+      {
+        requestedCategory,
+        availableCategories,
+      },
+    );
+    return `No tenemos ${requestedCategory} disponible ahorita. ¿Te interesa algo más?`;
   }
 }
 
 export async function handleBacklogResponse(
   message: string,
   ageMinutes: number,
-): Promise<LLMResult<string>> {
+  phoneNumber: string,
+  state?: string,
+): Promise<string> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -180,12 +213,17 @@ export async function handleBacklogResponse(
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
 
-    return {
-      success: true,
-      data:
-        res.response || `¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?`,
-    };
+    return res.response || `¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?`;
   } catch (e) {
-    return { success: false, error: classifyLLMError(e) };
+    logLLMError(
+      phoneNumber,
+      "handleBacklogResponse",
+      classifyLLMError(e),
+      state,
+      {
+        ageMinutes,
+      },
+    );
+    return `¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?`;
   }
 }

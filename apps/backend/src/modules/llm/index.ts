@@ -7,4 +7,4 @@ export {
   suggestAlternative,
   handleBacklogResponse,
 } from "./classifiers.ts";
-export type { LLMResult, LLMError, LLMErrorType } from "./types.ts";
+export type { LLMError, LLMErrorType } from "./types.ts";
