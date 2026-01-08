@@ -81,6 +81,12 @@ async function processNextBatch(): Promise<void> {
       return;
     }
 
+    // Monitor queue size for operational awareness
+    const pendingCount = getPendingCount();
+    if (pendingCount > 50) {
+      console.warn(`[Processor] High queue: ${pendingCount} pending messages`);
+    }
+
     // Retry failed groups (max 3 attempts, 2min delay)
     const retryableGroups = getRetryableFailedGroups();
     for (const groupId of retryableGroups) {
