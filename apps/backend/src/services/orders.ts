@@ -1,15 +1,8 @@
 import { db } from "../db/connection";
 import { getOne, getAll } from "../db/query.ts";
+import type { SQLQueryBindings } from "bun:sqlite";
 import type { Order } from "@totem/types";
 import { notifyTeam } from "./notifier";
-
-function formatOrder(row: Order): Order {
-  return {
-    ...row,
-    created_at: new Date(row.created_at).toISOString(),
-    updated_at: new Date(row.updated_at).toISOString(),
-  };
-}
 
 interface CreateOrderInput {
   conversationPhone: string;
@@ -88,7 +81,7 @@ export class OrdersService {
 
   getOrders(filters: OrderFilters = {}): Order[] {
     let query = "SELECT * FROM orders WHERE 1=1";
-    const params: unknown[] = [];
+    const params: SQLQueryBindings[] = [];
 
     if (filters.status) {
       query += " AND status = ?";
@@ -121,20 +114,18 @@ export class OrdersService {
     params.push(limit, offset);
 
     const rows = getAll<Order>(query, params);
-    return rows.map(formatOrder);
+    return rows;
   }
 
   getOrderById(id: string): Order | null {
-    const row = getOne<Order>("SELECT * FROM orders WHERE id = ?", [id]);
-    return row ? formatOrder(row) : null;
+    return getOne<Order>("SELECT * FROM orders WHERE id = ?", [id]) || null;
   }
 
   getOrderByConversation(phone: string): Order | null {
-    const row = getOne<Order>(
+    return getOne<Order>(
       "SELECT * FROM orders WHERE conversation_phone = ? ORDER BY created_at DESC LIMIT 1",
       [phone]
-    );
-    return row ? formatOrder(row) : null;
+    ) || null;
   }
 
   updateOrderStatus(

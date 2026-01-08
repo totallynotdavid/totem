@@ -8,45 +8,31 @@ type CreatePeriodData = {
   created_by: string;
 };
 
-function formatPeriod(row: CatalogPeriod): CatalogPeriod {
-  return {
-    ...row,
-    published_at: row.published_at
-      ? new Date(row.published_at).toISOString()
-      : null,
-    created_at: new Date(row.created_at).toISOString(),
-  };
-}
-
 export const PeriodService = {
   getAll: (): CatalogPeriod[] => {
-    const rows = getAll<CatalogPeriod>(
+    return getAll<CatalogPeriod>(
       "SELECT * FROM catalog_periods ORDER BY year_month DESC"
     );
-    return rows.map(formatPeriod);
   },
 
   getById: (id: string): CatalogPeriod | null => {
-    const row = getOne<CatalogPeriod>(
+    return getOne<CatalogPeriod>(
       "SELECT * FROM catalog_periods WHERE id = ?",
       [id]
-    );
-    return row ? formatPeriod(row) : null;
+    ) || null;
   },
 
   getActive: (): CatalogPeriod | null => {
-    const row = getOne<CatalogPeriod>(
+    return getOne<CatalogPeriod>(
       "SELECT * FROM catalog_periods WHERE status = 'active' LIMIT 1"
-    );
-    return row ? formatPeriod(row) : null;
+    ) || null;
   },
 
   getByYearMonth: (yearMonth: string): CatalogPeriod | null => {
-    const row = getOne<CatalogPeriod>(
+    return getOne<CatalogPeriod>(
       "SELECT * FROM catalog_periods WHERE year_month = ?",
       [yearMonth]
-    );
-    return row ? formatPeriod(row) : null;
+    ) || null;
   },
 
   create: (data: CreatePeriodData): CatalogPeriod => {

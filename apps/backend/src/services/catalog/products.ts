@@ -2,30 +2,20 @@ import { db } from "../../db/index.ts";
 import { getOne, getAll } from "../../db/query.ts";
 import type { Product } from "@totem/types";
 
-function formatProduct(row: Product): Product {
-  return {
-    ...row,
-    created_at: new Date(row.created_at).toISOString(),
-  };
-}
-
 export const ProductService = {
   getAll: (): Product[] => {
-    const rows = getAll<Product>("SELECT * FROM products ORDER BY category, name");
-    return rows.map(formatProduct);
+    return getAll<Product>("SELECT * FROM products ORDER BY category, name");
   },
 
   getByCategory: (category: string): Product[] => {
-    const rows = getAll<Product>(
+    return getAll<Product>(
       "SELECT * FROM products WHERE category = ? ORDER BY name",
       [category]
     );
-    return rows.map(formatProduct);
   },
 
   getById: (id: string): Product | null => {
-    const row = getOne<Product>("SELECT * FROM products WHERE id = ?", [id]);
-    return row ? formatProduct(row) : null;
+    return getOne<Product>("SELECT * FROM products WHERE id = ?", [id]) || null;
   },
 
   create: (data: {

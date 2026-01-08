@@ -1,5 +1,6 @@
 import { db } from "../../db/index.ts";
 import { getOne, getAll } from "../../db/query.ts";
+import type { SQLQueryBindings } from "bun:sqlite";
 import type { Bundle } from "@totem/types";
 import { imageStorage } from "../image-storage.ts";
 
@@ -10,14 +11,6 @@ type BundleFilters = {
   segment?: "gaso" | "fnb";
 };
 
-function formatBundle(row: Bundle): Bundle {
-  return {
-    ...row,
-    created_at: new Date(row.created_at).toISOString(),
-    updated_at: new Date(row.updated_at).toISOString(),
-  };
-}
-
 export const BundleService = {
   /** Get all bundles for a period (dashboard) */
   getByPeriod: (periodId: string, segment?: "gaso" | "fnb"): Bundle[] => {
@@ -26,14 +19,14 @@ export const BundleService = {
         "SELECT * FROM catalog_bundles WHERE period_id = ? AND segment = ? ORDER BY primary_category, price",
         [periodId, segment]
       );
-      return rows.map(formatBundle);
+      return rows;
     }
 
     const rows = getAll<Bundle>(
       "SELECT * FROM catalog_bundles WHERE period_id = ? ORDER BY primary_category, price",
       [periodId]
     );
-    return rows.map(formatBundle);
+    return rows;
   },
 
   /** Get available bundles for bot (active period, filters) */
@@ -45,7 +38,7 @@ export const BundleService = {
         AND b.is_active = 1
         AND b.stock_status != 'out_of_stock'
     `;
-    const params: unknown[] = [];
+    const params: SQLQueryBindings[] = [];
 
     if (filters.segment) {
       query += " AND b.segment = ?";
@@ -66,7 +59,7 @@ export const BundleService = {
     query += " ORDER BY b.price ASC";
 
     const rows = getAll<Bundle>(query, params);
-    return rows.map(formatBundle);
+    return rows;
   },
 
   getById: (id: string): Bundle | null => {
@@ -74,7 +67,7 @@ export const BundleService = {
       "SELECT * FROM catalog_bundles WHERE id = ?",
       [id]
     );
-    return row ? formatBundle(row) : null;
+    return row || null;
   },
 
   create: (data: {
