@@ -93,9 +93,7 @@ async function executeTransition(
           ? BundleService.getAvailableCategories("fnb")
           : BundleService.getAvailableCategories("gaso");
 
-      const category = await LLM.extractEntity(message, "product_category", {
-        availableCategories,
-      });
+      const category = await LLM.extractCategory(message, availableCategories);
 
       if (category) {
         context.extractedCategory = category;

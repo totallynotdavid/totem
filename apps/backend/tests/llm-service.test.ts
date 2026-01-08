@@ -49,26 +49,14 @@ describe("LLM Service - Category Extraction", () => {
   ];
 
   test.skipIf(FORCE_SKIP)("extracts brand to category", async () => {
-    const result = await LLM.extractEntity(
-      "Quiero un iPhone",
-      "product_category",
-      {
-        availableCategories: categories,
-      },
-    );
+    const result = await LLM.extractCategory("Quiero un iPhone", categories);
     expect(result).not.toBeNull();
     expect(result?.toLowerCase()).toMatch(/celular/);
     await delay(1000);
   });
 
   test.skipIf(FORCE_SKIP)("returns null for no category", async () => {
-    const result = await LLM.extractEntity(
-      "Hola, buenos días",
-      "product_category",
-      {
-        availableCategories: categories,
-      },
-    );
+    const result = await LLM.extractCategory("Hola, buenos días", categories);
     expect(result).toBeNull();
     await delay(1000);
   });
@@ -118,10 +106,10 @@ describe("LLM Service - Error Handling", () => {
     if (originalKey) process.env.GEMINI_API_KEY = originalKey;
   });
 
-  test("returns null on extractEntity failure", async () => {
+  test("returns null on extractCategory failure", async () => {
     const originalKey = process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY;
-    const result = await LLM.extractEntity("test", "product_category");
+    const result = await LLM.extractCategory("test", ["celulares"]);
     expect(result).toBeNull();
     if (originalKey) process.env.GEMINI_API_KEY = originalKey;
   });

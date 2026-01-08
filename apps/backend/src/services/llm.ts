@@ -1,9 +1,8 @@
 import OpenAI from "openai";
 import process from "node:process";
 import {
-  buildClassifyIntentPrompt,
   buildIsQuestionPrompt,
-  buildExtractEntityPrompt,
+  buildExtractCategoryPrompt,
   buildAnswerQuestionPrompt,
   buildSuggestAlternativePrompt,
   buildHandleBacklogPrompt,
@@ -16,10 +15,6 @@ const client = new OpenAI({
 
 const MODEL = "gemini-2.5-flash-lite";
 
-/**
- * Simple binary check: is this message a question?
- * More focused than classifyIntent, faster and more accurate.
- */
 export async function isQuestion(message: string): Promise<boolean> {
   try {
     const completion = await client.chat.completions.create({
@@ -41,51 +36,17 @@ export async function isQuestion(message: string): Promise<boolean> {
   }
 }
 
-/**
- * @deprecated Use isQuestion for new code
- */
-export async function classifyIntent(
+export async function extractCategory(
   message: string,
-): Promise<"yes" | "no" | "question" | "product_selection" | "unclear"> {
-  try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content: buildClassifyIntentPrompt(),
-        },
-        { role: "user", content: message },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3,
-    });
-    const choice = completion.choices[0];
-    const content = choice?.message.content;
-    const res = JSON.parse(content || "{}");
-    return res.intent || "unclear";
-  } catch {
-    return "unclear";
-  }
-}
-
-export async function extractEntity(
-  message: string,
-  entity: string,
-  options?: { availableCategories?: string[] },
+  availableCategories: string[],
 ): Promise<string | null> {
   try {
-    const systemPrompt = buildExtractEntityPrompt(
-      entity,
-      options?.availableCategories,
-    );
-
     const completion = await client.chat.completions.create({
       model: MODEL,
       messages: [
         {
           role: "system",
-          content: systemPrompt,
+          content: buildExtractCategoryPrompt(availableCategories),
         },
         { role: "user", content: message },
       ],
@@ -95,7 +56,7 @@ export async function extractEntity(
     const choice = completion.choices[0];
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
-    return res.category ?? res.value ?? null;
+    return res.category ?? null;
   } catch {
     return null;
   }
