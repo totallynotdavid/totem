@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
     updated_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
 );
 
--- Message queue for async processing (replaces in-memory debouncer)
+-- Message queue for async processing
 CREATE TABLE IF NOT EXISTS message_queue (
     id TEXT PRIMARY KEY,
     phone_number TEXT NOT NULL,
