@@ -1,6 +1,6 @@
 import type { StateContext } from "@totem/core";
 import type { Conversation } from "@totem/types";
-import { checkGASO } from "../../modules/eligibility/check.ts";
+import { checkGASO } from "../../modules/eligibility/gaso.ts";
 import { WhatsAppService } from "../../services/whatsapp/index.ts";
 import { updateConversationState, escalateConversation } from "../context.ts";
 import { trackEvent } from "../../services/analytics.ts";

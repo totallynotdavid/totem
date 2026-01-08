@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { db } from "../db/index.ts";
 import { WhatsAppService } from "../services/whatsapp/index.ts";
+import { assignNextAgent } from "../services/assignment.ts";
+import { notifyTeam } from "../services/notifier.ts";
 import { getEventsByPhone } from "../services/analytics.ts";
 import { logAction } from "../services/audit.ts";
 import { buildStateContext } from "../agent/context.ts";
@@ -149,7 +151,6 @@ conversations.post("/:phone/decline-assignment", async (c) => {
   logAction(user.id, "decline_assignment", "conversation", phoneNumber);
 
   // Trigger reassignment
-  const { assignNextAgent } = await import("../services/assignment.ts");
   await assignNextAgent(phoneNumber, conv.client_name);
 
   return c.json({ success: true });
@@ -317,7 +318,6 @@ conversations.post("/:phone/upload-contract", async (c) => {
   });
 
   // Notify supervisors
-  const { notifyTeam } = await import("../services/notifier.ts");
   await notifyTeam(
     "sales",
     `📄 Contrato subido\n\n` +
