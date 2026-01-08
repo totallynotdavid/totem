@@ -1,0 +1,152 @@
+/**
+ * Core Conversation Types
+ *
+ * These types define the state machine interface.
+ * Backend implements these with concrete types.
+ */
+
+import type { Segment } from "@totem/types";
+
+/**
+ * Conversation phase - discriminated union
+ */
+export type ConversationPhase =
+  | { phase: "greeting" }
+  | { phase: "confirming_client" }
+  | { phase: "collecting_dni" }
+  | { phase: "checking_eligibility"; dni: string }
+  | { phase: "collecting_age"; dni: string; name: string }
+  | {
+      phase: "offering_products";
+      segment: Segment;
+      credit: number;
+      name: string;
+    }
+  | {
+      phase: "handling_objection";
+      segment: Segment;
+      credit: number;
+      name: string;
+      objectionCount: number;
+    }
+  | { phase: "closing"; purchaseConfirmed: boolean }
+  | { phase: "escalated"; reason: string };
+
+/**
+ * Conversation metadata
+ */
+export type ConversationMetadata = {
+  dni?: string;
+  name?: string;
+  segment?: Segment;
+  credit?: number;
+  nse?: number;
+  age?: number;
+  lastCategory?: string;
+  isReturningUser?: boolean;
+  createdAt: number;
+  lastActivityAt: number;
+};
+
+/**
+ * Enrichment requests
+ */
+export type EnrichmentRequest =
+  | { type: "check_fnb"; dni: string }
+  | { type: "check_gaso"; dni: string }
+  | { type: "detect_question"; message: string }
+  | { type: "should_escalate"; message: string }
+  | {
+      type: "extract_category";
+      message: string;
+      availableCategories: string[];
+    }
+  | {
+      type: "answer_question";
+      message: string;
+      context: {
+        segment?: Segment;
+        credit?: number;
+        phase: string;
+        availableCategories: string[];
+      };
+    }
+  | {
+      type: "generate_backlog_apology";
+      message: string;
+      ageMinutes: number;
+    };
+
+/**
+ * Enrichment results
+ */
+export type EnrichmentResult =
+  | {
+      type: "fnb_result";
+      eligible: boolean;
+      credit?: number;
+      name?: string;
+    }
+  | {
+      type: "gaso_result";
+      eligible: boolean;
+      credit?: number;
+      name?: string;
+      nse?: number;
+      requiresAge?: boolean;
+    }
+  | { type: "question_detected"; isQuestion: boolean }
+  | { type: "escalation_needed"; shouldEscalate: boolean }
+  | { type: "category_extracted"; category: string | null }
+  | { type: "question_answered"; answer: string }
+  | { type: "backlog_apology"; apology: string };
+
+/**
+ * Transition result
+ */
+export type TransitionResult =
+  | {
+      type: "stay";
+      response?: string;
+      track?: TrackEvent;
+    }
+  | {
+      type: "advance";
+      nextPhase: ConversationPhase;
+      response?: string;
+      images?: ImageCommand;
+      track?: TrackEvent;
+      notify?: NotifyCommand;
+    }
+  | {
+      type: "need_enrichment";
+      enrichment: EnrichmentRequest;
+      pendingPhase?: ConversationPhase;
+    }
+  | {
+      type: "escalate";
+      reason: string;
+      notify?: NotifyCommand;
+    };
+
+export type TrackEvent = {
+  eventType: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type ImageCommand = {
+  category: string;
+  productIds?: string[];
+};
+
+export type NotifyCommand = {
+  channel: "agent" | "dev" | "sales";
+  message: string;
+};
+
+export type TransitionInput = {
+  phase: ConversationPhase;
+  message: string;
+  metadata: ConversationMetadata;
+  enrichment?: EnrichmentResult;
+};

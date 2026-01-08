@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import process from "node:process";
-import { enqueueMessage } from "../modules/chat/queue.ts";
+import { messageAggregator, handleMessage } from "../conversation/index.ts";
 import { WhatsAppService } from "../services/whatsapp/index.ts";
+import { isMaintenanceMode } from "../modules/settings/system.ts";
+import { holdMessage } from "../conversation/held-messages.ts";
 
 const webhook = new Hono();
 
@@ -41,12 +43,10 @@ webhook.post("/", async (c) => {
 
     const text = message.text.body;
     const messageId = message.id;
-    const timestamp = message.timestamp || Math.floor(Date.now() / 1000);
+    // WhatsApp timestamp is in seconds, convert to milliseconds
+    const timestamp = (message.timestamp || Math.floor(Date.now() / 1000)) * 1000;
 
-    WhatsAppService.markAsReadAndShowTyping(messageId).catch((err) =>
-      console.error("Failed to mark as read:", err),
-    );
-
+    // Log inbound message
     WhatsAppService.logMessage(
       phoneNumber,
       "inbound",
@@ -55,7 +55,27 @@ webhook.post("/", async (c) => {
       "received",
     );
 
-    enqueueMessage(phoneNumber, text, timestamp, messageId);
+    // During maintenance, hold messages for later processing
+    if (isMaintenanceMode()) {
+      holdMessage(phoneNumber, text, messageId, timestamp);
+      return c.json({ status: "maintenance_held" });
+    }
+
+    // Use aggregator to debounce burst messages
+    messageAggregator.add(
+      phoneNumber,
+      text,
+      timestamp,
+      messageId,
+      async (aggregatedContent, oldestTimestamp, latestMessageId) => {
+        await handleMessage({
+          phoneNumber,
+          content: aggregatedContent,
+          timestamp: oldestTimestamp,
+          messageId: latestMessageId,
+        });
+      },
+    );
 
     return c.json({ status: "queued" });
   } catch (error) {

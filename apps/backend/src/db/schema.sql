@@ -106,6 +106,15 @@ CREATE TABLE IF NOT EXISTS analytics_events (
     created_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
 );
 
+CREATE TABLE IF NOT EXISTS held_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone_number TEXT NOT NULL,
+    message_text TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    whatsapp_timestamp INTEGER NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
+);
+
 CREATE TABLE IF NOT EXISTS audit_log (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id),
