@@ -62,7 +62,10 @@ export function getConversationDetail(phoneNumber: string) {
   };
 }
 
-export function getReplayData(phoneNumber: string, userId: string): ReplayData | null {
+export function getReplayData(
+  phoneNumber: string,
+  userId: string,
+): ReplayData | null {
   const conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
     [phoneNumber],

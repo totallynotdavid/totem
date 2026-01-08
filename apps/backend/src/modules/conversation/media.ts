@@ -25,12 +25,7 @@ export async function uploadContract(
     userDisplayName,
   } = input;
 
-  const contractsDir = resolve(
-    process.cwd(),
-    "data",
-    "contracts",
-    phoneNumber,
-  );
+  const contractsDir = resolve(process.cwd(), "data", "contracts", phoneNumber);
   await mkdir(contractsDir, { recursive: true });
 
   const contractExt = contractFile.name.split(".").pop();

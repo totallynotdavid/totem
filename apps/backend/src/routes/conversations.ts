@@ -10,11 +10,11 @@ const conversations = new Hono();
 conversations.get("/", (c) => {
   const user = c.get("user");
   const status = c.req.query("status");
-  
+
   if (!isValidRole(user.role)) {
     return c.json({ error: "Invalid role" }, 403);
   }
-  
+
   const rows = ConversationRead.listConversations(status, user.role, user.id);
   return c.json(rows);
 });
