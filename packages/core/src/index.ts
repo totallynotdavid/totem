@@ -1,3 +1,4 @@
+export * from "./content/prompts.ts";
 export * from "./validation/regex.ts";
 export * from "./validation/input-sanitizer.ts";
 export * from "./validation/format-name.ts";
