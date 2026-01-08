@@ -1,6 +1,3 @@
-/**
- * Backlog response prompt with sanitized input
- */
 export function buildHandleBacklogPrompt(
   message: string,
   ageMinutes: number,

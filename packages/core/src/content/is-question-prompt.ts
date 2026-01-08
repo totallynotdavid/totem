@@ -1,6 +1,3 @@
-/**
- * Question detection prompt
- */
 export function buildIsQuestionPrompt(): string {
   return `¿El mensaje es una pregunta?
 

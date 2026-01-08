@@ -1,6 +1,3 @@
-/**
- * Alternative suggestion prompt
- */
 export function buildSuggestAlternativePrompt(
   requestedCategory: string,
   availableCategories: string[],

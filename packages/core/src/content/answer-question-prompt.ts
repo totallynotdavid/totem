@@ -1,6 +1,3 @@
-/**
- * Question answering prompt with explicit escalation rules
- */
 export function buildAnswerQuestionPrompt(context: {
   segment?: string;
   creditLine?: number;

@@ -1,6 +1,3 @@
-/**
- * Category extraction prompt
- */
 export function buildExtractCategoryPrompt(
   availableCategories: string[],
 ): string {
