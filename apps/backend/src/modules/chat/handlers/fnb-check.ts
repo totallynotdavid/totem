@@ -16,13 +16,16 @@ export async function handleCheckFNB(
 ): Promise<void> {
   const phoneNumber = conv.phone_number;
   const isSimulation = conv.is_simulation === 1;
-  
+
   // Skip if already processed (conversation moved past WAITING_PROVIDER)
-  if (conv.current_state !== "WAITING_PROVIDER" && conv.current_state !== "COLLECT_DNI") {
+  if (
+    conv.current_state !== "WAITING_PROVIDER" &&
+    conv.current_state !== "COLLECT_DNI"
+  ) {
     console.log(`[FNB Check] Skipping - already in ${conv.current_state}`);
     return;
   }
-  
+
   const result = await checkFNB(dni, phoneNumber);
 
   if (result.eligible && checkFNBEligibility(result.credit)) {
