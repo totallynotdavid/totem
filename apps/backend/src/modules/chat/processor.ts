@@ -7,9 +7,13 @@ import {
   detectBacklog,
   getPendingCount,
   cleanupOldMessages,
+  recoverOrphanedMessages,
+  getRetryableFailedGroups,
+  retryFailedGroup,
 } from "./queue.ts";
 import { executeCommand } from "./dispatcher.ts";
 import { assignNextAgent } from "../conversation/assignment.ts";
+import { isMaintenanceMode } from "../settings/system.ts";
 import { db } from "../../db/index.ts";
 import { buildStateContext } from "./context.ts";
 
@@ -28,6 +32,12 @@ export function startProcessor(): void {
 
   isRunning = true;
   console.log("[Processor] Starting message processor...");
+
+  // Recover messages orphaned by previous crash (stuck >5min)
+  const recovered = recoverOrphanedMessages();
+  if (recovered > 0) {
+    console.log(`[Processor] Recovered ${recovered} orphaned messages`);
+  }
 
   processorInterval = setInterval(async () => {
     await processNextBatch();
@@ -66,6 +76,24 @@ export function stopProcessor(): void {
 
 async function processNextBatch(): Promise<void> {
   try {
+    // During maintenance, don't process - messages stay queued
+    if (isMaintenanceMode()) {
+      return;
+    }
+
+    // Monitor queue size for operational awareness
+    const pendingCount = getPendingCount();
+    if (pendingCount > 50) {
+      console.warn(`[Processor] High queue: ${pendingCount} pending messages`);
+    }
+
+    // Retry failed groups (max 3 attempts, 2min delay)
+    const retryableGroups = getRetryableFailedGroups();
+    for (const groupId of retryableGroups) {
+      retryFailedGroup(groupId);
+      console.log(`[Processor] Retrying failed group ${groupId}`);
+    }
+
     const messageGroup = dequeueNextGroup();
 
     if (!messageGroup || messageGroup.length === 0) {
