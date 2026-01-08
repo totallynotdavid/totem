@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { ordersService } from "../services/orders";
+import * as ordersModule from "../modules/sales/orders.ts";
 import { logAction } from "../services/audit";
 
-const orders = new Hono();
+const app = new Hono();
 
 // Role validation helper for order status transitions
 function canUpdateOrderStatus(
@@ -49,17 +49,17 @@ function canUpdateOrderStatus(
 }
 
 // Get order metrics
-orders.get("/metrics", async (c) => {
-  const metrics = ordersService.getOrderMetrics();
+app.get("/metrics", async (c) => {
+  const metrics = ordersModule.getOrderMetrics();
   return c.json(metrics);
 });
 
 // Create order
-orders.post("/", async (c) => {
+app.post("/", async (c) => {
   const body = await c.req.json();
   const user = c.get("user");
 
-  const order = ordersService.createOrder({
+  const order = ordersModule.createOrder({
     conversationPhone: body.conversationPhone,
     clientName: body.clientName,
     clientDni: body.clientDni,
@@ -74,7 +74,7 @@ orders.post("/", async (c) => {
 });
 
 // Get all orders with filters
-orders.get("/", async (c) => {
+app.get("/", async (c) => {
   const status = c.req.query("status");
   const startDate = c.req.query("startDate");
   const endDate = c.req.query("endDate");
@@ -84,7 +84,7 @@ orders.get("/", async (c) => {
     ? Number(c.req.query("offset"))
     : undefined;
 
-  const ordersData = ordersService.getOrders({
+  const ordersData = ordersModule.getOrders({
     status,
     startDate,
     endDate,
@@ -97,9 +97,9 @@ orders.get("/", async (c) => {
 });
 
 // Get order by ID
-orders.get("/:id", async (c) => {
+app.get("/:id", async (c) => {
   const { id } = c.req.param();
-  const order = ordersService.getOrderById(id);
+  const order = ordersModule.getOrderById(id);
 
   if (!order) {
     return c.json({ error: "Order not found" }, 404);
@@ -109,9 +109,9 @@ orders.get("/:id", async (c) => {
 });
 
 // Get order by conversation phone
-orders.get("/by-conversation/:phone", async (c) => {
+app.get("/by-conversation/:phone", async (c) => {
   const { phone } = c.req.param();
-  const order = ordersService.getOrderByConversation(phone);
+  const order = ordersModule.getOrderByConversation(phone);
 
   if (!order) {
     return c.json({ order: null });
@@ -121,7 +121,7 @@ orders.get("/by-conversation/:phone", async (c) => {
 });
 
 // Update order status
-orders.patch("/:id/status", async (c) => {
+app.patch("/:id/status", async (c) => {
   const { id } = c.req.param();
   const body = await c.req.json();
   const user = c.get("user");
@@ -132,7 +132,7 @@ orders.patch("/:id/status", async (c) => {
     return c.json({ error: permission.reason }, 403);
   }
 
-  const order = ordersService.updateOrderStatus(
+  const order = ordersModule.updateOrderStatus(
     id,
     body.status,
     body.notes,
@@ -147,4 +147,4 @@ orders.patch("/:id/status", async (c) => {
   return c.json(order);
 });
 
-export default orders;
+export default app;
