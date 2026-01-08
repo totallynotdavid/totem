@@ -6,6 +6,7 @@ import { updateConversationState } from "../context.ts";
 import { selectVariant } from "@totem/core";
 import * as T from "@totem/core";
 import * as LLM from "../../llm/index.ts";
+import { logLLMError } from "../../../services/llm-errors.ts";
 
 export async function handleNoStock(
   conv: Conversation,
@@ -25,12 +26,22 @@ export async function handleNoStock(
         ? BundleService.getAvailableCategories("fnb")
         : BundleService.getAvailableCategories("gaso");
 
-    responseMessage = await LLM.suggestAlternative(
+    const result = await LLM.suggestAlternative(
       requestedCategory,
       availableCategories,
     );
+
+    if (result.success) {
+      responseMessage = result.data;
+    } else {
+      logLLMError(phoneNumber, "suggestAlternative", result.error, undefined, {
+        requestedCategory,
+        availableCategories,
+      });
+      responseMessage = `No tenemos ${requestedCategory} disponible ahorita. ¿Te interesa algo más?`;
+    }
   } else {
-    // Quick match but no stock - use template
+    // Quick match but no stock (use template)
     const { message: noStockMsg, updatedContext: variantCtx } = selectVariant(
       T.NO_STOCK,
       "NO_STOCK",

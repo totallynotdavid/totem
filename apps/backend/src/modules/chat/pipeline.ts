@@ -11,6 +11,7 @@ import {
 import { isMaintenanceMode } from "../settings/system.ts";
 import * as LLM from "../llm/index.ts";
 import { BundleService } from "../../services/catalog/index.ts";
+import { logLLMError } from "../../services/llm-errors.ts";
 
 const MAINTENANCE_MESSAGE =
   "¡Hola! 👋 En este momento estamos realizando mejoras en nuestro sistema. " +
@@ -62,16 +63,46 @@ async function executeTransition(
   let backlogResponse: string | null = null;
   if (metadata?.isBacklog && state === "INIT") {
     const ageMinutes = Math.floor(metadata.oldestMessageAge / 60000);
-    backlogResponse = await LLM.handleBacklogResponse(message, ageMinutes);
+    const result = await LLM.handleBacklogResponse(message, ageMinutes);
+    if (result.success) {
+      backlogResponse = result.data;
+    } else {
+      logLLMError(
+        conv.phone_number,
+        "handleBacklogResponse",
+        result.error,
+        state,
+        {
+          ageMinutes,
+        },
+      );
+      backlogResponse = "¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?";
+    }
   }
 
   if (state !== "INIT" && state !== "WAITING_PROVIDER") {
     const isQuestionResult = await LLM.isQuestion(message);
 
-    if (isQuestionResult) {
-      const shouldEscalate = await LLM.shouldEscalate(message);
+    if (!isQuestionResult.success) {
+      logLLMError(
+        conv.phone_number,
+        "isQuestion",
+        isQuestionResult.error,
+        state,
+      );
+    } else if (isQuestionResult.data) {
+      const escalateResult = await LLM.shouldEscalate(message);
 
-      if (shouldEscalate) {
+      if (!escalateResult.success) {
+        logLLMError(
+          conv.phone_number,
+          "shouldEscalate",
+          escalateResult.error,
+          state,
+        );
+        context.llmDetectedQuestion = true;
+        context.llmRequiresHuman = true;
+      } else if (escalateResult.data) {
         context.llmDetectedQuestion = true;
         context.llmRequiresHuman = true;
       } else {
@@ -80,16 +111,32 @@ async function executeTransition(
             ? BundleService.getAvailableCategories("fnb")
             : BundleService.getAvailableCategories("gaso");
 
-        const answer = await LLM.answerQuestion(message, {
+        const answerResult = await LLM.answerQuestion(message, {
           segment: context.segment,
           creditLine: context.creditLine,
           state,
           availableCategories,
         });
 
-        context.llmDetectedQuestion = true;
-        context.llmGeneratedAnswer = answer;
-        context.llmRequiresHuman = false;
+        if (!answerResult.success) {
+          logLLMError(
+            conv.phone_number,
+            "answerQuestion",
+            answerResult.error,
+            state,
+            {
+              segment: context.segment,
+              creditLine: context.creditLine,
+            },
+          );
+          context.llmDetectedQuestion = true;
+          context.llmGeneratedAnswer = "Déjame ayudarte con eso...";
+          context.llmRequiresHuman = false;
+        } else {
+          context.llmDetectedQuestion = true;
+          context.llmGeneratedAnswer = answerResult.data;
+          context.llmRequiresHuman = false;
+        }
       }
     }
   }
@@ -106,10 +153,23 @@ async function executeTransition(
           ? BundleService.getAvailableCategories("fnb")
           : BundleService.getAvailableCategories("gaso");
 
-      const category = await LLM.extractCategory(message, availableCategories);
+      const categoryResult = await LLM.extractCategory(
+        message,
+        availableCategories,
+      );
 
-      if (category) {
-        context.extractedCategory = category;
+      if (!categoryResult.success) {
+        logLLMError(
+          conv.phone_number,
+          "extractCategory",
+          categoryResult.error,
+          state,
+          {
+            availableCategories,
+          },
+        );
+      } else if (categoryResult.data) {
+        context.extractedCategory = categoryResult.data;
         context.usedLLM = true;
       }
     }

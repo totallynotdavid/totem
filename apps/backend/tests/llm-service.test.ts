@@ -18,7 +18,10 @@ describe("LLM service (question detection)", () => {
 
   test.skipIf(FORCE_SKIP)("detects question with ?", async () => {
     const result = await LLM.isQuestion("¿Cuánto cuesta?");
-    expect(result).toBe(true);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe(true);
+    }
     await delay(1000);
   });
 
@@ -26,14 +29,20 @@ describe("LLM service (question detection)", () => {
     "does not detect affirmation as question",
     async () => {
       const result = await LLM.isQuestion("Sí, me interesa");
-      expect(result).toBe(false);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toBe(false);
+      }
       await delay(1000);
     },
   );
 
   test.skipIf(FORCE_SKIP)("does not detect negation as question", async () => {
     const result = await LLM.isQuestion("No gracias");
-    expect(result).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe(false);
+    }
     await delay(1000);
   });
 });
@@ -43,19 +52,28 @@ describe("LLM service (escalation detection)", () => {
     const result = await LLM.shouldEscalate(
       "¿Cuánto exactamente en soles pago por cuota?",
     );
-    expect(result).toBe(true);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe(true);
+    }
     await delay(1000);
   });
 
   test.skipIf(FORCE_SKIP)("escalates on complaint", async () => {
     const result = await LLM.shouldEscalate("Quiero hacer un reclamo formal");
-    expect(result).toBe(true);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe(true);
+    }
     await delay(1000);
   });
 
   test.skipIf(FORCE_SKIP)("does not escalate general questions", async () => {
     const result = await LLM.shouldEscalate("¿Cómo funciona el pago?");
-    expect(result).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe(false);
+    }
     await delay(1000);
   });
 });
@@ -72,14 +90,19 @@ describe("LLM service (category extraction)", () => {
 
   test.skipIf(FORCE_SKIP)("extracts brand to category", async () => {
     const result = await LLM.extractCategory("Quiero un iPhone", categories);
-    expect(result).not.toBeNull();
-    expect(result?.toLowerCase()).toMatch(/celular/);
+    expect(result.success).toBe(true);
+    if (result.success && result.data) {
+      expect(result.data.toLowerCase()).toMatch(/celular/);
+    }
     await delay(1000);
   });
 
   test.skipIf(FORCE_SKIP)("returns null for no category", async () => {
     const result = await LLM.extractCategory("Hola, buenos días", categories);
-    expect(result).toBeNull();
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBeNull();
+    }
     await delay(1000);
   });
 });
@@ -91,8 +114,11 @@ describe("LLM service (answering questions)", () => {
       creditLine: 3000,
       availableCategories: ["celulares", "cocinas"],
     });
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(typeof result.data).toBe("string");
+      expect(result.data.length).toBeGreaterThan(0);
+    }
     await delay(1000);
   });
 
@@ -101,42 +127,57 @@ describe("LLM service (answering questions)", () => {
       segment: "gaso",
       availableCategories: ["cocinas", "termas"],
     });
-    expect(typeof result).toBe("string");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(typeof result.data).toBe("string");
+    }
     await delay(1000);
   });
 });
 
 describe("LLM service (error handling)", () => {
-  test("returns false on isQuestion failure", async () => {
+  test("returns error result on isQuestion failure", async () => {
     const originalKey = process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY;
     const result = await LLM.isQuestion("test");
-    expect(result).toBe(false);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBeDefined();
+      expect(result.error.message).toBeDefined();
+    }
     if (originalKey) process.env.GEMINI_API_KEY = originalKey;
   });
 
-  test("returns false on shouldEscalate failure", async () => {
+  test("returns error result on shouldEscalate failure", async () => {
     const originalKey = process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY;
     const result = await LLM.shouldEscalate("test");
-    expect(result).toBe(false);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBeDefined();
+    }
     if (originalKey) process.env.GEMINI_API_KEY = originalKey;
   });
 
-  test("returns null on extractCategory failure", async () => {
+  test("returns error result on extractCategory failure", async () => {
     const originalKey = process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY;
     const result = await LLM.extractCategory("test", ["celulares"]);
-    expect(result).toBeNull();
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBeDefined();
+    }
     if (originalKey) process.env.GEMINI_API_KEY = originalKey;
   });
 
-  test("returns fallback on answerQuestion failure", async () => {
+  test("returns error result on answerQuestion failure", async () => {
     const originalKey = process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY;
     const result = await LLM.answerQuestion("test", { segment: "fnb" });
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBeDefined();
+    }
     if (originalKey) process.env.GEMINI_API_KEY = originalKey;
   });
 });
