@@ -3,6 +3,7 @@ import * as ConversationRead from "../modules/conversation/read.ts";
 import { isValidRole } from "../modules/conversation/read.ts";
 import * as ConversationWrite from "../modules/conversation/write.ts";
 import * as ConversationMedia from "../modules/conversation/media.ts";
+import { assignNextAgent } from "../modules/conversation/assignment.ts";
 
 const conversations = new Hono();
 
@@ -64,13 +65,17 @@ conversations.post("/:phone/release", (c) => {
 conversations.post("/:phone/decline-assignment", async (c) => {
   const phoneNumber = c.req.param("phone");
   const user = c.get("user");
-  const result = await ConversationWrite.declineAssignment(phoneNumber, user.id);
+  const result = ConversationWrite.declineAssignment(phoneNumber, user.id);
 
   if (!result.success) {
     return c.json({ error: result.error }, 403);
   }
 
-  return c.json(result);
+  if (result.clientName !== undefined) {
+    await assignNextAgent(phoneNumber, result.clientName);
+  }
+
+  return c.json({ success: true });
 });
 
 conversations.patch("/:phone/agent-data", async (c) => {
