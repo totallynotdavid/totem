@@ -45,9 +45,11 @@ import catalog from "./routes/catalog.ts";
 import periods from "./routes/periods.ts";
 import orders from "./routes/orders.ts";
 
-import { getProvidersHealth } from "./services/providers.ts";
+import { health } from "./services/providers/health.ts";
 import { ReportService } from "./services/reports.ts";
 import { checkNotifierHealth } from "./services/notifier.ts";
+import { checkAndReassignTimeouts } from "./services/assignment.ts";
+import { checkEligibilityWithFallback } from "./modules/eligibility/orchestrator.ts";
 
 const app = new Hono();
 
@@ -57,7 +59,6 @@ seedDatabase(db);
 
 // Start periodic timeout check (every minute)
 setInterval(async () => {
-  const { checkAndReassignTimeouts } = await import("./services/assignment.ts");
   await checkAndReassignTimeouts();
 }, 60 * 1000);
 
@@ -82,7 +83,7 @@ app.use(
 
 // Public routes
 app.get("/health", async (c) => {
-  const providers = getProvidersHealth();
+  const providers = health.getAllStatus();
   const notifier = await checkNotifierHealth();
 
   const allHealthy =
@@ -273,54 +274,17 @@ app.get("/api/providers/:dni", requireAuth, async (c) => {
     return c.json({ error: "DNI debe tener 8 dígitos" }, 400);
   }
 
-  const { FNBProvider, GasoProvider } = await import("./services/providers.ts");
-  const healthStatus = getProvidersHealth();
-
   try {
-    let fnbResult = null;
-    if (healthStatus.fnb.available) {
-      fnbResult = await FNBProvider.checkCredit(dni);
-      if (fnbResult.eligible) {
-        return c.json({
-          provider: "fnb",
-          dni,
-          result: fnbResult,
-          providersChecked: ["fnb"],
-        });
-      }
-    }
-
-    let gasoResult = null;
-    if (healthStatus.gaso.available) {
-      gasoResult = await GasoProvider.checkEligibility(dni);
-      if (gasoResult.eligible || gasoResult.reason !== "not_found") {
-        const checked = healthStatus.fnb.available ? ["fnb", "gaso"] : ["gaso"];
-        return c.json({
-          provider: "gaso",
-          dni,
-          result: gasoResult,
-          providersChecked: checked,
-        });
-      }
-    }
-
-    const checked: string[] = [];
-    if (healthStatus.fnb.available) checked.push("fnb");
-    if (healthStatus.gaso.available) checked.push("gaso");
+    const result = await checkEligibilityWithFallback(dni);
+    const healthStatus = health.getAllStatus();
 
     return c.json({
-      provider: null,
       dni,
-      result: { eligible: false, credit: 0, reason: "not_found" },
-      providersChecked: checked,
-      providersUnavailable: !(
-        healthStatus.fnb.available && healthStatus.gaso.available
-      )
-        ? {
-            fnb: !healthStatus.fnb.available,
-            gaso: !healthStatus.gaso.available,
-          }
-        : undefined,
+      result,
+      providersChecked: [
+        ...(healthStatus.fnb.available ? ["fnb"] : []),
+        ...(healthStatus.gaso.available ? ["gaso"] : []),
+      ],
     });
   } catch (_error) {
     return c.json({ error: "Error al consultar proveedor" }, 500);

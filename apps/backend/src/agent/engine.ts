@@ -1,4 +1,4 @@
-import { transition } from "@totem/core";
+import { transition, matchCategory } from "@totem/core";
 import type { Conversation } from "@totem/types";
 import {
   getOrCreateConversation,
@@ -7,7 +7,7 @@ import {
   checkSessionTimeout,
   resetSession,
 } from "./context.ts";
-import { isMaintenanceMode } from "../services/providers.ts";
+import { isMaintenanceMode } from "../modules/settings/system.ts";
 import { WhatsAppService } from "../services/whatsapp/index.ts";
 import * as LLM from "../services/llm.ts";
 import { BundleService } from "../services/catalog/index.ts";
@@ -95,7 +95,6 @@ async function executeTransition(
   // 2. Extract product category (in OFFER_PRODUCTS state)
   if (state === "OFFER_PRODUCTS") {
     // Fast path: Try category matcher first (90% of cases)
-    const { matchCategory } = await import("@totem/core");
     const matchedCategory = matchCategory(message);
 
     if (matchedCategory) {
