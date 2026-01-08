@@ -176,20 +176,6 @@ CREATE TABLE IF NOT EXISTS llm_error_log (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Message queue for async processing
-CREATE TABLE IF NOT EXISTS message_queue (
-    id TEXT PRIMARY KEY,
-    phone_number TEXT NOT NULL,
-    message_text TEXT NOT NULL,
-    whatsapp_message_id TEXT,
-    whatsapp_timestamp INTEGER NOT NULL,
-    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'processed', 'failed')),
-    group_id TEXT,
-    processed_at INTEGER,
-    error_message TEXT,
-    retry_count INTEGER DEFAULT 0,
-    created_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
-);
 
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(last_activity_at DESC);
 CREATE INDEX IF NOT EXISTS idx_conversations_status ON conversations(status);

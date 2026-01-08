@@ -132,12 +132,14 @@ async function runEnrichmentLoop(
     console.log(
       `[Handler] Enrichment needed: ${result.enrichment.type} (iteration ${iterations})`,
     );
-    enrichment = await executeEnrichment(result.enrichment, phoneNumber);
 
-    // If state machine provided a pending phase, use it
+    // Persist pending phase immediately to prevent state loss on crash
     if (result.pendingPhase) {
       currentPhase = result.pendingPhase;
+      updateConversation(phoneNumber, currentPhase, metadata);
     }
+
+    enrichment = await executeEnrichment(result.enrichment, phoneNumber);
   }
 
   // Safety: too many loops, escalate
