@@ -103,7 +103,7 @@ export const ReportService = {
         WHERE ${whereClause}
         ORDER BY last_activity_at DESC
       `,
-      values
+      values,
     );
 
     // Transform data for Excel
@@ -154,7 +154,8 @@ export const ReportService = {
         Campaña: segmentMap[row["Campaña"] as string] || "",
         Crédito: row["Crédito"] || "",
         NSE: row["NSE"] || "",
-        "Estado Venta": saleStatusMap[row["Estado Venta"] as string] || "Pendiente",
+        "Estado Venta":
+          saleStatusMap[row["Estado Venta"] as string] || "Pendiente",
         Productos: productos,
         Observaciones: row["Observaciones"] || "",
         "Última Actividad": fechaActividad,
@@ -254,7 +255,7 @@ export const ReportService = {
         ${whereClause}
         ORDER BY created_at DESC
       `,
-      values
+      values,
     );
 
     const statusMap: Record<string, string> = {

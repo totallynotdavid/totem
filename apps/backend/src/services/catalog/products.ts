@@ -10,7 +10,7 @@ export const ProductService = {
   getByCategory: (category: string): Product[] => {
     return getAll<Product>(
       "SELECT * FROM products WHERE category = ? ORDER BY name",
-      [category]
+      [category],
     );
   },
 
@@ -75,7 +75,7 @@ export const ProductService = {
 
   getCategories: (): string[] => {
     const rows = getAll<{ category: string }>(
-      "SELECT DISTINCT category FROM products ORDER BY category"
+      "SELECT DISTINCT category FROM products ORDER BY category",
     );
     return rows.map((r) => r.category);
   },

@@ -17,14 +17,14 @@ export const BundleService = {
     if (segment) {
       const rows = getAll<Bundle>(
         "SELECT * FROM catalog_bundles WHERE period_id = ? AND segment = ? ORDER BY primary_category, price",
-        [periodId, segment]
+        [periodId, segment],
       );
       return rows;
     }
 
     const rows = getAll<Bundle>(
       "SELECT * FROM catalog_bundles WHERE period_id = ? ORDER BY primary_category, price",
-      [periodId]
+      [periodId],
     );
     return rows;
   },
@@ -63,10 +63,9 @@ export const BundleService = {
   },
 
   getById: (id: string): Bundle | null => {
-    const row = getOne<Bundle>(
-      "SELECT * FROM catalog_bundles WHERE id = ?",
-      [id]
-    );
+    const row = getOne<Bundle>("SELECT * FROM catalog_bundles WHERE id = ?", [
+      id,
+    ]);
     return row || null;
   },
 
@@ -168,7 +167,7 @@ export const BundleService = {
          WHERE p.status = 'active' AND b.is_active = 1 AND b.stock_status != 'out_of_stock'
            AND b.segment = ?
          ORDER BY b.primary_category`,
-        [segment]
+        [segment],
       );
       return rows.map((r) => r.category);
     }
@@ -177,7 +176,7 @@ export const BundleService = {
       `SELECT DISTINCT b.primary_category as category FROM catalog_bundles b
        JOIN catalog_periods p ON b.period_id = p.id
        WHERE p.status = 'active' AND b.is_active = 1 AND b.stock_status != 'out_of_stock'
-       ORDER BY b.primary_category`
+       ORDER BY b.primary_category`,
     );
     return rows.map((r) => r.category);
   },

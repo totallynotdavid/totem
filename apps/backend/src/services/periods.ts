@@ -11,28 +11,33 @@ type CreatePeriodData = {
 export const PeriodService = {
   getAll: (): CatalogPeriod[] => {
     return getAll<CatalogPeriod>(
-      "SELECT * FROM catalog_periods ORDER BY year_month DESC"
+      "SELECT * FROM catalog_periods ORDER BY year_month DESC",
     );
   },
 
   getById: (id: string): CatalogPeriod | null => {
-    return getOne<CatalogPeriod>(
-      "SELECT * FROM catalog_periods WHERE id = ?",
-      [id]
-    ) || null;
+    return (
+      getOne<CatalogPeriod>("SELECT * FROM catalog_periods WHERE id = ?", [
+        id,
+      ]) || null
+    );
   },
 
   getActive: (): CatalogPeriod | null => {
-    return getOne<CatalogPeriod>(
-      "SELECT * FROM catalog_periods WHERE status = 'active' LIMIT 1"
-    ) || null;
+    return (
+      getOne<CatalogPeriod>(
+        "SELECT * FROM catalog_periods WHERE status = 'active' LIMIT 1",
+      ) || null
+    );
   },
 
   getByYearMonth: (yearMonth: string): CatalogPeriod | null => {
-    return getOne<CatalogPeriod>(
-      "SELECT * FROM catalog_periods WHERE year_month = ?",
-      [yearMonth]
-    ) || null;
+    return (
+      getOne<CatalogPeriod>(
+        "SELECT * FROM catalog_periods WHERE year_month = ?",
+        [yearMonth],
+      ) || null
+    );
   },
 
   create: (data: CreatePeriodData): CatalogPeriod => {
@@ -86,7 +91,7 @@ export const PeriodService = {
     // Check for bundles
     const bundleCount = getOne<{ count: number }>(
       "SELECT COUNT(*) as count FROM catalog_bundles WHERE period_id = ?",
-      [id]
+      [id],
     )!;
 
     if (bundleCount.count > 0) {

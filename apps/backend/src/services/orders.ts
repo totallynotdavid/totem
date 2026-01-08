@@ -122,10 +122,12 @@ export class OrdersService {
   }
 
   getOrderByConversation(phone: string): Order | null {
-    return getOne<Order>(
-      "SELECT * FROM orders WHERE conversation_phone = ? ORDER BY created_at DESC LIMIT 1",
-      [phone]
-    ) || null;
+    return (
+      getOne<Order>(
+        "SELECT * FROM orders WHERE conversation_phone = ? ORDER BY created_at DESC LIMIT 1",
+        [phone],
+      ) || null
+    );
   }
 
   updateOrderStatus(
@@ -158,36 +160,37 @@ export class OrdersService {
     const now = Date.now();
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
 
-    const totalOrders = getOne<{ count: number }>("SELECT COUNT(*) as count FROM orders")!
-      .count;
+    const totalOrders = getOne<{ count: number }>(
+      "SELECT COUNT(*) as count FROM orders",
+    )!.count;
 
     const pendingCount = getOne<{ count: number }>(
-      "SELECT COUNT(*) as count FROM orders WHERE status = 'pending'"
+      "SELECT COUNT(*) as count FROM orders WHERE status = 'pending'",
     )!.count;
 
     const supervisorApprovedCount = getOne<{ count: number }>(
-      "SELECT COUNT(*) as count FROM orders WHERE status = 'supervisor_approved'"
+      "SELECT COUNT(*) as count FROM orders WHERE status = 'supervisor_approved'",
     )!.count;
 
     const calidaApprovedCount = getOne<{ count: number }>(
-      "SELECT COUNT(*) as count FROM orders WHERE status = 'calidda_approved'"
+      "SELECT COUNT(*) as count FROM orders WHERE status = 'calidda_approved'",
     )!.count;
 
     const deliveredCount = getOne<{ count: number }>(
-      "SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'"
+      "SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'",
     )!.count;
 
     const rejectedCount = getOne<{ count: number }>(
-      "SELECT COUNT(*) as count FROM orders WHERE status LIKE '%rejected%'"
+      "SELECT COUNT(*) as count FROM orders WHERE status LIKE '%rejected%'",
     )!.count;
 
     const totalRevenue = getOne<{ revenue: number }>(
-      "SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status = 'delivered'"
+      "SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status = 'delivered'",
     )!.revenue;
 
     const revenueThisMonth = getOne<{ revenue: number }>(
       "SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status = 'delivered' AND created_at >= ?",
-      [thirtyDaysAgo]
+      [thirtyDaysAgo],
     )!.revenue;
 
     const avgOrderValue =

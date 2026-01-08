@@ -22,14 +22,14 @@ conversations.get("/", (c) => {
     if (status) {
       const rows = getAll<Conversation>(
         "SELECT * FROM conversations WHERE is_simulation = 0 AND assigned_agent = ? AND status = ? ORDER BY last_activity_at DESC LIMIT 100",
-        [user.id, status]
+        [user.id, status],
       );
       return c.json(rows);
     }
 
     const rows = getAll<Conversation>(
       "SELECT * FROM conversations WHERE is_simulation = 0 AND assigned_agent = ? ORDER BY last_activity_at DESC LIMIT 100",
-      [user.id]
+      [user.id],
     );
     return c.json(rows);
   }
@@ -38,13 +38,13 @@ conversations.get("/", (c) => {
   if (status) {
     const rows = getAll<Conversation>(
       "SELECT * FROM conversations WHERE is_simulation = 0 AND status = ? ORDER BY last_activity_at DESC LIMIT 100",
-      [status]
+      [status],
     );
     return c.json(rows);
   }
 
   const rows = getAll<Conversation>(
-    "SELECT * FROM conversations WHERE is_simulation = 0 ORDER BY last_activity_at DESC LIMIT 100"
+    "SELECT * FROM conversations WHERE is_simulation = 0 ORDER BY last_activity_at DESC LIMIT 100",
   );
   return c.json(rows);
 });
@@ -55,7 +55,7 @@ conversations.get("/:phone", (c) => {
 
   const conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   );
 
   if (!conv) {
@@ -138,7 +138,7 @@ conversations.post("/:phone/decline-assignment", async (c) => {
     client_name: string | null;
   }>(
     "SELECT assigned_agent, client_name FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   );
 
   if (!conv || conv.assigned_agent !== user.id) {
@@ -194,7 +194,7 @@ conversations.patch("/:phone/agent-data", async (c) => {
   // Auto-assign agent if not already assigned
   const conv = getOne<{ assigned_agent: string | null }>(
     "SELECT assigned_agent FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   );
 
   if (conv && !conv.assigned_agent) {
@@ -238,7 +238,7 @@ conversations.get("/:phone/replay", (c) => {
 
   const conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   );
 
   if (!conv) {

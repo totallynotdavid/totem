@@ -97,7 +97,7 @@ simulator.get("/conversations", (c) => {
   const conversations = getAll<Conversation>(
     `SELECT * FROM conversations 
      WHERE is_simulation = 1 
-     ORDER BY last_activity_at DESC`
+     ORDER BY last_activity_at DESC`,
   );
 
   return c.json(conversations);
@@ -122,7 +122,7 @@ simulator.post("/conversations", async (c) => {
   // Check if already exists
   const existing = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   );
 
   if (existing) {
@@ -136,7 +136,7 @@ simulator.post("/conversations", async (c) => {
 
   const conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   )!;
 
   return c.json(conv);
@@ -166,7 +166,7 @@ simulator.post("/message", async (c) => {
   // Execute commands synchronously for immediate response
   const conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   )!;
   const context = buildStateContext(conv);
 
@@ -237,7 +237,7 @@ simulator.post("/load", async (c) => {
   // Fetch source conversation
   const sourceConv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [sourcePhone]
+    [sourcePhone],
   );
 
   if (!sourceConv) {

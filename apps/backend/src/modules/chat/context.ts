@@ -9,7 +9,7 @@ export function getOrCreateConversation(
 ): Conversation {
   let conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
-    [phoneNumber]
+    [phoneNumber],
   );
 
   if (!conv) {
@@ -19,7 +19,7 @@ export function getOrCreateConversation(
 
     conv = getOne<Conversation>(
       "SELECT * FROM conversations WHERE phone_number = ?",
-      [phoneNumber]
+      [phoneNumber],
     )!;
   }
 
