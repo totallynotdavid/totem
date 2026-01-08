@@ -28,12 +28,12 @@ export async function uploadContract(
   const contractsDir = resolve(process.cwd(), "data", "contracts", phoneNumber);
   await mkdir(contractsDir, { recursive: true });
 
-  const contractExt = contractFile.name.split(".").pop();
+  const contractExt = contractFile.name.split(".").pop() || "pdf";
   const contractPath = join(contractsDir, `contract.${contractExt}`);
   const contractBuffer = await contractFile.arrayBuffer();
   await writeFile(contractPath, Buffer.from(contractBuffer));
 
-  const audioExt = audioFile.name.split(".").pop();
+  const audioExt = audioFile.name.split(".").pop() || "mp3";
   const audioPath = join(contractsDir, `audio.${audioExt}`);
   const audioBuffer = await audioFile.arrayBuffer();
   await writeFile(audioPath, Buffer.from(audioBuffer));

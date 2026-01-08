@@ -87,9 +87,9 @@ export function declineAssignment(
 export function updateAgentData(
   phoneNumber: string,
   userId: string,
-  updates: Record<string, any>,
+  updates: Record<string, string | undefined>,
 ): { success: boolean; error?: string } {
-  const validUpdates: Record<string, any> = {};
+  const validUpdates: Record<string, string> = {};
 
   for (const field of ALLOWED_AGENT_DATA_FIELDS) {
     if (updates[field] !== undefined) {
@@ -118,7 +118,7 @@ export function updateAgentData(
   }
 
   const setClauses: string[] = [];
-  const values: any[] = [];
+  const values: (string | number)[] = [];
 
   for (const [key, value] of Object.entries(validUpdates)) {
     setClauses.push(`${key} = ?`);
