@@ -6,6 +6,7 @@ import {
   buildAnswerQuestionPrompt,
   buildSuggestAlternativePrompt,
   buildHandleBacklogPrompt,
+  getCategoryMetadata,
 } from "@totem/core";
 
 const client = new OpenAI({
@@ -41,12 +42,14 @@ export async function extractCategory(
   availableCategories: string[],
 ): Promise<string | null> {
   try {
+    const metadata = getCategoryMetadata(availableCategories);
+
     const completion = await client.chat.completions.create({
       model: MODEL,
       messages: [
         {
           role: "system",
-          content: buildExtractCategoryPrompt(availableCategories),
+          content: buildExtractCategoryPrompt(metadata),
         },
         { role: "user", content: message },
       ],

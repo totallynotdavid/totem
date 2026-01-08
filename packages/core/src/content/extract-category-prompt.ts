@@ -1,19 +1,27 @@
+import type { CategoryMetadata } from "../helpers/category-metadata.ts";
+
 export function buildExtractCategoryPrompt(
-  availableCategories: string[],
+  categoryMetadata: CategoryMetadata[],
 ): string {
+  const categoryList = categoryMetadata
+    .map((cat) => {
+      const parts = [`**${cat.key}**`];
+      if (cat.aliases.length > 0) {
+        parts.push(`aliases: ${cat.aliases.join(", ")}`);
+      }
+      if (cat.brands.length > 0) {
+        parts.push(`brands: ${cat.brands.join(", ")}`);
+      }
+      return `- ${parts.join(" | ")}`;
+    })
+    .join("\n");
+
   return `Extrae la categoría de producto mencionada.
 
-CATEGORÍAS VÁLIDAS: ${availableCategories.join(", ")}
+CATEGORÍAS DISPONIBLES:
+${categoryList}
 
-Mapea términos a categorías:
-- Marcas celular (Samsung, iPhone, Xiaomi, Galaxy) → celulares
-- "refri", "refrigeradora", "frigo" → refrigeradoras
-- "tele", "TV", "televisor" → televisores
-- "laptop", "portátil", "computadora" → laptops
-- "cocina", "estufa" → cocinas
-- "terma", "calentador" → termas
+Devuelve la categoría exacta (key) o null si no hay coincidencia.
 
-Devuelve la categoría exacta de la lista o null si no hay coincidencia.
-
-JSON: {"category": "categoria" | null}`;
+JSON: {"category": "key" | null}`;
 }
