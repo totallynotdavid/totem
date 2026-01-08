@@ -106,6 +106,7 @@ export function updateConversation(
   if (metadata.segment) updates.segment = metadata.segment;
   if (metadata.credit !== undefined) updates.credit_line = metadata.credit;
   if (metadata.nse !== undefined) updates.nse = metadata.nse;
+  if (metadata.age !== undefined) updates.age = metadata.age;
 
   if (phase.phase === "escalated") {
     updates.status = "human_takeover";

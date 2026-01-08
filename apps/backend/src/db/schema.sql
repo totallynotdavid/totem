@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     segment TEXT CHECK(segment IN ('fnb', 'gaso')),
     credit_line REAL,
     nse INTEGER,
+    age INTEGER,
     current_state TEXT NOT NULL DEFAULT 'INIT',
     context_data TEXT DEFAULT '{}',
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'human_takeover', 'closed')),

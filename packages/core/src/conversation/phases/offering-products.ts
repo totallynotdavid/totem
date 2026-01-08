@@ -30,6 +30,15 @@ export function transitionOfferingProducts(
 ): TransitionResult {
   const lower = message.toLowerCase();
 
+  // First check: do we have categories loaded?
+  if (!phase.availableCategories) {
+    // Need to fetch categories from DB before proceeding
+    return {
+      type: "need_enrichment",
+      enrichment: { type: "fetch_categories", segment: phase.segment },
+    };
+  }
+
   // Handle enrichment results first
   if (enrichment) {
     return handleEnrichmentResult(phase, message, enrichment);
@@ -113,6 +122,30 @@ function handleEnrichmentResult(
   message: string,
   enrichment: EnrichmentResult,
 ): TransitionResult {
+  // Categories fetched - update phase and continue
+  if (enrichment.type === "categories_fetched") {
+    const updatedPhase: OfferingProductsPhase = {
+      ...phase,
+      availableCategories: enrichment.categories,
+    };
+
+    // If no categories available, gracefully handle
+    if (enrichment.categories.length === 0) {
+      return {
+        type: "escalate",
+        reason: "no_products_available",
+        notify: {
+          channel: "agent",
+          message: "No hay productos disponibles en catálogo activo",
+        },
+      };
+    }
+
+    // Categories loaded - return to normal processing
+    // Re-process the message with categories now available
+    return transitionOfferingProducts(updatedPhase, message, {}, undefined);
+  }
+
   // Question detected - need to decide how to handle
   if (enrichment.type === "question_detected") {
     if (enrichment.isQuestion) {
@@ -124,13 +157,12 @@ function handleEnrichmentResult(
     }
 
     // Not a question - try to extract category with LLM
-    const availableCategories = getAvailableCategoriesForSegment(phase.segment);
     return {
       type: "need_enrichment",
       enrichment: {
         type: "extract_category",
         message,
-        availableCategories,
+        availableCategories: phase.availableCategories!,
       },
     };
   }
@@ -149,7 +181,6 @@ function handleEnrichmentResult(
     }
 
     // Answer the question
-    const availableCategories = getAvailableCategoriesForSegment(phase.segment);
     return {
       type: "need_enrichment",
       enrichment: {
@@ -159,7 +190,7 @@ function handleEnrichmentResult(
           segment: phase.segment,
           credit: phase.credit,
           phase: "offering_products",
-          availableCategories,
+          availableCategories: phase.availableCategories!,
         },
       },
     };
@@ -232,20 +263,4 @@ function isPriceConcern(lower: string): boolean {
   return /(caro|muy\s+caro|precio|cuesta\s+mucho|no\s+puedo\s+pagar|no\s+tengo\s+plata|presupuesto)/.test(
     lower,
   );
-}
-
-function getAvailableCategoriesForSegment(segment: string): string[] {
-  // This would normally come from the catalog service
-  // For now, return all categories
-  if (segment === "fnb") {
-    return [
-      "celulares",
-      "laptops",
-      "tv",
-      "refrigeradoras",
-      "lavadoras",
-      "cocinas",
-    ];
-  }
-  return ["cocinas", "termas", "fusion"];
 }

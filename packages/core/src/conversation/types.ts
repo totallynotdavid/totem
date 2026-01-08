@@ -21,6 +21,7 @@ export type ConversationPhase =
       segment: Segment;
       credit: number;
       name: string;
+      availableCategories?: string[];
     }
   | {
       phase: "handling_objection";
@@ -54,6 +55,7 @@ export type ConversationMetadata = {
 export type EnrichmentRequest =
   | { type: "check_fnb"; dni: string }
   | { type: "check_gaso"; dni: string }
+  | { type: "fetch_categories"; segment: Segment }
   | { type: "detect_question"; message: string }
   | { type: "should_escalate"; message: string }
   | {
@@ -95,6 +97,7 @@ export type EnrichmentResult =
       nse?: number;
       requiresAge?: boolean;
     }
+  | { type: "categories_fetched"; categories: string[] }
   | { type: "question_detected"; isQuestion: boolean }
   | { type: "escalation_needed"; shouldEscalate: boolean }
   | { type: "category_extracted"; category: string | null }

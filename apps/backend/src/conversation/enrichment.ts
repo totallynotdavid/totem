@@ -12,6 +12,7 @@ type EnrichmentRequest = conversation.EnrichmentRequest;
 type EnrichmentResult = conversation.EnrichmentResult;
 import { checkGASO } from "../modules/eligibility/gaso.ts";
 import * as LLM from "../modules/llm/index.ts";
+import { getActiveCategoriesBySegment } from "../services/catalog/index.ts";
 
 /**
  * Execute an enrichment request and return the result
@@ -26,6 +27,9 @@ export async function executeEnrichment(
 
     case "check_gaso":
       return await executeGASOCheck(request.dni, phoneNumber);
+
+    case "fetch_categories":
+      return await executeFetchCategories(request.segment);
 
     case "detect_question":
       return await executeDetectQuestion(request.message, phoneNumber);
@@ -96,6 +100,25 @@ async function executeGASOCheck(
     return {
       type: "gaso_result",
       eligible: false,
+    };
+  }
+}
+
+async function executeFetchCategories(
+  segment: string,
+): Promise<EnrichmentResult> {
+  try {
+    const categories = getActiveCategoriesBySegment(segment as "fnb" | "gaso");
+    return {
+      type: "categories_fetched",
+      categories,
+    };
+  } catch (error) {
+    console.error(`[Enrichment] Fetch categories failed for ${segment}:`, error);
+    // Fallback to empty array - phase will handle gracefully
+    return {
+      type: "categories_fetched",
+      categories: [],
     };
   }
 }
