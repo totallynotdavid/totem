@@ -8,8 +8,14 @@ import {
   getCategoryMetadata,
 } from "@totem/core";
 import { client, MODEL } from "./client.ts";
+import { classifyLLMError } from "./types.ts";
+import { logLLMError } from "../../services/llm-errors.ts";
 
-export async function isQuestion(message: string): Promise<boolean> {
+export async function isQuestion(
+  message: string,
+  phoneNumber: string,
+  state?: string,
+): Promise<boolean> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -25,12 +31,16 @@ export async function isQuestion(message: string): Promise<boolean> {
     const res = JSON.parse(content || "{}");
     return res.isQuestion === true;
   } catch (e) {
-    console.error("[isQuestion error]", e);
+    logLLMError(phoneNumber, "isQuestion", classifyLLMError(e), state);
     return false;
   }
 }
 
-export async function shouldEscalate(message: string): Promise<boolean> {
+export async function shouldEscalate(
+  message: string,
+  phoneNumber: string,
+  state?: string,
+): Promise<boolean> {
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
@@ -46,7 +56,7 @@ export async function shouldEscalate(message: string): Promise<boolean> {
     const res = JSON.parse(content || "{}");
     return res.shouldEscalate === true;
   } catch (e) {
-    console.error("[shouldEscalate error]", e);
+    logLLMError(phoneNumber, "shouldEscalate", classifyLLMError(e), state);
     return false;
   }
 }
@@ -54,6 +64,8 @@ export async function shouldEscalate(message: string): Promise<boolean> {
 export async function extractCategory(
   message: string,
   availableCategories: string[],
+  phoneNumber: string,
+  state?: string,
 ): Promise<string | null> {
   try {
     const metadata = getCategoryMetadata(availableCategories);
@@ -74,7 +86,10 @@ export async function extractCategory(
     const content = choice?.message.content;
     const res = JSON.parse(content || "{}");
     return res.category ?? null;
-  } catch {
+  } catch (e) {
+    logLLMError(phoneNumber, "extractCategory", classifyLLMError(e), state, {
+      availableCategories,
+    });
     return null;
   }
 }
@@ -87,6 +102,7 @@ export async function answerQuestion(
     state?: string;
     availableCategories?: string[];
   },
+  phoneNumber: string,
 ): Promise<string> {
   try {
     const completion = await client.chat.completions.create({
@@ -107,7 +123,17 @@ export async function answerQuestion(
     const res = JSON.parse(content || "{}");
 
     return res.answer || "Déjame ayudarte con eso...";
-  } catch {
+  } catch (e) {
+    logLLMError(
+      phoneNumber,
+      "answerQuestion",
+      classifyLLMError(e),
+      context.state,
+      {
+        segment: context.segment,
+        creditLine: context.creditLine,
+      },
+    );
     return "Déjame ayudarte con eso...";
   }
 }
@@ -115,6 +141,7 @@ export async function answerQuestion(
 export async function suggestAlternative(
   requestedCategory: string,
   availableCategories: string[],
+  phoneNumber: string,
 ): Promise<string> {
   try {
     const completion = await client.chat.completions.create({
@@ -144,7 +171,17 @@ export async function suggestAlternative(
       res.suggestion ||
       `No tenemos ${requestedCategory} ahora. ¿Te gustaría ver ${availableCategories[0] || "otras opciones"}?`
     );
-  } catch {
+  } catch (e) {
+    logLLMError(
+      phoneNumber,
+      "suggestAlternative",
+      classifyLLMError(e),
+      undefined,
+      {
+        requestedCategory,
+        availableCategories,
+      },
+    );
     return `No tenemos ${requestedCategory} disponible ahorita. ¿Te interesa algo más?`;
   }
 }
@@ -152,6 +189,8 @@ export async function suggestAlternative(
 export async function handleBacklogResponse(
   message: string,
   ageMinutes: number,
+  phoneNumber: string,
+  state?: string,
 ): Promise<string> {
   try {
     const completion = await client.chat.completions.create({
@@ -175,7 +214,16 @@ export async function handleBacklogResponse(
     const res = JSON.parse(content || "{}");
 
     return res.response || `¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?`;
-  } catch {
+  } catch (e) {
+    logLLMError(
+      phoneNumber,
+      "handleBacklogResponse",
+      classifyLLMError(e),
+      state,
+      {
+        ageMinutes,
+      },
+    );
     return `¡Hola! Disculpa la demora. ¿En qué puedo ayudarte?`;
   }
 }

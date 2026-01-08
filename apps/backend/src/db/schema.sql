@@ -154,6 +154,18 @@ CREATE TABLE IF NOT EXISTS system_settings (
     updated_at INTEGER NOT NULL DEFAULT (unixepoch('now', 'subsec') * 1000)
 );
 
+-- LLM error logging for observability
+CREATE TABLE IF NOT EXISTS llm_error_log (
+    id TEXT PRIMARY KEY,
+    phone_number TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    error_type TEXT NOT NULL,
+    error_message TEXT NOT NULL,
+    state TEXT,
+    metadata TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Message queue for async processing
 CREATE TABLE IF NOT EXISTS message_queue (
     id TEXT PRIMARY KEY,
@@ -187,3 +199,6 @@ CREATE INDEX IF NOT EXISTS idx_conversations_assigned ON conversations(assigned_
 CREATE INDEX IF NOT EXISTS idx_users_available ON users(role, is_available, is_active);CREATE INDEX IF NOT EXISTS idx_message_queue_status ON message_queue(status, created_at ASC);
 CREATE INDEX IF NOT EXISTS idx_message_queue_phone ON message_queue(phone_number, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_message_queue_group ON message_queue(group_id);
+CREATE INDEX IF NOT EXISTS idx_llm_errors_phone ON llm_error_log(phone_number, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_llm_errors_type ON llm_error_log(error_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_llm_errors_operation ON llm_error_log(operation, created_at DESC);

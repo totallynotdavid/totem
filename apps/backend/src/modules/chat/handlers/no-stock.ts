@@ -28,9 +28,10 @@ export async function handleNoStock(
     responseMessage = await LLM.suggestAlternative(
       requestedCategory,
       availableCategories,
+      phoneNumber,
     );
   } else {
-    // Quick match but no stock - use template
+    // Quick match but no stock (use template)
     const { message: noStockMsg, updatedContext: variantCtx } = selectVariant(
       T.NO_STOCK,
       "NO_STOCK",

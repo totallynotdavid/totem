@@ -62,14 +62,27 @@ async function executeTransition(
   let backlogResponse: string | null = null;
   if (metadata?.isBacklog && state === "INIT") {
     const ageMinutes = Math.floor(metadata.oldestMessageAge / 60000);
-    backlogResponse = await LLM.handleBacklogResponse(message, ageMinutes);
+    backlogResponse = await LLM.handleBacklogResponse(
+      message,
+      ageMinutes,
+      conv.phone_number,
+      state,
+    );
   }
 
   if (state !== "INIT" && state !== "WAITING_PROVIDER") {
-    const isQuestionResult = await LLM.isQuestion(message);
+    const isQuestionResult = await LLM.isQuestion(
+      message,
+      conv.phone_number,
+      state,
+    );
 
     if (isQuestionResult) {
-      const shouldEscalate = await LLM.shouldEscalate(message);
+      const shouldEscalate = await LLM.shouldEscalate(
+        message,
+        conv.phone_number,
+        state,
+      );
 
       if (shouldEscalate) {
         context.llmDetectedQuestion = true;
@@ -80,12 +93,16 @@ async function executeTransition(
             ? BundleService.getAvailableCategories("fnb")
             : BundleService.getAvailableCategories("gaso");
 
-        const answer = await LLM.answerQuestion(message, {
-          segment: context.segment,
-          creditLine: context.creditLine,
-          state,
-          availableCategories,
-        });
+        const answer = await LLM.answerQuestion(
+          message,
+          {
+            segment: context.segment,
+            creditLine: context.creditLine,
+            state,
+            availableCategories,
+          },
+          conv.phone_number,
+        );
 
         context.llmDetectedQuestion = true;
         context.llmGeneratedAnswer = answer;
@@ -106,7 +123,12 @@ async function executeTransition(
           ? BundleService.getAvailableCategories("fnb")
           : BundleService.getAvailableCategories("gaso");
 
-      const category = await LLM.extractCategory(message, availableCategories);
+      const category = await LLM.extractCategory(
+        message,
+        availableCategories,
+        conv.phone_number,
+        state,
+      );
 
       if (category) {
         context.extractedCategory = category;
