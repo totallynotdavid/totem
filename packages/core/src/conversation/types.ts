@@ -66,9 +66,6 @@ export type EnrichmentRequest =
       ageMinutes: number;
     };
 
-/**
- * Enrichment results
- */
 export type EnrichmentResult =
   | {
       type: "eligibility_result";

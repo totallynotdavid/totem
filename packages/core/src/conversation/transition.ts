@@ -1,12 +1,3 @@
-/**
- * Pure State Machine
- *
- * This is the core of the conversation logic. It is:
- * - Pure: No side effects, deterministic
- * - Enrichment-aware: Returns need_enrichment when async data is needed
- * - Type-safe: Uses discriminated unions for states
- */
-
 import type { TransitionInput, TransitionResult } from "./types.ts";
 import { transitionGreeting } from "./phases/greeting.ts";
 import { transitionConfirmingClient } from "./phases/confirming-client.ts";
@@ -17,9 +8,6 @@ import { transitionOfferingProducts } from "./phases/offering-products.ts";
 import { transitionHandlingObjection } from "./phases/handling-objection.ts";
 import { transitionClosing } from "./phases/closing.ts";
 
-/**
- * Main transition function - routes to phase-specific handlers
- */
 export function transition(input: TransitionInput): TransitionResult {
   const { phase, message, metadata, enrichment } = input;
 

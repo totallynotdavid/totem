@@ -1,7 +1,3 @@
-/**
- * Greeting phase transition
- */
-
 import type { ConversationMetadata, TransitionResult } from "../types.ts";
 import { selectVariant } from "../../messaging/variation-selector.ts";
 import * as T from "../../templates/standard.ts";

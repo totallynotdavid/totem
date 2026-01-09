@@ -58,7 +58,7 @@ export function transitionCollectingAge(
     };
   }
 
-  // Age valid - proceed to offer
+  // Age valid, proceed to offer
   const credit = metadata.credit || 0;
   const { message: response } = selectVariant(
     S.GASO_OFFER_KITCHEN_BUNDLE,

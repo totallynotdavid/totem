@@ -1,9 +1,3 @@
-/**
- * Handling objection phase transition
- *
- * Handles price concerns, kitchen bundle rejections, etc.
- */
-
 import type {
   ConversationPhase,
   TransitionResult,
@@ -62,7 +56,7 @@ export function transitionHandlingObjection(
     }
   }
 
-  // Too many objections - escalate
+  // Too many objections, escalate
   if (phase.objectionCount >= MAX_OBJECTIONS) {
     return {
       type: "update",
@@ -139,7 +133,7 @@ export function transitionHandlingObjection(
     };
   }
 
-  // Check if it's a question - need LLM
+  // Check if it's a question, need LLM
   return {
     type: "need_enrichment",
     enrichment: { type: "detect_question", message },

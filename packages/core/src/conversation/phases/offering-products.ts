@@ -1,7 +1,5 @@
 /**
- * Offering products phase transition
- *
- * This is the main sales phase. Handles:
+ * The main sales phase handles:
  * - Category extraction (via regex or LLM)
  * - Question detection and answering
  * - Product selection
@@ -105,7 +103,7 @@ export function transitionOfferingProducts(
     };
   }
 
-  // Check for price concern - transition to objection handling
+  // Check for price concern, transition to objection handling
   if (isPriceConcern(lower)) {
     const { message: response } = selectVariant(
       S.PRICE_CONCERN.standard,
@@ -126,7 +124,7 @@ export function transitionOfferingProducts(
     };
   }
 
-  // Need LLM to understand - first detect if it's a question
+  // Need LLM to understand, first detect if it's a question
   return {
     type: "need_enrichment",
     enrichment: { type: "detect_question", message },
@@ -138,7 +136,7 @@ function handleEnrichmentResult(
   message: string,
   enrichment: EnrichmentResult,
 ): TransitionResult {
-  // Categories fetched - update phase and continue
+  // Categories fetched, update phase and continue
   if (enrichment.type === "categories_fetched") {
     const updatedPhase: OfferingProductsPhase = {
       ...phase,
@@ -164,12 +162,11 @@ function handleEnrichmentResult(
       };
     }
 
-    // Categories loaded - return to normal processing
+    // Categories loaded, return to normal processing
     // Re-process the message with categories now available
     return transitionOfferingProducts(updatedPhase, message, {}, undefined);
   }
 
-  // Question detected - need to decide how to handle
   if (enrichment.type === "question_detected") {
     if (enrichment.isQuestion) {
       // Check if should escalate
@@ -179,7 +176,7 @@ function handleEnrichmentResult(
       };
     }
 
-    // Not a question - try to extract category with LLM
+    // Not a question, try to extract category with LLM
     return {
       type: "need_enrichment",
       enrichment: {
@@ -252,7 +249,7 @@ function handleEnrichmentResult(
       };
     }
 
-    // Couldn't extract category - ask for clarification
+    // Couldn't extract category, ask for clarification
     const { message: response } = selectVariant(
       S.ASK_PRODUCT_INTEREST,
       "ASK_PRODUCT_INTEREST",
@@ -266,7 +263,7 @@ function handleEnrichmentResult(
     };
   }
 
-  // Unknown enrichment - ask what they want
+  // Unknown enrichment, ask what they want
   const { message: response } = selectVariant(
     S.ASK_PRODUCT_INTEREST,
     "ASK_PRODUCT_INTEREST",
