@@ -8,8 +8,7 @@ export function transitionGreeting(
   // Check if returning user had previous interest
   if (metadata.lastCategory) {
     const variants = T.GREETING_RETURNING(metadata.lastCategory);
-    const { message: response } = selectVariant(variants, "GREETING_RETURNING", {});
-    const messages = Array.isArray(response) ? response : [response];
+    const { message } = selectVariant(variants, "GREETING_RETURNING", {});
 
     return {
       type: "update",
@@ -20,13 +19,12 @@ export function transitionGreeting(
           event: "session_start",
           metadata: { returning: true },
         },
-        ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
       ],
     };
   }
 
-  const { message: response } = selectVariant(T.GREETING, "GREETING", {});
-  const messages = Array.isArray(response) ? response : [response];
+  const { message } = selectVariant(T.GREETING, "GREETING", {});
 
   return {
     type: "update",
@@ -37,7 +35,7 @@ export function transitionGreeting(
         event: "session_start",
         metadata: { returning: false },
       },
-      ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
     ],
   };
 }

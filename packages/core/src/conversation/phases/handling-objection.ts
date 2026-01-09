@@ -100,12 +100,11 @@ export function transitionHandlingObjection(
   if (/\b(no|nada|no\s+quiero)\b/.test(lower)) {
     if (phase.objectionCount === 1 && phase.segment === "gaso") {
       // Offer therma as alternative
-      const { message: response } = selectVariant(
+      const { message } = selectVariant(
         S.THERMA_ALTERNATIVE,
         "THERMA_ALTERNATIVE",
         {},
       );
-      const messages = Array.isArray(response) ? response : [response];
 
       return {
         type: "update",
@@ -113,17 +112,19 @@ export function transitionHandlingObjection(
           ...phase,
           objectionCount: phase.objectionCount + 1,
         },
-        commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        commands: message.map((text) => ({
+          type: "SEND_MESSAGE" as const,
+          text,
+        })),
       };
     }
 
     // Another objection
-    const { message: response } = selectVariant(
+    const { message } = selectVariant(
       S.KITCHEN_OBJECTION_RESPONSE,
       "KITCHEN_OBJECTION",
       {},
     );
-    const messages = Array.isArray(response) ? response : [response];
 
     return {
       type: "update",
@@ -131,7 +132,10 @@ export function transitionHandlingObjection(
         ...phase,
         objectionCount: phase.objectionCount + 1,
       },
-      commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      commands: message.map((text) => ({
+        type: "SEND_MESSAGE" as const,
+        text,
+      })),
     };
   }
 

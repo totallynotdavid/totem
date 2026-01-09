@@ -30,16 +30,15 @@ export function transitionCheckingEligibility(
   if (enrichment.type === "eligibility_result") {
     // Case 1: needs human intervention (both providers down)
     if (enrichment.status === "needs_human") {
-      const { message: response } = selectVariant(
+      const { message } = selectVariant(
         [
-          "Perfecto, déjame verificar tu información. Te respondo en un momento.",
-          "Genial, dame un momentito mientras reviso tu línea de crédito.",
-          "Déjame consultar tu información. Ya te confirmo.",
+          ["Perfecto, déjame verificar tu información. Dame un momento."],
+          ["Genial, dame un momentito mientras reviso tu línea de crédito."],
+          ["Déjame consultar tu información. Un momento, por favor."],
         ],
         "CHECKING_HOLD",
         {},
       );
-      const messages = Array.isArray(response) ? response : [response];
 
       return {
         type: "update",
@@ -48,7 +47,7 @@ export function transitionCheckingEligibility(
           reason: enrichment.handoffReason || "eligibility_check_failed",
         },
         commands: [
-          ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+          ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
           {
             type: "NOTIFY_TEAM",
             channel: "agent",
@@ -72,11 +71,7 @@ export function transitionCheckingEligibility(
       if (segment === "fnb") {
         if (!checkFNBEligibility(credit)) {
           // Credit too low for FNB
-          const { message: response } = selectVariant(
-            T.NOT_ELIGIBLE,
-            "NOT_ELIGIBLE",
-            {},
-          );
+          const { message } = selectVariant(T.NOT_ELIGIBLE, "NOT_ELIGIBLE", {});
 
           return {
             type: "update",
@@ -87,20 +82,17 @@ export function transitionCheckingEligibility(
                 event: "eligibility_failed",
                 metadata: { segment: "fnb", credit, reason: "credit_too_low" },
               },
-              { type: "SEND_MESSAGE", text: response as string },
+              ...message.map((text) => ({
+                type: "SEND_MESSAGE" as const,
+                text,
+              })),
             ],
           };
         }
 
         // FNB approved
         const variants = S.FNB_APPROVED(name, credit);
-        const { message: response } = selectVariant(
-          variants,
-          "FNB_APPROVED",
-          {},
-        );
-
-        const messages = Array.isArray(response) ? response : [response];
+        const { message } = selectVariant(variants, "FNB_APPROVED", {});
 
         return {
           type: "update",
@@ -116,7 +108,7 @@ export function transitionCheckingEligibility(
               event: "eligibility_passed",
               metadata: { segment: "fnb", credit },
             },
-            ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+            ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
           ],
         };
       }
@@ -124,8 +116,7 @@ export function transitionCheckingEligibility(
       // For GASO, always requires age verification
       if (segment === "gaso") {
         const variants = T.ASK_AGE(name);
-        const { message: response } = selectVariant(variants, "ASK_AGE", {});
-        const messages = Array.isArray(response) ? response : [response];
+        const { message } = selectVariant(variants, "ASK_AGE", {});
 
         return {
           type: "update",
@@ -134,19 +125,17 @@ export function transitionCheckingEligibility(
             dni: phase.dni,
             name,
           },
-          commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+          commands: message.map((text) => ({
+            type: "SEND_MESSAGE" as const,
+            text,
+          })),
         };
       }
     }
 
     // Case 3: Customer not eligible
     if (enrichment.status === "not_eligible") {
-      const { message: response } = selectVariant(
-        T.NOT_ELIGIBLE,
-        "NOT_ELIGIBLE",
-        {},
-      );
-      const messages = Array.isArray(response) ? response : [response];
+      const { message } = selectVariant(T.NOT_ELIGIBLE, "NOT_ELIGIBLE", {});
 
       return {
         type: "update",
@@ -157,7 +146,7 @@ export function transitionCheckingEligibility(
             event: "eligibility_failed",
             metadata: { segment: "none", reason: "not_eligible" },
           },
-          ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+          ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
         ],
       };
     }

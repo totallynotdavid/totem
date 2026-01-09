@@ -62,13 +62,7 @@ export function transitionOfferingProducts(
   // Check for purchase confirmation signals
   if (isPurchaseConfirmation(lower)) {
     const variants = S.CONFIRM_PURCHASE(phase.name || "");
-    const { message: response } = selectVariant(
-      variants,
-      "CONFIRM_PURCHASE",
-      {},
-    );
-
-    const messages = Array.isArray(response) ? response : [response];
+    const { message } = selectVariant(variants, "CONFIRM_PURCHASE", {});
 
     return {
       type: "update",
@@ -79,7 +73,7 @@ export function transitionOfferingProducts(
           event: "purchase_confirmed",
           metadata: { segment: phase.segment },
         },
-        ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
         {
           type: "NOTIFY_TEAM",
           channel: "agent",
@@ -110,12 +104,11 @@ export function transitionOfferingProducts(
 
   // Check for price concern, transition to objection handling
   if (isPriceConcern(lower)) {
-    const { message: response } = selectVariant(
+    const { message } = selectVariant(
       S.PRICE_CONCERN.standard,
       "PRICE_CONCERN",
       {},
     );
-    const messages = Array.isArray(response) ? response : [response];
 
     return {
       type: "update",
@@ -126,7 +119,10 @@ export function transitionOfferingProducts(
         name: phase.name,
         objectionCount: 1,
       },
-      commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      commands: message.map((text) => ({
+        type: "SEND_MESSAGE" as const,
+        text,
+      })),
     };
   }
 
@@ -239,49 +235,35 @@ function handleEnrichmentResult(
   }
 
   // Category extracted
-  if (enrichment.type === "category_extracted") {
-    if (enrichment.category) {
-      return {
-        type: "update",
-        nextPhase: phase, // Stay in offering_products
-        commands: [
-          {
-            type: "TRACK_EVENT",
-            event: "category_selected",
-            metadata: { category: enrichment.category, method: "llm" },
-          },
-          { type: "SEND_IMAGES", category: enrichment.category },
-        ],
-      };
-    }
-
-    // Couldn't extract category, ask for clarification
-    const { message: response } = selectVariant(
-      S.ASK_PRODUCT_INTEREST,
-      "ASK_PRODUCT_INTEREST",
-      {},
-    );
-    const messages = Array.isArray(response) ? response : [response];
-
+  if (enrichment.type === "category_extracted" && enrichment.category) {
     return {
       type: "update",
-      nextPhase: phase,
-      commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      nextPhase: phase, // Stay in offering_products
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "category_selected",
+          metadata: { category: enrichment.category, method: "llm" },
+        },
+        { type: "SEND_IMAGES", category: enrichment.category },
+      ],
     };
   }
 
-  // Unknown enrichment, ask what they want
-  const { message: response2 } = selectVariant(
+  // Fallback: couldn't extract category or unknown enrichment, ask for clarification
+  const { message: messages } = selectVariant(
     S.ASK_PRODUCT_INTEREST,
     "ASK_PRODUCT_INTEREST",
     {},
   );
-  const messages2 = Array.isArray(response2) ? response2 : [response2];
 
   return {
     type: "update",
     nextPhase: phase,
-    commands: messages2.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+    commands: messages.map((text) => ({
+      type: "SEND_MESSAGE" as const,
+      text,
+    })),
   };
 }
 

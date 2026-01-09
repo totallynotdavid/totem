@@ -25,12 +25,11 @@ export function transitionConfirmingClient(
     /^no(\s|,|!|$)/.test(lower) ||
     /\b(nada|negativo)(\s|,|!|$)/.test(lower)
   ) {
-    const { message: response } = selectVariant(
+    const { message } = selectVariant(
       T.CONFIRM_CLIENT_NO,
       "CONFIRM_CLIENT_NO",
       {},
     );
-    const messages = Array.isArray(response) ? response : [response];
 
     return {
       type: "update",
@@ -39,9 +38,9 @@ export function transitionConfirmingClient(
         {
           type: "TRACK_EVENT",
           event: "not_calidda_client",
-          metadata: { response: message },
+          metadata: { response: message.join(" ") },
         },
-        ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
       ],
     };
   }
@@ -96,12 +95,11 @@ export function transitionConfirmingClient(
     }
 
     // Normal flow, ask for DNI
-    const { message: response } = selectVariant(
+    const { message } = selectVariant(
       T.CONFIRM_CLIENT_YES,
       "CONFIRM_CLIENT_YES",
       {},
     );
-    const messages = Array.isArray(response) ? response : [response];
 
     return {
       type: "update",
@@ -110,9 +108,9 @@ export function transitionConfirmingClient(
         {
           type: "TRACK_EVENT",
           event: "confirmed_calidda_client",
-          metadata: { response: message },
+          metadata: { response: message.join(" ") },
         },
-        ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
       ],
     };
   }

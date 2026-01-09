@@ -27,24 +27,25 @@ export function transitionCollectingAge(
   const age = extractAge(message);
 
   if (age === null) {
-    const { message: response } = selectVariant(
+    const { message: messages } = selectVariant(
       T.INVALID_AGE,
       "INVALID_AGE",
       {},
     );
-    const messages = Array.isArray(response) ? response : [response];
 
     return {
       type: "update",
       nextPhase: phase,
-      commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      commands: messages.map((text) => ({
+        type: "SEND_MESSAGE" as const,
+        text,
+      })),
     };
   }
 
   if (age < MIN_AGE) {
     const variants = T.AGE_TOO_LOW(MIN_AGE);
-    const { message: response } = selectVariant(variants, "AGE_TOO_LOW", {});
-    const messages = Array.isArray(response) ? response : [response];
+    const { message: messages } = selectVariant(variants, "AGE_TOO_LOW", {});
 
     return {
       type: "update",
@@ -62,13 +63,11 @@ export function transitionCollectingAge(
 
   // Age valid, proceed to offer
   const credit = metadata.credit || 0;
-  const { message: response } = selectVariant(
+  const { message: messages } = selectVariant(
     S.GASO_OFFER_KITCHEN_BUNDLE,
     "GASO_OFFER",
     {},
   );
-
-  const messages = Array.isArray(response) ? response : [response];
 
   return {
     type: "update",
