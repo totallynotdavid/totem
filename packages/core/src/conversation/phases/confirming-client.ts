@@ -9,8 +9,15 @@ export function transitionConfirmingClient(
 ): TransitionResult {
   const lower = message.toLowerCase().trim();
 
-  // Check if user volunteered DNI early
+  // Check if user volunteered DNI early (implicit confirmation)
   const earlyDNI = extractDNI(message);
+  if (earlyDNI) {
+    return {
+      type: "need_enrichment",
+      enrichment: { type: "check_eligibility", dni: earlyDNI },
+      pendingPhase: { phase: "checking_eligibility", dni: earlyDNI },
+    };
+  }
 
   // NEGATIVE patterns
   if (
@@ -71,15 +78,6 @@ export function transitionConfirmingClient(
         response: metadata.name
           ? `¡Excelente ${metadata.name}! Sigamos viendo opciones para ti.`
           : `¡Excelente! Sigamos viendo opciones para ti.`,
-      };
-    }
-
-    // User provided DNI in same message
-    if (earlyDNI) {
-      return {
-        type: "need_enrichment",
-        enrichment: { type: "check_eligibility", dni: earlyDNI },
-        pendingPhase: { phase: "checking_eligibility", dni: earlyDNI },
       };
     }
 
