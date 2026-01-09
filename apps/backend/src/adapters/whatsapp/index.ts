@@ -1,5 +1,5 @@
 import process from "node:process";
-import type { Message, WhatsAppAdapter } from "./types.ts";
+import type { ConversationMessage, WhatsAppAdapter } from "./types.ts";
 import { CloudApiAdapter } from "./cloud-api.ts";
 import { DevAdapter } from "./dev-adapter.ts";
 import { MessageStore } from "./message-store.ts";
@@ -47,7 +47,10 @@ export const WhatsAppService = {
     MessageStore.log(phoneNumber, direction, type, content, status);
   },
 
-  getMessageHistory(phoneNumber: string, limit: number = 50): Message[] {
+  getMessageHistory(
+    phoneNumber: string,
+    limit: number = 50,
+  ): ConversationMessage[] {
     return MessageStore.getHistory(phoneNumber, limit);
   },
 

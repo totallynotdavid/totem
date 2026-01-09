@@ -1,37 +1,39 @@
-/**
- * Variation Selector - Prevents robotic repetition by rotating message variants
- *
- * Core principle: Never repeat the same message variant within a conversation session.
- * Uses session-based tracking to ensure natural variation.
- */
-
 export type VariantKey = string; // e.g., "GREETING", "COLLECT_DNI"
 
 export interface VariantContext {
-  usedVariantKeys?: Record<VariantKey, number>; // Key -> variant index used
+  usedVariantKeys?: Record<VariantKey, number>; // Key: variant index used
 }
 
 /**
- * Select a variant from an array, avoiding previously used ones in this session
+ * Bot response model:
+ * - Single response = string (single text message)
+ * - ResponseSequence = string[] (messages sent in sequence with 150ms delay)
+ * - ResponseVariants = string[][] (array of variant sequences)
+ */
+export type ResponseSequence = string[];
+export type ResponseVariants = ResponseSequence[];
+
+/**
+ * Select a variant from response variants, avoiding previously used ones
  *
- * @param variants - Array of message variations
+ * @param variants - Response variants (array of response sequences)
  * @param key - Unique key for this message type (e.g., "GREETING")
  * @param context - Conversation context containing used variant tracking
- * @returns Selected variant string and updated context
+ * @returns Selected response sequence and updated context
  */
 export function selectVariant(
-  variants: string[],
+  variants: ResponseVariants,
   key: VariantKey,
   context: VariantContext,
-): { message: string; updatedContext: Partial<VariantContext> } {
+): { message: ResponseSequence; updatedContext: Partial<VariantContext> } {
   if (!variants || variants.length === 0) {
     throw new Error(`No variants provided for key: ${key}`);
   }
 
-  // Single variant - no selection needed
+  // Single variant
   if (variants.length === 1) {
     return {
-      message: variants[0] ?? "",
+      message: variants[0] ?? [],
       updatedContext: {},
     };
   }
@@ -55,7 +57,7 @@ export function selectVariant(
     indices[Math.floor(Math.random() * indices.length)] ?? 0;
 
   return {
-    message: variants[selectedIndex] ?? "",
+    message: variants[selectedIndex] ?? [],
     updatedContext: {
       usedVariantKeys: {
         ...usedVariantKeys,
@@ -65,15 +67,6 @@ export function selectVariant(
   };
 }
 
-/**
- * Select variant with contextual awareness (frustration, patience needed, etc.)
- *
- * @param variants - Object with categorized variant arrays
- * @param key - Base key for tracking
- * @param context - Conversation context
- * @param signals - Contextual signals for smart selection
- * @returns Selected variant and updated context
- */
 export interface ContextSignals {
   frustrated?: boolean; // User showing frustration
   needsPatience?: boolean; // User needs more time
@@ -82,11 +75,11 @@ export interface ContextSignals {
 }
 
 export interface CategorizedVariants {
-  standard: string[];
-  empathetic?: string[];
-  patient?: string[];
-  casual?: string[];
-  formal?: string[];
+  standard: ResponseVariants;
+  empathetic?: ResponseVariants;
+  patient?: ResponseVariants;
+  casual?: ResponseVariants;
+  formal?: ResponseVariants;
 }
 
 export function selectVariantWithContext(
@@ -94,7 +87,7 @@ export function selectVariantWithContext(
   key: VariantKey,
   context: VariantContext,
   signals: ContextSignals = {},
-): { message: string; updatedContext: Partial<VariantContext> } {
+): { message: ResponseSequence; updatedContext: Partial<VariantContext> } {
   // Select appropriate category based on signals
   let selectedCategory = variants.standard;
 

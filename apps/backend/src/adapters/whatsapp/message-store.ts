@@ -1,5 +1,9 @@
 import { db } from "../../db/index.ts";
-import type { Message, MessageDirection, MessageType } from "./types.ts";
+import type {
+  ConversationMessage,
+  MessageDirection,
+  MessageType,
+} from "./types.ts";
 
 export const MessageStore = {
   log(
@@ -16,7 +20,7 @@ export const MessageStore = {
     ).run(id, phoneNumber, direction, type, content, status);
   },
 
-  getHistory(phoneNumber: string, limit: number = 50): Message[] {
+  getHistory(phoneNumber: string, limit: number = 50): ConversationMessage[] {
     return db
       .prepare(
         `SELECT * FROM messages 
@@ -24,7 +28,7 @@ export const MessageStore = {
          ORDER BY created_at DESC, ROWID DESC 
          LIMIT ?`,
       )
-      .all(phoneNumber, limit) as Message[];
+      .all(phoneNumber, limit) as ConversationMessage[];
   },
 
   clear(phoneNumber: string): void {

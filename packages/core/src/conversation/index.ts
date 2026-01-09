@@ -1,9 +1,3 @@
-/**
- * Conversation Module - Pure State Machine
- *
- * Exports the transition function and related types.
- */
-
 export { transition } from "./transition.ts";
 export type {
   ConversationPhase,
@@ -12,7 +6,5 @@ export type {
   EnrichmentResult,
   TransitionResult,
   TransitionInput,
-  TrackEvent,
-  ImageCommand,
-  NotifyCommand,
+  Command,
 } from "./types.ts";

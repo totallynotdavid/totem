@@ -27,53 +27,63 @@ export function transitionCollectingAge(
   const age = extractAge(message);
 
   if (age === null) {
-    const { message: response } = selectVariant(
+    const { message: messages } = selectVariant(
       T.INVALID_AGE,
       "INVALID_AGE",
       {},
     );
 
     return {
-      type: "stay",
-      response,
+      type: "update",
+      nextPhase: phase,
+      commands: messages.map((text) => ({
+        type: "SEND_MESSAGE" as const,
+        text,
+      })),
     };
   }
 
   if (age < MIN_AGE) {
     const variants = T.AGE_TOO_LOW(MIN_AGE);
-    const { message: response } = selectVariant(variants, "AGE_TOO_LOW", {});
+    const { message: messages } = selectVariant(variants, "AGE_TOO_LOW", {});
 
     return {
-      type: "advance",
+      type: "update",
       nextPhase: { phase: "closing", purchaseConfirmed: false },
-      response,
-      track: {
-        eventType: "eligibility_failed",
-        metadata: { reason: "age_too_low", age },
-      },
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "eligibility_failed",
+          metadata: { reason: "age_too_low", age },
+        },
+        ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      ],
     };
   }
 
-  // Age valid - proceed to offer
+  // Age valid, proceed to offer
   const credit = metadata.credit || 0;
-  const { message: response } = selectVariant(
+  const { message: messages } = selectVariant(
     S.GASO_OFFER_KITCHEN_BUNDLE,
     "GASO_OFFER",
     {},
   );
 
   return {
-    type: "advance",
+    type: "update",
     nextPhase: {
       phase: "offering_products",
       segment: "gaso",
       credit,
       name: phase.name,
     },
-    response,
-    track: {
-      eventType: "eligibility_passed",
-      metadata: { segment: "gaso", credit, age },
-    },
+    commands: [
+      {
+        type: "TRACK_EVENT",
+        event: "eligibility_passed",
+        metadata: { segment: "gaso", credit, age },
+      },
+      ...messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+    ],
   };
 }

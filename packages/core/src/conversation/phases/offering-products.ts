@@ -1,7 +1,5 @@
 /**
- * Offering products phase transition
- *
- * This is the main sales phase. Handles:
+ * The main sales phase handles:
  * - Category extraction (via regex or LLM)
  * - Question detection and answering
  * - Product selection
@@ -48,58 +46,72 @@ export function transitionOfferingProducts(
   const matchedCategory = matchCategory(message);
   if (matchedCategory) {
     return {
-      type: "advance",
+      type: "update",
       nextPhase: phase, // Stay in offering_products
-      images: { category: matchedCategory },
-      track: {
-        eventType: "category_selected",
-        metadata: { category: matchedCategory, method: "regex" },
-      },
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "category_selected",
+          metadata: { category: matchedCategory, method: "regex" },
+        },
+        { type: "SEND_IMAGES", category: matchedCategory },
+      ],
     };
   }
 
   // Check for purchase confirmation signals
   if (isPurchaseConfirmation(lower)) {
     const variants = S.CONFIRM_PURCHASE(phase.name || "");
+    const { message } = selectVariant(variants, "CONFIRM_PURCHASE", {});
+
     return {
-      type: "advance",
+      type: "update",
       nextPhase: { phase: "closing", purchaseConfirmed: true },
-      response: selectVariant(variants, "CONFIRM_PURCHASE", {}).message,
-      notify: {
-        channel: "agent",
-        message: `Cliente confirmó interés de compra`,
-      },
-      track: {
-        eventType: "purchase_confirmed",
-        metadata: { segment: phase.segment },
-      },
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "purchase_confirmed",
+          metadata: { segment: phase.segment },
+        },
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        {
+          type: "NOTIFY_TEAM",
+          channel: "agent",
+          message: `Cliente confirmó interés de compra`,
+        },
+      ],
     };
   }
 
   // Check for rejection
   if (isRejection(lower)) {
     return {
-      type: "advance",
+      type: "update",
       nextPhase: { phase: "closing", purchaseConfirmed: false },
-      response:
-        "Entendido. ¡Gracias por tu tiempo! Si cambias de opinión, aquí estaré.",
-      track: {
-        eventType: "offer_rejected",
-        metadata: {},
-      },
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "offer_rejected",
+          metadata: {},
+        },
+        {
+          type: "SEND_MESSAGE",
+          text: "Entendido. ¡Gracias por tu tiempo! Si cambias de opinión, aquí estaré.",
+        },
+      ],
     };
   }
 
-  // Check for price concern - transition to objection handling
+  // Check for price concern, transition to objection handling
   if (isPriceConcern(lower)) {
-    const { message: response } = selectVariant(
+    const { message } = selectVariant(
       S.PRICE_CONCERN.standard,
       "PRICE_CONCERN",
       {},
     );
 
     return {
-      type: "advance",
+      type: "update",
       nextPhase: {
         phase: "handling_objection",
         segment: phase.segment,
@@ -107,11 +119,14 @@ export function transitionOfferingProducts(
         name: phase.name,
         objectionCount: 1,
       },
-      response,
+      commands: message.map((text) => ({
+        type: "SEND_MESSAGE" as const,
+        text,
+      })),
     };
   }
 
-  // Need LLM to understand - first detect if it's a question
+  // Need LLM to understand, first detect if it's a question
   return {
     type: "need_enrichment",
     enrichment: { type: "detect_question", message },
@@ -123,7 +138,7 @@ function handleEnrichmentResult(
   message: string,
   enrichment: EnrichmentResult,
 ): TransitionResult {
-  // Categories fetched - update phase and continue
+  // Categories fetched, update phase and continue
   if (enrichment.type === "categories_fetched") {
     const updatedPhase: OfferingProductsPhase = {
       ...phase,
@@ -133,21 +148,27 @@ function handleEnrichmentResult(
     // If no categories available, gracefully handle
     if (enrichment.categories.length === 0) {
       return {
-        type: "escalate",
-        reason: "no_products_available",
-        notify: {
-          channel: "agent",
-          message: "No hay productos disponibles en catálogo activo",
+        type: "update",
+        nextPhase: {
+          phase: "escalated",
+          reason: "no_products_available",
         },
+        commands: [
+          {
+            type: "NOTIFY_TEAM",
+            channel: "agent",
+            message: "No hay productos disponibles en catálogo activo",
+          },
+          { type: "ESCALATE", reason: "no_products_available" },
+        ],
       };
     }
 
-    // Categories loaded - return to normal processing
+    // Categories loaded, return to normal processing
     // Re-process the message with categories now available
     return transitionOfferingProducts(updatedPhase, message, {}, undefined);
   }
 
-  // Question detected - need to decide how to handle
   if (enrichment.type === "question_detected") {
     if (enrichment.isQuestion) {
       // Check if should escalate
@@ -157,7 +178,7 @@ function handleEnrichmentResult(
       };
     }
 
-    // Not a question - try to extract category with LLM
+    // Not a question, try to extract category with LLM
     return {
       type: "need_enrichment",
       enrichment: {
@@ -172,12 +193,19 @@ function handleEnrichmentResult(
   if (enrichment.type === "escalation_needed") {
     if (enrichment.shouldEscalate) {
       return {
-        type: "escalate",
-        reason: "customer_question_requires_human",
-        notify: {
-          channel: "agent",
-          message: `Cliente tiene pregunta que requiere atención humana`,
+        type: "update",
+        nextPhase: {
+          phase: "escalated",
+          reason: "customer_question_requires_human",
         },
+        commands: [
+          {
+            type: "NOTIFY_TEAM",
+            channel: "agent",
+            message: `Cliente tiene pregunta que requiere atención humana`,
+          },
+          { type: "ESCALATE", reason: "customer_question_requires_human" },
+        ],
       };
     }
 
@@ -200,48 +228,42 @@ function handleEnrichmentResult(
   // Question answered
   if (enrichment.type === "question_answered") {
     return {
-      type: "stay",
-      response: enrichment.answer,
+      type: "update",
+      nextPhase: phase,
+      commands: [{ type: "SEND_MESSAGE", text: enrichment.answer }],
     };
   }
 
   // Category extracted
-  if (enrichment.type === "category_extracted") {
-    if (enrichment.category) {
-      return {
-        type: "advance",
-        nextPhase: phase, // Stay in offering_products
-        images: { category: enrichment.category },
-        track: {
-          eventType: "category_selected",
+  if (enrichment.type === "category_extracted" && enrichment.category) {
+    return {
+      type: "update",
+      nextPhase: phase, // Stay in offering_products
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "category_selected",
           metadata: { category: enrichment.category, method: "llm" },
         },
-      };
-    }
-
-    // Couldn't extract category - ask for clarification
-    const { message: response } = selectVariant(
-      S.ASK_PRODUCT_INTEREST,
-      "ASK_PRODUCT_INTEREST",
-      {},
-    );
-
-    return {
-      type: "stay",
-      response,
+        { type: "SEND_IMAGES", category: enrichment.category },
+      ],
     };
   }
 
-  // Unknown enrichment - ask what they want
-  const { message: response } = selectVariant(
+  // Fallback: couldn't extract category or unknown enrichment, ask for clarification
+  const { message: messages } = selectVariant(
     S.ASK_PRODUCT_INTEREST,
     "ASK_PRODUCT_INTEREST",
     {},
   );
 
   return {
-    type: "stay",
-    response,
+    type: "update",
+    nextPhase: phase,
+    commands: messages.map((text) => ({
+      type: "SEND_MESSAGE" as const,
+      text,
+    })),
   };
 }
 

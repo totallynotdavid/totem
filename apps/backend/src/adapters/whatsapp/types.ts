@@ -1,4 +1,4 @@
-import type { Message } from "@totem/types";
+import type { ConversationMessage } from "@totem/types";
 
 export type WhatsAppAdapter = {
   sendMessage(to: string, content: string): Promise<boolean>;
@@ -9,4 +9,4 @@ export type WhatsAppAdapter = {
 export type MessageDirection = "inbound" | "outbound";
 export type MessageType = "text" | "image";
 
-export type { Message };
+export type { ConversationMessage };

@@ -30,7 +30,11 @@ export function transitionCollectingDni(
 
   if (willSendLater) {
     // Stay silent, wait for DNI
-    return { type: "stay" };
+    return {
+      type: "update",
+      nextPhase: { phase: "collecting_dni" },
+      commands: [],
+    };
   }
 
   // User can't provide DNI right now
@@ -40,7 +44,7 @@ export function transitionCollectingDni(
     );
 
   if (cantProvideNow) {
-    const { message: response } = selectVariantWithContext(
+    const { message: messages } = selectVariantWithContext(
       T.DNI_WAITING,
       "DNI_WAITING",
       {},
@@ -48,8 +52,12 @@ export function transitionCollectingDni(
     );
 
     return {
-      type: "stay",
-      response,
+      type: "update",
+      nextPhase: { phase: "collecting_dni" },
+      commands: messages.map((text) => ({
+        type: "SEND_MESSAGE" as const,
+        text,
+      })),
     };
   }
 
@@ -58,25 +66,38 @@ export function transitionCollectingDni(
     message.trim(),
   );
   if (isAck) {
-    return { type: "stay" };
+    return {
+      type: "update",
+      nextPhase: { phase: "collecting_dni" },
+      commands: [],
+    };
   }
 
   // For progress update, stay silent
   const isProgressUpdate = /(ya\s+casi|casi|esperame|un\s+segundo)/.test(lower);
   if (isProgressUpdate) {
-    return { type: "stay" };
+    return {
+      type: "update",
+      nextPhase: { phase: "collecting_dni" },
+      commands: [],
+    };
   }
 
   // For very short responses, stay silent
   if (message.trim().length <= 3) {
-    return { type: "stay" };
+    return {
+      type: "update",
+      nextPhase: { phase: "collecting_dni" },
+      commands: [],
+    };
   }
 
   // Invalid DNI format
-  const { message: response } = selectVariant(T.INVALID_DNI, "INVALID_DNI", {});
+  const { message: messages } = selectVariant(T.INVALID_DNI, "INVALID_DNI", {});
 
   return {
-    type: "stay",
-    response,
+    type: "update",
+    nextPhase: { phase: "collecting_dni" },
+    commands: messages.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
   };
 }

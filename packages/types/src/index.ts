@@ -78,7 +78,7 @@ export type CatalogPeriod = {
   created_at: string;
 };
 
-export type Message = {
+export type ConversationMessage = {
   id: string;
   phone_number: string;
   direction: "inbound" | "outbound";
@@ -170,7 +170,7 @@ export type ReplayMetadata = {
 
 export type ReplayData = {
   conversation: Conversation;
-  messages: Message[];
+  messages: ConversationMessage[];
   initialContext: Record<string, any>;
   metadata: ReplayMetadata;
 };

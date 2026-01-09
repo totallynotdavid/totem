@@ -32,22 +32,32 @@ export function transitionCheckingEligibility(
     if (enrichment.status === "needs_human") {
       const { message } = selectVariant(
         [
-          "Perfecto, déjame verificar tu información. Te respondo en un momento.",
-          "Genial, dame un momentito mientras reviso tu línea de crédito.",
-          "Déjame consultar tu información. Ya te confirmo.",
+          ["Perfecto, déjame verificar tu información. Dame un momento."],
+          ["Genial, dame un momentito mientras reviso tu línea de crédito."],
+          ["Déjame consultar tu información. Un momento, por favor."],
         ],
         "CHECKING_HOLD",
         {},
       );
 
       return {
-        type: "escalate",
-        reason: enrichment.handoffReason || "eligibility_check_failed",
-        notify: {
-          channel: "agent",
-          message: `🔴 Cliente esperando. Verificación de elegibilidad: DNI ${phase.dni}. ${enrichment.handoffReason === "both_providers_down" ? "Ambos proveedores caídos." : "Error en verificación."}`,
+        type: "update",
+        nextPhase: {
+          phase: "escalated",
+          reason: enrichment.handoffReason || "eligibility_check_failed",
         },
-        response: message,
+        commands: [
+          ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+          {
+            type: "NOTIFY_TEAM",
+            channel: "agent",
+            message: `🔴 Cliente esperando. Verificación de elegibilidad: DNI ${phase.dni}. ${enrichment.handoffReason === "both_providers_down" ? "Ambos proveedores caídos." : "Error en verificación."}`,
+          },
+          {
+            type: "ESCALATE",
+            reason: enrichment.handoffReason || "eligibility_check_failed",
+          },
+        ],
       };
     }
 
@@ -61,84 +71,91 @@ export function transitionCheckingEligibility(
       if (segment === "fnb") {
         if (!checkFNBEligibility(credit)) {
           // Credit too low for FNB
-          const { message: response } = selectVariant(
-            T.NOT_ELIGIBLE,
-            "NOT_ELIGIBLE",
-            {},
-          );
+          const { message } = selectVariant(T.NOT_ELIGIBLE, "NOT_ELIGIBLE", {});
 
           return {
-            type: "advance",
+            type: "update",
             nextPhase: { phase: "closing", purchaseConfirmed: false },
-            response,
-            track: {
-              eventType: "eligibility_failed",
-              metadata: { segment: "fnb", credit, reason: "credit_too_low" },
-            },
+            commands: [
+              {
+                type: "TRACK_EVENT",
+                event: "eligibility_failed",
+                metadata: { segment: "fnb", credit, reason: "credit_too_low" },
+              },
+              ...message.map((text) => ({
+                type: "SEND_MESSAGE" as const,
+                text,
+              })),
+            ],
           };
         }
 
         // FNB approved
         const variants = S.FNB_APPROVED(name, credit);
-        const { message: response } = selectVariant(
-          variants,
-          "FNB_APPROVED",
-          {},
-        );
+        const { message } = selectVariant(variants, "FNB_APPROVED", {});
 
         return {
-          type: "advance",
+          type: "update",
           nextPhase: {
             phase: "offering_products",
             segment: "fnb",
             credit,
             name,
           },
-          response,
-          track: {
-            eventType: "eligibility_passed",
-            metadata: { segment: "fnb", credit },
-          },
+          commands: [
+            {
+              type: "TRACK_EVENT",
+              event: "eligibility_passed",
+              metadata: { segment: "fnb", credit },
+            },
+            ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+          ],
         };
       }
 
       // For GASO, always requires age verification
       if (segment === "gaso") {
         const variants = T.ASK_AGE(name);
-        const { message: response } = selectVariant(variants, "ASK_AGE", {});
+        const { message } = selectVariant(variants, "ASK_AGE", {});
 
         return {
-          type: "advance",
+          type: "update",
           nextPhase: {
             phase: "collecting_age",
             dni: phase.dni,
             name,
           },
-          response,
+          commands: message.map((text) => ({
+            type: "SEND_MESSAGE" as const,
+            text,
+          })),
         };
       }
     }
 
     // Case 3: Customer not eligible
     if (enrichment.status === "not_eligible") {
-      const { message: response } = selectVariant(
-        T.NOT_ELIGIBLE,
-        "NOT_ELIGIBLE",
-        {},
-      );
+      const { message } = selectVariant(T.NOT_ELIGIBLE, "NOT_ELIGIBLE", {});
 
       return {
-        type: "advance",
+        type: "update",
         nextPhase: { phase: "closing", purchaseConfirmed: false },
-        response,
-        track: {
-          eventType: "eligibility_failed",
-          metadata: { segment: "none", reason: "not_eligible" },
-        },
+        commands: [
+          {
+            type: "TRACK_EVENT",
+            event: "eligibility_failed",
+            metadata: { segment: "none", reason: "not_eligible" },
+          },
+          ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        ],
       };
     }
   }
 
   // For unknown cases, stay in phase
-  return { type: "stay" };
+  return {
+    type: "update",
+    nextPhase: phase,
+    commands: [],
+  };
 }

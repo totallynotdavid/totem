@@ -1,17 +1,9 @@
 <script lang="ts">
 import MessageBubble from "./message-bubble.svelte";
-
-type Message = {
-  id: string;
-  direction: "inbound" | "outbound";
-  type: "text" | "image";
-  content: string;
-  status?: string;
-  created_at: string;
-};
+import type { ConversationMessage } from "@totem/types";
 
 type Props = {
-  messages: Message[];
+  messages: ConversationMessage[];
 };
 
 let { messages }: Props = $props();

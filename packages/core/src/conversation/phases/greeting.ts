@@ -1,7 +1,3 @@
-/**
- * Greeting phase transition
- */
-
 import type { ConversationMetadata, TransitionResult } from "../types.ts";
 import { selectVariant } from "../../messaging/variation-selector.ts";
 import * as T from "../../templates/standard.ts";
@@ -15,19 +11,31 @@ export function transitionGreeting(
     const { message } = selectVariant(variants, "GREETING_RETURNING", {});
 
     return {
-      type: "advance",
+      type: "update",
       nextPhase: { phase: "confirming_client" },
-      response: message,
-      track: { eventType: "session_start", metadata: { returning: true } },
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "session_start",
+          metadata: { returning: true },
+        },
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      ],
     };
   }
 
   const { message } = selectVariant(T.GREETING, "GREETING", {});
 
   return {
-    type: "advance",
+    type: "update",
     nextPhase: { phase: "confirming_client" },
-    response: message,
-    track: { eventType: "session_start", metadata: { returning: false } },
+    commands: [
+      {
+        type: "TRACK_EVENT",
+        event: "session_start",
+        metadata: { returning: false },
+      },
+      ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+    ],
   };
 }
