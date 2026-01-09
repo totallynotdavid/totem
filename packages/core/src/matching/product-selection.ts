@@ -1,6 +1,3 @@
-/**
- * Product that was sent to the customer
- */
 export type SentProduct = {
   name: string;
   position: number;
@@ -45,9 +42,16 @@ export function matchAllProducts(
   );
 
   // Priority 1: Exact product name match (may match multiple)
-  const cleanMessage = lower
-    .replace(/^(el|la|los|las|un|una|unos|unas)\s+/, "")
-    .replace(/\s+(por favor|gracias|pls?)$/i, "");
+  // Extract potential product references by removing common phrases
+  let cleanMessage = lower
+    .replace(
+      /(me interesa|quiero|quisiera|me gustaría|dame|deme|me llevo)/gi,
+      "",
+    )
+    .replace(/\b(el|la|los|las|un|una|unos|unas)\b/g, "")
+    .replace(/\s+(por favor|gracias|pls?)\s*$/i, "")
+    .trim()
+    .replace(/\s+/g, " "); // normalize spaces
 
   const exactMatches: SentProduct[] = [];
   for (const product of sentProducts) {
@@ -97,30 +101,30 @@ export function matchAllProducts(
     );
   }
 
-  // Priority 3: Fuzzy brand/model match (may return multiple)
-  const brandKeywords = extractBrandKeywords(lower);
-  if (brandKeywords.length > 0) {
+  // Priority 3: Extract significant tokens from message and match against product tokens
+  const messageTokens = extractSignificantTokens(lower);
+  if (messageTokens.length > 0) {
     console.log(
-      `[ProductMatch] Priority 3 (brand): Extracted keywords:`,
-      brandKeywords,
+      `[ProductMatch] Priority 3 (tokens): Extracted from message:`,
+      messageTokens,
     );
     const matches: SentProduct[] = [];
     for (const product of sentProducts) {
-      const productWords = product.name.toLowerCase().split(/\s+/);
-      // Check if any brand keyword matches product name
-      if (
-        brandKeywords.some((keyword) =>
-          productWords.some(
-            (word: string) => word.includes(keyword) || keyword.includes(word),
-          ),
-        )
-      ) {
+      const productTokens = extractSignificantTokens(product.name);
+      // Match if any message token appears in product tokens
+      const hasMatch = messageTokens.some((msgToken) =>
+        productTokens.some(
+          (prodToken) =>
+            prodToken.includes(msgToken) || msgToken.includes(prodToken),
+        ),
+      );
+      if (hasMatch) {
         matches.push(product);
       }
     }
     if (matches.length > 0) {
       console.log(
-        `[ProductMatch] Priority 3 (brand): Found ${matches.length} matches:`,
+        `[ProductMatch] Priority 3 (tokens): Found ${matches.length} matches:`,
         matches.map((p) => p.name),
       );
       return matches;
@@ -132,95 +136,59 @@ export function matchAllProducts(
   return [];
 }
 
-function extractBrandKeywords(message: string): string[] {
-  const words = message.toLowerCase().split(/\s+/);
-  const brandKeywords: string[] = [];
+/**
+ * Extract significant tokens from text (brands, models, alphanumeric sequences)
+ * Filters out common Spanish stopwords
+ * Works dynamically with any product name - no hardcoded model lists
+ */
+function extractSignificantTokens(text: string): string[] {
+  const words = text.toLowerCase().split(/\s+/);
+  const stopwords = new Set([
+    "el",
+    "la",
+    "los",
+    "las",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "de",
+    "del",
+    "en",
+    "por",
+    "para",
+    "con",
+    "sin",
+    "que",
+    "como",
+    "si",
+    "no",
+    "me",
+    "te",
+    "se",
+    "le",
+    "lo",
+    "su",
+    "es",
+    "son",
+    "este",
+    "esta",
+    "ese",
+    "esa",
+    "y",
+    "o",
+    "pero",
+    "mas",
+  ]);
 
-  // Common brand patterns
-  const brandPatterns = [
-    // Phone brands
-    "samsung",
-    "galaxy",
-    "iphone",
-    "apple",
-    "huawei",
-    "xiaomi",
-    "redmi",
-    "motorola",
-    "lg",
-    // Appliance brands
-    "mabe",
-    "lg",
-    "samsung",
-    "whirlpool",
-    "electrolux",
-    "indurama",
-    "rca",
-    "panasonic",
-    // TV brands
-    "samsung",
-    "lg",
-    "panasonic",
-    "tcl",
-    "hisense",
-    "philips",
-    // Generic terms that might indicate specific products
-    "a26",
-    "a25",
-    "a15",
-    "note",
-    "pro",
-    "max",
-    "plus",
-    "ultra",
-  ];
-
-  for (const word of words) {
-    // Skip common words
-    if (
-      [
-        "el",
-        "la",
-        "los",
-        "las",
-        "un",
-        "una",
-        "me",
-        "te",
-        "le",
-        "se",
-        "lo",
-        "que",
-        "de",
-        "en",
-        "con",
-        "por",
-        "para",
-        "como",
-        "si",
-        "no",
-        "es",
-        "son",
-        "este",
-        "esta",
-        "esto",
-        "ese",
-        "esa",
-        "eso",
-      ].includes(word)
-    ) {
-      continue;
-    }
-
-    // Check if word matches or contains brand patterns
-    if (
-      brandPatterns.some(
-        (brand) => word.includes(brand) || brand.includes(word),
-      )
-    ) {
-      brandKeywords.push(word);
-    }
-  }
-
-  return brandKeywords;
+  return words.filter((word) => {
+    // Keep words that are:
+    // - Length >= 2 characters
+    // - Not common stopwords
+    // - Alphanumeric (brands, models, identifiers)
+    if (word.length < 2) return false;
+    if (stopwords.has(word)) return false;
+    // Keep if contains letters or numbers
+    return /[a-z0-9]/.test(word);
+  });
 }
