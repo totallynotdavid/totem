@@ -29,6 +29,17 @@ export type ConversationPhase =
       }>;
     }
   | {
+      phase: "confirming_selection";
+      segment: Segment;
+      credit: number;
+      name: string;
+      selectedProduct: {
+        name: string;
+        price: number;
+        productId: string;
+      };
+    }
+  | {
       phase: "handling_objection";
       segment: Segment;
       credit: number;

@@ -34,24 +34,28 @@ export function transitionOfferingProducts(
     const allMatches = matchAllProducts(message, phase.sentProducts);
 
     if (allMatches.length === 1) {
-      // Unique match, confirm specific product
+      // Unique match, transition to confirmation gate
       const selected = allMatches[0];
       if (selected) {
         console.log(`[OfferingProducts] Unique match found:`, selected.name);
         const priceText = selected.price
           ? ` (S/ ${selected.price.toFixed(2)})`
           : "";
-        const confirmationText = `Perfecto ${phase.name} 😊\n\nHas elegido: ${selected.name}${priceText}`;
-        const variants = S.CONFIRM_PURCHASE(phase.name || "");
-        const { message: confirmMsgs } = selectVariant(
-          variants,
-          "CONFIRM_PURCHASE",
-          {},
-        );
+        const confirmationText = `Perfecto ${phase.name} 😊\n\nHas elegido: ${selected.name}${priceText}\n\n¿Confirmas tu elección?`;
 
         return {
           type: "update",
-          nextPhase: { phase: "closing", purchaseConfirmed: true },
+          nextPhase: {
+            phase: "confirming_selection",
+            segment: phase.segment,
+            credit: phase.credit,
+            name: phase.name,
+            selectedProduct: {
+              name: selected.name,
+              price: selected.price || 0,
+              productId: selected.productId || "",
+            },
+          },
           commands: [
             {
               type: "SEND_MESSAGE",
@@ -67,14 +71,10 @@ export function transitionOfferingProducts(
                 price: selected.price,
               },
             },
-            ...confirmMsgs.slice(1).map((text) => ({
-              type: "SEND_MESSAGE" as const,
-              text,
-            })),
             {
               type: "NOTIFY_TEAM",
               channel: "agent",
-              message: `Cliente seleccionó: ${selected.name}${priceText}`,
+              message: `Cliente seleccionó: ${selected.name}${priceText} - esperando confirmación`,
             },
           ],
         };
@@ -112,30 +112,21 @@ export function transitionOfferingProducts(
     );
   }
 
-  // Check for explicit product selection with interest phrases
+  // If user expresses interest without context (no sentProducts), ask what they want to see
   if (isProductSelection(lower)) {
-    // Generic confirmation (no products tracked or no match)
-    const variants = S.CONFIRM_PURCHASE(phase.name || "");
-    const { message: confirmMsgs } = selectVariant(
-      variants,
-      "CONFIRM_PURCHASE",
-      {},
-    );
+    const categoryDisplayNames = phase.categoryDisplayNames || [];
+    const productList =
+      categoryDisplayNames.length > 0
+        ? categoryDisplayNames.join(", ")
+        : "nuestros productos disponibles";
 
     return {
       type: "update",
-      nextPhase: { phase: "closing", purchaseConfirmed: true },
+      nextPhase: phase,
       commands: [
         {
-          type: "TRACK_EVENT",
-          event: "product_selected_generic",
-          metadata: { segment: phase.segment },
-        },
-        ...confirmMsgs.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
-        {
-          type: "NOTIFY_TEAM",
-          channel: "agent",
-          message: `Cliente seleccionó un producto`,
+          type: "SEND_MESSAGE",
+          text: `¿Qué producto te interesa? Tenemos: ${productList}`,
         },
       ],
     };
@@ -144,25 +135,15 @@ export function transitionOfferingProducts(
   // Check for category matching
   const matchedCategory = matchCategory(message);
   if (matchedCategory) {
-    // If we already showed this exact category, treat as product interest confirmation
+    // If same category, ask which specific product
     if (phase.lastShownCategory === matchedCategory) {
-      const variants = S.CONFIRM_PURCHASE(phase.name || "");
-      const { message } = selectVariant(variants, "CONFIRM_PURCHASE", {});
-
       return {
         type: "update",
-        nextPhase: { phase: "closing", purchaseConfirmed: true },
+        nextPhase: phase,
         commands: [
           {
-            type: "TRACK_EVENT",
-            event: "product_confirmed_via_category_repeat",
-            metadata: { category: matchedCategory },
-          },
-          ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
-          {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Cliente confirmó interés en ${matchedCategory}`,
+            type: "SEND_MESSAGE",
+            text: "¿Cuál de los productos te interesa? Puedes decir 'el primero', 'el segundo', etc.",
           },
         ],
       };
@@ -211,26 +192,21 @@ export function transitionOfferingProducts(
     };
   }
 
-  // Check for purchase confirmation signals (only generic ones like "sí, quiero", "confirmo")
-  // Specific product mentions are handled by isProductSelection above
+  // Generic confirmations without product context - ask what they want
   if (isPurchaseConfirmation(lower)) {
-    const variants = S.CONFIRM_PURCHASE(phase.name || "");
-    const { message } = selectVariant(variants, "CONFIRM_PURCHASE", {});
+    const categoryDisplayNames = phase.categoryDisplayNames || [];
+    const productList =
+      categoryDisplayNames.length > 0
+        ? categoryDisplayNames.join(", ")
+        : "nuestros productos disponibles";
 
     return {
       type: "update",
-      nextPhase: { phase: "closing", purchaseConfirmed: true },
+      nextPhase: phase,
       commands: [
         {
-          type: "TRACK_EVENT",
-          event: "purchase_confirmed",
-          metadata: { segment: phase.segment },
-        },
-        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
-        {
-          type: "NOTIFY_TEAM",
-          channel: "agent",
-          message: `Cliente confirmó interés de compra`,
+          type: "SEND_MESSAGE",
+          text: `¡Perfecto! ¿Qué te gustaría ver? Tenemos: ${productList}`,
         },
       ],
     };
@@ -358,25 +334,15 @@ function handleEnrichmentResult(
 
   // Category extracted
   if (enrichment.type === "category_extracted" && enrichment.category) {
-    // If LLM extracted same category we already showed, treat as product confirmation
+    // If LLM extracted same category we already showed, ask which product
     if (phase.lastShownCategory === enrichment.category) {
-      const variants = S.CONFIRM_PURCHASE(phase.name || "");
-      const { message } = selectVariant(variants, "CONFIRM_PURCHASE", {});
-
       return {
         type: "update",
-        nextPhase: { phase: "closing", purchaseConfirmed: true },
+        nextPhase: phase,
         commands: [
           {
-            type: "TRACK_EVENT",
-            event: "product_confirmed_via_llm_category",
-            metadata: { category: enrichment.category },
-          },
-          ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
-          {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Cliente confirmó interés en ${enrichment.category}`,
+            type: "SEND_MESSAGE",
+            text: "¿Cuál de los productos te interesa? Puedes decir 'el primero', 'el segundo', etc.",
           },
         ],
       };

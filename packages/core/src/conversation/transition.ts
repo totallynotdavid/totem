@@ -6,6 +6,7 @@ import { transitionCheckingEligibility } from "./phases/checking-eligibility.ts"
 import { transitionCollectingAge } from "./phases/collecting-age.ts";
 import { transitionOfferingProducts } from "./phases/offering-products.ts";
 import { transitionHandlingObjection } from "./phases/handling-objection.ts";
+import { transitionConfirmingSelection } from "./phases/confirming-selection.ts";
 import { transitionClosing } from "./phases/closing.ts";
 
 export function transition(input: TransitionInput): TransitionResult {
@@ -32,6 +33,14 @@ export function transition(input: TransitionInput): TransitionResult {
 
     case "handling_objection":
       return transitionHandlingObjection(phase, message, metadata, enrichment);
+
+    case "confirming_selection":
+      return transitionConfirmingSelection(
+        phase,
+        message,
+        metadata,
+        enrichment,
+      );
 
     case "closing":
       return transitionClosing(phase, message, metadata, enrichment);
