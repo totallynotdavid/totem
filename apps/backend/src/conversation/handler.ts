@@ -196,6 +196,10 @@ async function executeResult(
     case "need_enrichment":
       // Should not reach here, loop should handle it
       console.error("[Handler] Unexpected need_enrichment in executeResult");
+      await executeNotify({
+        channel: "dev",
+        message: `CRITICAL: need_enrichment leaked to executeResult for ${phoneNumber}`,
+      });
       break;
   }
 }
