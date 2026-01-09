@@ -62,9 +62,17 @@ export function transitionCollectingAge(
   }
 
   // Age valid, proceed to offer
-  const credit = metadata.credit || 0;
+  const credit = phase.credit || metadata.credit || 0;
+  const affordableCategories = phase.affordableCategories || [];
+  const categoryDisplayNames = phase.categoryDisplayNames || [];
+
+  const productList =
+    categoryDisplayNames.length > 0
+      ? categoryDisplayNames.join(", ")
+      : "nuestros combos disponibles";
+
   const { message: messages } = selectVariant(
-    S.GASO_OFFER_KITCHEN_BUNDLE,
+    S.GASO_OFFER_KITCHEN_BUNDLE(productList),
     "GASO_OFFER",
     {},
   );
@@ -76,6 +84,8 @@ export function transitionCollectingAge(
       segment: "gaso",
       credit,
       name: phase.name,
+      availableCategories: affordableCategories,
+      categoryDisplayNames,
     },
     commands: [
       {

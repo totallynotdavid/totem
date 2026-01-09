@@ -4,20 +4,22 @@ export type ConversationPhase =
   | { phase: "greeting" }
   | { phase: "confirming_client" }
   | { phase: "collecting_dni" }
+  | { phase: "checking_eligibility"; dni: string }
   | {
-      phase: "checking_eligibility";
+      phase: "collecting_age";
       dni: string;
-      name?: string;
+      name: string;
       credit?: number;
-      segment?: Segment;
+      affordableCategories?: string[];
+      categoryDisplayNames?: string[];
     }
-  | { phase: "collecting_age"; dni: string; name: string }
   | {
       phase: "offering_products";
       segment: Segment;
       credit: number;
       name: string;
       availableCategories?: string[];
+      categoryDisplayNames?: string[];
     }
   | {
       phase: "handling_objection";
@@ -48,7 +50,6 @@ export type ConversationMetadata = {
 
 export type EnrichmentRequest =
   | { type: "check_eligibility"; dni: string }
-  | { type: "fetch_categories"; segment: Segment; credit: number }
   | { type: "detect_question"; message: string }
   | { type: "should_escalate"; message: string }
   | {
@@ -82,8 +83,9 @@ export type EnrichmentResult =
       nse?: number;
       requiresAge?: boolean;
       handoffReason?: string;
+      affordableCategories?: string[];
+      categoryDisplayNames?: string[];
     }
-  | { type: "categories_fetched"; categories: string[] }
   | { type: "question_detected"; isQuestion: boolean }
   | { type: "escalation_needed"; shouldEscalate: boolean }
   | { type: "category_extracted"; category: string | null }

@@ -27,35 +27,6 @@ export function transitionCheckingEligibility(
     };
   }
 
-  // Handle categories fetched (for FNB approval flow)
-  if (enrichment.type === "categories_fetched") {
-    const name = formatFirstName(phase.name || "");
-    const credit = phase.credit || 0;
-    const categories = enrichment.categories;
-
-    const variants = S.FNB_APPROVED(name, credit, categories);
-    const { message } = selectVariant(variants, "FNB_APPROVED", {});
-
-    return {
-      type: "update",
-      nextPhase: {
-        phase: "offering_products",
-        segment: "fnb",
-        credit,
-        name,
-        availableCategories: categories,
-      },
-      commands: [
-        {
-          type: "TRACK_EVENT",
-          event: "eligibility_passed",
-          metadata: { segment: "fnb", credit },
-        },
-        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
-      ],
-    };
-  }
-
   if (enrichment.type === "eligibility_result") {
     // Case 1: needs human intervention (both providers down)
     if (enrichment.status === "needs_human") {
@@ -95,6 +66,8 @@ export function transitionCheckingEligibility(
       const segment = enrichment.segment;
       const credit = enrichment.credit || 0;
       const name = formatFirstName(enrichment.name || "");
+      const affordableCategories = enrichment.affordableCategories || [];
+      const categoryDisplayNames = enrichment.categoryDisplayNames || [];
 
       // For FNB, check business rules
       if (segment === "fnb") {
@@ -119,17 +92,33 @@ export function transitionCheckingEligibility(
           };
         }
 
-        // FNB approved - need to fetch affordable categories first
+        // FNB approved, show message with affordable products
+        const productList =
+          categoryDisplayNames.length > 0
+            ? categoryDisplayNames.join(", ")
+            : "nuestros productos disponibles";
+
+        const variants = S.FNB_APPROVED(name, credit, productList);
+        const { message } = selectVariant(variants, "FNB_APPROVED", {});
+
         return {
-          type: "need_enrichment",
-          enrichment: { type: "fetch_categories", segment: "fnb", credit },
-          pendingPhase: {
-            phase: "checking_eligibility",
-            dni: phase.dni,
-            name,
-            credit,
+          type: "update",
+          nextPhase: {
+            phase: "offering_products",
             segment: "fnb",
+            credit,
+            name,
+            availableCategories: affordableCategories,
+            categoryDisplayNames,
           },
+          commands: [
+            {
+              type: "TRACK_EVENT",
+              event: "eligibility_passed",
+              metadata: { segment: "fnb", credit },
+            },
+            ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+          ],
         };
       }
 
@@ -144,6 +133,9 @@ export function transitionCheckingEligibility(
             phase: "collecting_age",
             dni: phase.dni,
             name,
+            credit,
+            affordableCategories,
+            categoryDisplayNames,
           },
           commands: message.map((text) => ({
             type: "SEND_MESSAGE" as const,

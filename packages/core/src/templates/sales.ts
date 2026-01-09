@@ -1,38 +1,33 @@
-import { formatCategoryList } from "../helpers/category-display.ts";
-
 export const FNB_APPROVED = (
   name: string,
   credit: number,
-  categories: string[],
-) => {
-  const categoryList = formatCategoryList(categories);
-  return [
-    [
-      `¡Excelente noticia, ${name}! 🎉 Tienes una línea de crédito aprobada de S/ ${credit.toFixed(2)}.`,
-      `Tenemos ${categoryList}. ¿Qué te gustaría ver?`,
-    ],
-    [
-      `${name}, ¡buenas noticias! 😊 Tu crédito aprobado es de S/ ${credit.toFixed(2)}.`,
-      `¿Qué producto te gustaría conocer? Tenemos ${categoryList}.`,
-    ],
-    [
-      `Perfecto ${name} 🎉 Calificas con S/ ${credit.toFixed(2)} de línea.`,
-      `¿Qué tienes en mente? ¿${categoryList}?`,
-    ],
-  ];
-};
-
-export const GASO_OFFER_KITCHEN_BUNDLE = [
+  productList: string,
+) => [
   [
-    `¡Excelente noticia, calificas para nuestro programa! 🎉 Tenemos combos de cocina + electrodomésticos desde S/ 80 al mes (hasta 18 meses).`,
+    `¡Excelente noticia, ${name}! 🎉 Tienes una línea de crédito aprobada de S/ ${credit.toFixed(2)}.`,
+    `Tenemos ${productList}. ¿Qué te gustaría ver?`,
+  ],
+  [
+    `${name}, ¡buenas noticias! 😊 Tu crédito aprobado es de S/ ${credit.toFixed(2)}.`,
+    `¿Qué producto te gustaría conocer? Tenemos ${productList}.`,
+  ],
+  [
+    `Perfecto ${name} 🎉 Calificas con S/ ${credit.toFixed(2)} de línea.`,
+    `¿Qué tienes en mente? ¿${productList}?`,
+  ],
+];
+
+export const GASO_OFFER_KITCHEN_BUNDLE = (productList: string) => [
+  [
+    `¡Excelente noticia, calificas para nuestro programa! 🎉 Tenemos ${productList}.`,
     `¿Quieres ver las opciones?`,
   ],
   [
-    `Perfecto, estás aprobado 😊 Tenemos combos cocina + electrodomésticos con cuotas desde S/ 80 mensuales (18 meses máximo).`,
-    `¿Te muestro qué hay disponible?`,
+    `Perfecto, estás aprobado 😊 Tenemos ${productList} disponibles.`,
+    `¿Te muestro qué hay?`,
   ],
   [
-    `Genial, calificas para el programa 🙌. Hay combos disponibles: cocina + electrodomésticos desde S/ 80 al mes (hasta 18 meses).`,
+    `Genial, calificas para el programa 🙌. Hay ${productList} que puedes elegir.`,
     `¿Quieres conocerlos?`,
   ],
 ];
@@ -59,14 +54,11 @@ export const THERMA_ALTERNATIVE = [
   ["Otra opción: combos con terma. ¿Te llama más la atención?"],
 ];
 
-export const ASK_PRODUCT_INTEREST = (categories: string[]) => {
-  const categoryList = formatCategoryList(categories);
-  return [
-    [`¿Qué producto te gustaría conocer? 😊 Tenemos ${categoryList}.`],
-    [`¿Qué te llama la atención? ${categoryList}.`],
-    [`¿En qué estás pensando? Tenemos ${categoryList}.`],
-  ];
-};
+export const ASK_PRODUCT_INTEREST = (productList: string) => [
+  [`¿Qué producto te gustaría conocer? 😊 Tenemos ${productList}.`],
+  [`¿Qué te llama la atención? ${productList}.`],
+  [`¿En qué estás pensando? Tenemos ${productList}.`],
+];
 
 export const CONFIRM_PURCHASE = (name: string) => [
   [

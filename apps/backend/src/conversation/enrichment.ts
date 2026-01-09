@@ -1,12 +1,9 @@
-/**
- * Executes async operations requested by the state machine.
- */
-
 import type { EnrichmentRequest, EnrichmentResult } from "@totem/core";
 import { checkEligibilityWithFallback } from "../domains/eligibility/orchestrator.ts";
 
 import * as LLM from "../adapters/llm/index.ts";
 import { BundleService } from "../domains/catalog/index.ts";
+import { getCategoryDisplayNames } from "../adapters/catalog/display.ts";
 
 export async function executeEnrichment(
   request: EnrichmentRequest,
@@ -15,9 +12,6 @@ export async function executeEnrichment(
   switch (request.type) {
     case "check_eligibility":
       return await executeEligibilityCheck(request.dni, phoneNumber);
-
-    case "fetch_categories":
-      return await executeFetchCategories(request.segment, request.credit);
 
     case "detect_question":
       return await executeDetectQuestion(request.message, phoneNumber);
@@ -66,15 +60,28 @@ async function executeEligibilityCheck(
     if (result.eligible) {
       // Determine segment from result or default
       const segment = result.nse !== undefined ? "gaso" : "fnb";
+      const credit = result.credit || 0;
+
+      // Fetch affordable categories in same operation
+      const affordableCategories = BundleService.getAffordableCategories(
+        segment as "fnb" | "gaso",
+        credit,
+      );
+
+      // Format display names for ready-to-use strings
+      const categoryDisplayNames =
+        getCategoryDisplayNames(affordableCategories);
 
       return {
         type: "eligibility_result",
         status: "eligible",
         segment: segment as "fnb" | "gaso",
-        credit: result.credit,
+        credit,
         name: result.name,
         nse: result.nse,
         requiresAge: segment === "gaso",
+        affordableCategories,
+        categoryDisplayNames,
       };
     }
 
@@ -89,32 +96,6 @@ async function executeEligibilityCheck(
       type: "eligibility_result",
       status: "needs_human",
       handoffReason: "eligibility_check_error",
-    };
-  }
-}
-
-async function executeFetchCategories(
-  segment: string,
-  creditLine: number,
-): Promise<EnrichmentResult> {
-  try {
-    const categories = BundleService.getAffordableCategories(
-      segment as "fnb" | "gaso",
-      creditLine,
-    );
-    return {
-      type: "categories_fetched",
-      categories,
-    };
-  } catch (error) {
-    console.error(
-      `[Enrichment] Fetch affordable categories failed for ${segment} with credit ${creditLine}:`,
-      error,
-    );
-    // Fallback to empty array, phase will handle gracefully
-    return {
-      type: "categories_fetched",
-      categories: [],
     };
   }
 }

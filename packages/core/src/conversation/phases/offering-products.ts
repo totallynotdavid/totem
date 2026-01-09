@@ -28,19 +28,6 @@ export function transitionOfferingProducts(
 ): TransitionResult {
   const lower = message.toLowerCase();
 
-  // First check: do we have categories loaded?
-  if (!phase.availableCategories) {
-    // Need to fetch categories from DB before proceeding
-    return {
-      type: "need_enrichment",
-      enrichment: {
-        type: "fetch_categories",
-        segment: phase.segment,
-        credit: phase.credit,
-      },
-    };
-  }
-
   // Handle enrichment results first
   if (enrichment) {
     return handleEnrichmentResult(phase, message, enrichment);
@@ -142,37 +129,6 @@ function handleEnrichmentResult(
   message: string,
   enrichment: EnrichmentResult,
 ): TransitionResult {
-  // Categories fetched, update phase and continue
-  if (enrichment.type === "categories_fetched") {
-    const updatedPhase: OfferingProductsPhase = {
-      ...phase,
-      availableCategories: enrichment.categories,
-    };
-
-    // If no categories available, gracefully handle
-    if (enrichment.categories.length === 0) {
-      return {
-        type: "update",
-        nextPhase: {
-          phase: "escalated",
-          reason: "no_products_available",
-        },
-        commands: [
-          {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: "No hay productos disponibles en catálogo activo",
-          },
-          { type: "ESCALATE", reason: "no_products_available" },
-        ],
-      };
-    }
-
-    // Categories loaded, return to normal processing
-    // Re-process the message with categories now available
-    return transitionOfferingProducts(updatedPhase, message, {}, undefined);
-  }
-
   if (enrichment.type === "question_detected") {
     if (enrichment.isQuestion) {
       // Check if should escalate
@@ -255,8 +211,14 @@ function handleEnrichmentResult(
   }
 
   // Fallback: couldn't extract category or unknown enrichment, ask for clarification
+  const categoryDisplayNames = phase.categoryDisplayNames || [];
+  const productList =
+    categoryDisplayNames.length > 0
+      ? categoryDisplayNames.join(", ")
+      : "nuestros productos disponibles";
+
   const { message: messages } = selectVariant(
-    S.ASK_PRODUCT_INTEREST(phase.availableCategories || []),
+    S.ASK_PRODUCT_INTEREST(productList),
     "ASK_PRODUCT_INTEREST",
     {},
   );
