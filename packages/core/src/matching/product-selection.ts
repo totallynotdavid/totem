@@ -40,6 +40,9 @@ export function matchAllProducts(
   sentProducts: SentProduct[],
 ): SentProduct[] {
   const lower = message.toLowerCase().trim();
+  console.log(
+    `[ProductMatch] Matching "${message}" against ${sentProducts.length} products`,
+  );
 
   // Priority 1: Exact product name match (may match multiple)
   const cleanMessage = lower
@@ -57,7 +60,13 @@ export function matchAllProducts(
       exactMatches.push(product);
     }
   }
-  if (exactMatches.length > 0) return exactMatches;
+  if (exactMatches.length > 0) {
+    console.log(
+      `[ProductMatch] Priority 1 (exact): Found ${exactMatches.length} matches:`,
+      exactMatches.map((p) => p.name),
+    );
+    return exactMatches;
+  }
 
   // Priority 2: Ordinal/position match
   const ordinalMatch = lower.match(
@@ -67,21 +76,34 @@ export function matchAllProducts(
     const ordinal = ordinalMatch[0];
     let position = 0;
 
-    // Map ordinals to positions
-    if (/\b(primer|1er|1ro|1ra|uno)\b/.test(ordinal)) position = 1;
-    else if (/\b(segund|2do|2da|dos)\b/.test(ordinal)) position = 2;
-    else if (/\b(tercer|3ro|3ra|tres)\b/.test(ordinal)) position = 3;
-    else if (/\b(cuart|4to|4ta|cuatro)\b/.test(ordinal)) position = 4;
-    else if (/\b(quint|5to|5ta|cinco)\b/.test(ordinal)) position = 5;
-    else if (/\b(sext|6to|6ta|seis)\b/.test(ordinal)) position = 6;
+    // Map ordinals to positions (check if ordinal contains the keyword)
+    if (/primer|1er|1ro|1ra|uno/.test(ordinal)) position = 1;
+    else if (/segund|2do|2da|dos/.test(ordinal)) position = 2;
+    else if (/tercer|3ro|3ra|tres/.test(ordinal)) position = 3;
+    else if (/cuart|4to|4ta|cuatro/.test(ordinal)) position = 4;
+    else if (/quint|5to|5ta|cinco/.test(ordinal)) position = 5;
+    else if (/sext|6to|6ta|seis/.test(ordinal)) position = 6;
 
     const product = sentProducts.find((p) => p.position === position);
-    if (product) return [product];
+    if (product) {
+      console.log(
+        `[ProductMatch] Priority 2 (ordinal): Matched "${ordinal}" to position ${position}:`,
+        product.name,
+      );
+      return [product];
+    }
+    console.log(
+      `[ProductMatch] Priority 2 (ordinal): Matched "${ordinal}" to position ${position} but no product found`,
+    );
   }
 
   // Priority 3: Fuzzy brand/model match (may return multiple)
   const brandKeywords = extractBrandKeywords(lower);
   if (brandKeywords.length > 0) {
+    console.log(
+      `[ProductMatch] Priority 3 (brand): Extracted keywords:`,
+      brandKeywords,
+    );
     const matches: SentProduct[] = [];
     for (const product of sentProducts) {
       const productWords = product.name.toLowerCase().split(/\s+/);
@@ -96,10 +118,17 @@ export function matchAllProducts(
         matches.push(product);
       }
     }
-    if (matches.length > 0) return matches;
+    if (matches.length > 0) {
+      console.log(
+        `[ProductMatch] Priority 3 (brand): Found ${matches.length} matches:`,
+        matches.map((p) => p.name),
+      );
+      return matches;
+    }
   }
 
   // Priority 4: No match found
+  console.log(`[ProductMatch] No matches found for "${message}"`);
   return [];
 }
 

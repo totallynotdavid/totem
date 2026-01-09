@@ -28,12 +28,16 @@ export function transitionOfferingProducts(
   // If we have sent products, check for product match first (even without explicit interest phrase)
   // After showing products and asking "¿Alguno te interesa?", any mention is implicit interest
   if (phase.sentProducts && phase.sentProducts.length > 0) {
+    console.log(
+      `[OfferingProducts] Checking message "${message}" against ${phase.sentProducts.length} sent products`,
+    );
     const allMatches = matchAllProducts(message, phase.sentProducts);
 
     if (allMatches.length === 1) {
       // Unique match, confirm specific product
       const selected = allMatches[0];
       if (selected) {
+        console.log(`[OfferingProducts] Unique match found:`, selected.name);
         const priceText = selected.price
           ? ` (S/ ${selected.price.toFixed(2)})`
           : "";
@@ -79,6 +83,10 @@ export function transitionOfferingProducts(
 
     if (allMatches.length > 1) {
       // Ambiguous, ask for clarification
+      console.log(
+        `[OfferingProducts] Multiple matches (${allMatches.length}), asking for clarification:`,
+        allMatches.map((p) => p.name),
+      );
       const options = allMatches
         .map((p, idx) => {
           const priceText = p.price ? ` - S/ ${p.price.toFixed(2)}` : "";
@@ -99,6 +107,9 @@ export function transitionOfferingProducts(
     }
 
     // No matches found in sent products, continue with normal flow below
+    console.log(
+      `[OfferingProducts] No product matches found, continuing to normal flow`,
+    );
   }
 
   // Check for explicit product selection with interest phrases
