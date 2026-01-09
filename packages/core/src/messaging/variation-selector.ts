@@ -5,27 +5,27 @@ export interface VariantContext {
 }
 
 /**
- * Message model:
- * - Message = string (single text message)
- * - MessageSequence = string[] (messages sent in sequence with 150ms delay)
- * - MessageTemplate = string[][] (array of variant sequences)
+ * Bot response model:
+ * - Single response = string (single text message)
+ * - ResponseSequence = string[] (messages sent in sequence with 150ms delay)
+ * - ResponseVariants = string[][] (array of variant sequences)
  */
-export type MessageSequence = string[];
-export type MessageTemplate = MessageSequence[];
+export type ResponseSequence = string[];
+export type ResponseVariants = ResponseSequence[];
 
 /**
- * Select a variant from a message template, avoiding previously used ones
+ * Select a variant from response variants, avoiding previously used ones
  *
- * @param variants - Message template (array of message sequences)
+ * @param variants - Response variants (array of response sequences)
  * @param key - Unique key for this message type (e.g., "GREETING")
  * @param context - Conversation context containing used variant tracking
- * @returns Selected message sequence and updated context
+ * @returns Selected response sequence and updated context
  */
 export function selectVariant(
-  variants: MessageTemplate,
+  variants: ResponseVariants,
   key: VariantKey,
   context: VariantContext,
-): { message: MessageSequence; updatedContext: Partial<VariantContext> } {
+): { message: ResponseSequence; updatedContext: Partial<VariantContext> } {
   if (!variants || variants.length === 0) {
     throw new Error(`No variants provided for key: ${key}`);
   }
@@ -75,11 +75,11 @@ export interface ContextSignals {
 }
 
 export interface CategorizedVariants {
-  standard: MessageTemplate;
-  empathetic?: MessageTemplate;
-  patient?: MessageTemplate;
-  casual?: MessageTemplate;
-  formal?: MessageTemplate;
+  standard: ResponseVariants;
+  empathetic?: ResponseVariants;
+  patient?: ResponseVariants;
+  casual?: ResponseVariants;
+  formal?: ResponseVariants;
 }
 
 export function selectVariantWithContext(
@@ -87,7 +87,7 @@ export function selectVariantWithContext(
   key: VariantKey,
   context: VariantContext,
   signals: ContextSignals = {},
-): { message: MessageSequence; updatedContext: Partial<VariantContext> } {
+): { message: ResponseSequence; updatedContext: Partial<VariantContext> } {
   // Select appropriate category based on signals
   let selectedCategory = variants.standard;
 

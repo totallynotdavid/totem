@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation";
 import type {
   Conversation,
-  Message as MessageType,
+  ConversationMessage,
   SaleStatus,
   Order,
 } from "@totem/types";
@@ -27,7 +27,7 @@ let { data }: Props = $props();
 
 // Core state - initialized from data, can be refreshed via API
 let conversation = $state<Conversation | null>(null);
-let messages = $state<MessageType[]>([]);
+let messages = $state<ConversationMessage[]>([]);
 let messageText = $state("");
 let saving = $state(false);
 let order = $state<Order | null>(null);
