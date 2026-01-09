@@ -27,6 +27,35 @@ export function transitionCheckingEligibility(
     };
   }
 
+  // Handle categories fetched (for FNB approval flow)
+  if (enrichment.type === "categories_fetched") {
+    const name = formatFirstName(phase.name || "");
+    const credit = phase.credit || 0;
+    const categories = enrichment.categories;
+
+    const variants = S.FNB_APPROVED(name, credit, categories);
+    const { message } = selectVariant(variants, "FNB_APPROVED", {});
+
+    return {
+      type: "update",
+      nextPhase: {
+        phase: "offering_products",
+        segment: "fnb",
+        credit,
+        name,
+        availableCategories: categories,
+      },
+      commands: [
+        {
+          type: "TRACK_EVENT",
+          event: "eligibility_passed",
+          metadata: { segment: "fnb", credit },
+        },
+        ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+      ],
+    };
+  }
+
   if (enrichment.type === "eligibility_result") {
     // Case 1: needs human intervention (both providers down)
     if (enrichment.status === "needs_human") {
@@ -90,26 +119,17 @@ export function transitionCheckingEligibility(
           };
         }
 
-        // FNB approved
-        const variants = S.FNB_APPROVED(name, credit);
-        const { message } = selectVariant(variants, "FNB_APPROVED", {});
-
+        // FNB approved - need to fetch affordable categories first
         return {
-          type: "update",
-          nextPhase: {
-            phase: "offering_products",
-            segment: "fnb",
-            credit,
+          type: "need_enrichment",
+          enrichment: { type: "fetch_categories", segment: "fnb", credit },
+          pendingPhase: {
+            phase: "checking_eligibility",
+            dni: phase.dni,
             name,
+            credit,
+            segment: "fnb",
           },
-          commands: [
-            {
-              type: "TRACK_EVENT",
-              event: "eligibility_passed",
-              metadata: { segment: "fnb", credit },
-            },
-            ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
-          ],
         };
       }
 

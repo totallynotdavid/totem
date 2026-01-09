@@ -4,7 +4,13 @@ export type ConversationPhase =
   | { phase: "greeting" }
   | { phase: "confirming_client" }
   | { phase: "collecting_dni" }
-  | { phase: "checking_eligibility"; dni: string }
+  | {
+      phase: "checking_eligibility";
+      dni: string;
+      name?: string;
+      credit?: number;
+      segment?: Segment;
+    }
   | { phase: "collecting_age"; dni: string; name: string }
   | {
       phase: "offering_products";
@@ -42,7 +48,7 @@ export type ConversationMetadata = {
 
 export type EnrichmentRequest =
   | { type: "check_eligibility"; dni: string }
-  | { type: "fetch_categories"; segment: Segment }
+  | { type: "fetch_categories"; segment: Segment; credit: number }
   | { type: "detect_question"; message: string }
   | { type: "should_escalate"; message: string }
   | {

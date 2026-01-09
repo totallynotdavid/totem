@@ -180,4 +180,19 @@ export const BundleService = {
     );
     return rows.map((r) => r.category);
   },
+
+  getAffordableCategories: (
+    segment: "gaso" | "fnb",
+    creditLine: number,
+  ): string[] => {
+    const rows = getAll<{ category: string }>(
+      `SELECT DISTINCT b.primary_category as category FROM catalog_bundles b
+       JOIN catalog_periods p ON b.period_id = p.id
+       WHERE p.status = 'active' AND b.is_active = 1 AND b.stock_status != 'out_of_stock'
+         AND b.segment = ? AND b.price <= ?
+       ORDER BY b.primary_category`,
+      [segment, creditLine],
+    );
+    return rows.map((r) => r.category);
+  },
 };

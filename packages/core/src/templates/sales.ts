@@ -1,17 +1,26 @@
-export const FNB_APPROVED = (name: string, credit: number) => [
-  [
-    `¡Excelente noticia, ${name}! 🎉 Tienes una línea de crédito aprobada de S/ ${credit.toFixed(2)}.`,
-    `Tenemos celulares, laptops, televisores, electrodomésticos y más. ¿Qué te gustaría ver?`,
-  ],
-  [
-    `${name}, ¡buenas noticias! 😊 Tu crédito aprobado es de S/ ${credit.toFixed(2)}.`,
-    `¿Qué producto te gustaría conocer? Tenemos celulares, laptops, TVs, cocinas...`,
-  ],
-  [
-    `Perfecto ${name} 🎉 Calificas con S/ ${credit.toFixed(2)} de línea.`,
-    `¿Qué tienes en mente? ¿Celulares, laptops, televisores?`,
-  ],
-];
+import { formatCategoryList } from "../helpers/category-display.ts";
+
+export const FNB_APPROVED = (
+  name: string,
+  credit: number,
+  categories: string[],
+) => {
+  const categoryList = formatCategoryList(categories);
+  return [
+    [
+      `¡Excelente noticia, ${name}! 🎉 Tienes una línea de crédito aprobada de S/ ${credit.toFixed(2)}.`,
+      `Tenemos ${categoryList}. ¿Qué te gustaría ver?`,
+    ],
+    [
+      `${name}, ¡buenas noticias! 😊 Tu crédito aprobado es de S/ ${credit.toFixed(2)}.`,
+      `¿Qué producto te gustaría conocer? Tenemos ${categoryList}.`,
+    ],
+    [
+      `Perfecto ${name} 🎉 Calificas con S/ ${credit.toFixed(2)} de línea.`,
+      `¿Qué tienes en mente? ¿${categoryList}?`,
+    ],
+  ];
+};
 
 export const GASO_OFFER_KITCHEN_BUNDLE = [
   [
@@ -50,15 +59,14 @@ export const THERMA_ALTERNATIVE = [
   ["Otra opción: combos con terma. ¿Te llama más la atención?"],
 ];
 
-export const ASK_PRODUCT_INTEREST = [
-  [
-    "¿Qué producto te gustaría conocer? 😊 Tenemos celulares, cocinas, refrigeradoras, televisores, termas...",
-  ],
-  [
-    "¿Qué te llama la atención? Celulares, TVs, cocinas, refrigeradoras, termas...",
-  ],
-  ["¿En qué estás pensando? Tenemos celulares, electrodomésticos, TVs..."],
-];
+export const ASK_PRODUCT_INTEREST = (categories: string[]) => {
+  const categoryList = formatCategoryList(categories);
+  return [
+    [`¿Qué producto te gustaría conocer? 😊 Tenemos ${categoryList}.`],
+    [`¿Qué te llama la atención? ${categoryList}.`],
+    [`¿En qué estás pensando? Tenemos ${categoryList}.`],
+  ];
+};
 
 export const CONFIRM_PURCHASE = (name: string) => [
   [

@@ -33,7 +33,11 @@ export function transitionOfferingProducts(
     // Need to fetch categories from DB before proceeding
     return {
       type: "need_enrichment",
-      enrichment: { type: "fetch_categories", segment: phase.segment },
+      enrichment: {
+        type: "fetch_categories",
+        segment: phase.segment,
+        credit: phase.credit,
+      },
     };
   }
 
@@ -252,7 +256,7 @@ function handleEnrichmentResult(
 
   // Fallback: couldn't extract category or unknown enrichment, ask for clarification
   const { message: messages } = selectVariant(
-    S.ASK_PRODUCT_INTEREST,
+    S.ASK_PRODUCT_INTEREST(phase.availableCategories || []),
     "ASK_PRODUCT_INTEREST",
     {},
   );
