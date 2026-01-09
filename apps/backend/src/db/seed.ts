@@ -63,37 +63,60 @@ function seedSampleConversations(db: Database, agentId: string) {
   const now = Date.now();
 
   db.prepare(
-    `INSERT INTO conversations (phone_number, client_name, dni, segment, credit_line, current_state, status, is_simulation, last_activity_at, context_data)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO conversations (phone_number, client_name, dni, segment, credit_line, status, is_simulation, last_activity_at, context_data)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     "+51999888777",
     "Juan Pérez",
     "12345678",
     "fnb",
     5000,
-    "OFFER_PRODUCTS",
     "active",
     0,
     now,
-    JSON.stringify({ offeredCategory: "celulares" }),
+    JSON.stringify({
+      phase: {
+        phase: "offering_products",
+        segment: "fnb",
+        credit: 5000,
+        name: "Juan Pérez",
+      },
+      metadata: {
+        dni: "12345678",
+        name: "Juan Pérez",
+        segment: "fnb",
+        credit: 5000,
+        createdAt: now,
+        lastActivityAt: now,
+      },
+    }),
   );
 
   db.prepare(
-    `INSERT INTO conversations (phone_number, client_name, dni, segment, credit_line, current_state, status, assigned_agent, assignment_notified_at, is_simulation, last_activity_at, context_data)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO conversations (phone_number, client_name, dni, segment, credit_line, status, assigned_agent, assignment_notified_at, is_simulation, last_activity_at, context_data)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     "+51999888888",
     "Ana Torres",
     "87654321",
     "gaso",
     2500,
-    "CLOSING",
     "human_takeover",
     agentId,
     now - 2 * 60 * 1000,
     0,
     now,
-    JSON.stringify({ purchaseConfirmed: true, offeredCategory: "cocinas" }),
+    JSON.stringify({
+      phase: { phase: "closing", purchaseConfirmed: true },
+      metadata: {
+        dni: "87654321",
+        name: "Ana Torres",
+        segment: "gaso",
+        credit: 2500,
+        createdAt: now,
+        lastActivityAt: now,
+      },
+    }),
   );
 
   console.log("Sample conversations created for testing");

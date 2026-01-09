@@ -38,12 +38,11 @@ export function getOrCreateConversation(
     };
 
     db.prepare(
-      `INSERT INTO conversations (phone_number, current_state, context_data, status, is_simulation)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO conversations (phone_number, context_data, status, is_simulation)
+       VALUES (?, ?, ?, ?)`,
     ).run(
       phoneNumber,
-      JSON.stringify(initialPhase),
-      JSON.stringify(initialMetadata),
+      JSON.stringify({ phase: initialPhase, metadata: initialMetadata }),
       "active",
       isSimulation ? 1 : 0,
     );
@@ -83,12 +82,8 @@ export function updateConversation(
     lastActivityAt: Date.now(),
   };
 
-  // Map new state format to old state column for backwards compatibility
-  const legacyState = mapPhaseToLegacyState(phase);
-
   // Update denormalized columns for dashboard queries
   const updates: Record<string, unknown> = {
-    current_state: legacyState,
     context_data: JSON.stringify({
       phase: phase,
       metadata: mergedMetadata,
@@ -158,14 +153,12 @@ export function resetSession(
 
   db.prepare(
     `UPDATE conversations
-     SET current_state = ?,
-         context_data = ?,
+     SET context_data = ?,
          status = 'active',
          handover_reason = NULL,
          last_activity_at = CURRENT_TIMESTAMP
      WHERE phone_number = ?`,
   ).run(
-    JSON.stringify(DEFAULT_PHASE),
     JSON.stringify({ phase: DEFAULT_PHASE, metadata: newMetadata }),
     phoneNumber,
   );
@@ -176,34 +169,10 @@ export function resetSession(
 function parseConversation(conv: Conversation): ConversationData {
   const contextData = JSON.parse(conv.context_data || "{}");
 
-  // Handle new format (phase + metadata stored in context_data)
-  if (contextData.phase && contextData.metadata) {
-    return {
-      phoneNumber: conv.phone_number,
-      phase: contextData.phase as ConversationPhase,
-      metadata: contextData.metadata as ConversationMetadata,
-      isSimulation: conv.is_simulation === 1,
-    };
-  }
-
-  // Handle legacy format - migrate on read
-  const phase = mapLegacyStateToPhase(conv.current_state, conv, contextData);
-  const metadata: ConversationMetadata = {
-    dni: conv.dni || undefined,
-    name: conv.client_name || undefined,
-    segment: conv.segment as "fnb" | "gaso" | undefined,
-    credit: conv.credit_line || undefined,
-    nse: conv.nse || undefined,
-    lastCategory: contextData.offeredCategory || undefined,
-    isReturningUser: contextData.isReturningUser || false,
-    createdAt: Date.now(),
-    lastActivityAt: new Date(conv.last_activity_at).getTime(),
-  };
-
   return {
     phoneNumber: conv.phone_number,
-    phase,
-    metadata,
+    phase: contextData.phase as ConversationPhase,
+    metadata: contextData.metadata as ConversationMetadata,
     isSimulation: conv.is_simulation === 1,
   };
 }
@@ -217,69 +186,4 @@ function parseMetadata(contextDataJson: string | null): ConversationMetadata {
     createdAt: Date.now(),
     lastActivityAt: Date.now(),
   };
-}
-
-function mapLegacyStateToPhase(
-  state: string,
-  conv: Conversation,
-  contextData: Record<string, unknown>,
-): ConversationPhase {
-  switch (state) {
-    case "INIT":
-      return { phase: "greeting" };
-    case "CONFIRM_CLIENT":
-      return { phase: "confirming_client" };
-    case "COLLECT_DNI":
-      return { phase: "collecting_dni" };
-    case "WAITING_PROVIDER":
-      return { phase: "checking_eligibility", dni: conv.dni || "" };
-    case "COLLECT_AGE":
-      return {
-        phase: "collecting_age",
-        dni: conv.dni || "",
-        name: conv.client_name || "",
-      };
-    case "OFFER_PRODUCTS":
-      return {
-        phase: "offering_products",
-        segment: (conv.segment as "fnb" | "gaso") || "fnb",
-        credit: conv.credit_line || 0,
-        name: conv.client_name || "",
-      };
-    case "HANDLE_OBJECTION":
-      return {
-        phase: "handling_objection",
-        segment: (conv.segment as "fnb" | "gaso") || "fnb",
-        credit: conv.credit_line || 0,
-        name: conv.client_name || "",
-        objectionCount: (contextData.objectionCount as number) || 1,
-      };
-    case "CLOSING":
-      return { phase: "closing", purchaseConfirmed: false };
-    default:
-      return { phase: "greeting" };
-  }
-}
-
-function mapPhaseToLegacyState(phase: ConversationPhase): string {
-  switch (phase.phase) {
-    case "greeting":
-      return "INIT";
-    case "confirming_client":
-      return "CONFIRM_CLIENT";
-    case "collecting_dni":
-      return "COLLECT_DNI";
-    case "checking_eligibility":
-      return "WAITING_PROVIDER";
-    case "collecting_age":
-      return "COLLECT_AGE";
-    case "offering_products":
-      return "OFFER_PRODUCTS";
-    case "handling_objection":
-      return "HANDLE_OBJECTION";
-    case "closing":
-      return "CLOSING";
-    case "escalated":
-      return "CLOSING";
-  }
 }

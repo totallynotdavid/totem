@@ -127,9 +127,18 @@ simulator.post("/conversations", async (c) => {
   }
 
   // Create new test conversation with persona
+  const initialPhase = { phase: "greeting" };
+  const initialMetadata = { createdAt: Date.now(), lastActivityAt: Date.now() };
+
   db.prepare(
-    "INSERT INTO conversations (phone_number, current_state, status, is_simulation, persona_id) VALUES (?, ?, ?, ?, ?)",
-  ).run(phoneNumber, "INIT", "active", 1, personaId || null);
+    "INSERT INTO conversations (phone_number, context_data, status, is_simulation, persona_id) VALUES (?, ?, ?, ?, ?)",
+  ).run(
+    phoneNumber,
+    JSON.stringify({ phase: initialPhase, metadata: initialMetadata }),
+    "active",
+    1,
+    personaId || null,
+  );
 
   const conv = getOne<Conversation>(
     "SELECT * FROM conversations WHERE phone_number = ?",
@@ -256,8 +265,7 @@ simulator.post("/load", async (c) => {
        segment = ?,
        credit_line = ?,
        nse = ?,
-       is_calidda_client = ?,
-       current_state = ?
+       is_calidda_client = ?
      WHERE phone_number = ?`,
   ).run(
     sourceConv.context_data,
@@ -267,7 +275,6 @@ simulator.post("/load", async (c) => {
     sourceConv.credit_line,
     sourceConv.nse,
     sourceConv.is_calidda_client,
-    sourceConv.current_state,
     simulatorPhone,
   );
 

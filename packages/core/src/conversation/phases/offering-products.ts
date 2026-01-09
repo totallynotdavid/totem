@@ -2,6 +2,7 @@ import type {
   ConversationPhase,
   TransitionResult,
   EnrichmentResult,
+  Command,
 } from "../types.ts";
 import { selectVariant } from "../../messaging/variation-selector.ts";
 import { matchCategory } from "../../matching/category-matcher.ts";
@@ -41,7 +42,15 @@ export function transitionOfferingProducts(
         const priceText = selected.price
           ? ` (S/ ${selected.price.toFixed(2)})`
           : "";
-        const confirmationText = `Perfecto ${phase.name} 😊\n\nHas elegido: ${selected.name}${priceText}\n\n¿Confirmas tu elección?`;
+
+        // Check if this is re-selecting the interested product or new selection
+        const isReselection =
+          phase.interestedProduct &&
+          phase.interestedProduct.productId === selected.productId;
+
+        const confirmationText = isReselection
+          ? `Perfecto ${phase.name} 😊\n\nRetomemos: ${selected.name}${priceText}\n\n¿Confirmas tu elección?`
+          : `Perfecto ${phase.name} 😊\n\nHas elegido: ${selected.name}${priceText}\n\n¿Confirmas tu elección?`;
 
         return {
           type: "update",
@@ -150,21 +159,48 @@ export function transitionOfferingProducts(
     }
 
     // Different category, allow switch
+    const exploredCount = phase.interestedProduct
+      ? phase.interestedProduct.exploredCategoriesCount + 1
+      : 0;
+
+    const updatedPhase = {
+      ...phase,
+      lastShownCategory: matchedCategory,
+      interestedProduct: phase.interestedProduct
+        ? {
+            ...phase.interestedProduct,
+            exploredCategoriesCount: exploredCount,
+          }
+        : undefined,
+    };
+
+    const commands: Command[] = [
+      {
+        type: "TRACK_EVENT",
+        event: "category_selected",
+        metadata: {
+          category: matchedCategory,
+          method: "regex",
+          previousCategory: phase.lastShownCategory,
+          exploredCount,
+        },
+      },
+      { type: "SEND_IMAGES", category: matchedCategory },
+    ];
+
+    // Send reminder after viewing 2 different categories
+    if (exploredCount === 2 && phase.interestedProduct) {
+      const priceText = ` (S/ ${phase.interestedProduct.price.toFixed(2)})`;
+      commands.push({
+        type: "SEND_MESSAGE",
+        text: `Por cierto ${phase.name}, recuerda que te interesaba el ${phase.interestedProduct.name}${priceText}. ¿Quieres confirmarlo?`,
+      });
+    }
+
     return {
       type: "update",
-      nextPhase: { ...phase, lastShownCategory: matchedCategory },
-      commands: [
-        {
-          type: "TRACK_EVENT",
-          event: "category_selected",
-          metadata: {
-            category: matchedCategory,
-            method: "regex",
-            previousCategory: phase.lastShownCategory,
-          },
-        },
-        { type: "SEND_IMAGES", category: matchedCategory },
-      ],
+      nextPhase: updatedPhase,
+      commands,
     };
   }
 
@@ -349,17 +385,47 @@ function handleEnrichmentResult(
     }
 
     // Different category, show new products
+    const exploredCount = phase.interestedProduct
+      ? phase.interestedProduct.exploredCategoriesCount + 1
+      : 0;
+
+    const updatedPhase = {
+      ...phase,
+      lastShownCategory: enrichment.category,
+      interestedProduct: phase.interestedProduct
+        ? {
+            ...phase.interestedProduct,
+            exploredCategoriesCount: exploredCount,
+          }
+        : undefined,
+    };
+
+    const commands: Command[] = [
+      {
+        type: "TRACK_EVENT",
+        event: "category_selected",
+        metadata: {
+          category: enrichment.category,
+          method: "llm",
+          exploredCount,
+        },
+      },
+      { type: "SEND_IMAGES", category: enrichment.category },
+    ];
+
+    // Send reminder after viewing 2 different categories
+    if (exploredCount === 2 && phase.interestedProduct) {
+      const priceText = ` (S/ ${phase.interestedProduct.price.toFixed(2)})`;
+      commands.push({
+        type: "SEND_MESSAGE",
+        text: `Por cierto ${phase.name}, recuerda que te interesaba el ${phase.interestedProduct.name}${priceText}. ¿Quieres confirmarlo?`,
+      });
+    }
+
     return {
       type: "update",
-      nextPhase: { ...phase, lastShownCategory: enrichment.category },
-      commands: [
-        {
-          type: "TRACK_EVENT",
-          event: "category_selected",
-          metadata: { category: enrichment.category, method: "llm" },
-        },
-        { type: "SEND_IMAGES", category: enrichment.category },
-      ],
+      nextPhase: updatedPhase,
+      commands,
     };
   }
 

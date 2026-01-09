@@ -27,6 +27,12 @@ export type ConversationPhase =
         productId?: string;
         price?: number;
       }>;
+      interestedProduct?: {
+        name: string;
+        price: number;
+        productId: string;
+        exploredCategoriesCount: number;
+      };
     }
   | {
       phase: "confirming_selection";

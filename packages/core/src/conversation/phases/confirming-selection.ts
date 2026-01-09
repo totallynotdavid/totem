@@ -62,6 +62,12 @@ export function transitionConfirmingSelection(
         segment: phase.segment,
         credit: phase.credit,
         name: phase.name,
+        interestedProduct: {
+          name: phase.selectedProduct.name,
+          price: phase.selectedProduct.price,
+          productId: phase.selectedProduct.productId,
+          exploredCategoriesCount: 0,
+        },
       },
       commands: [
         {
