@@ -24,7 +24,6 @@ const actionLabels: Record<string, string> = {
   create_product: "Creó producto",
   update_product: "Actualizó producto",
   delete_product: "Eliminó producto",
-  bulk_import: "Importación masiva",
   bulk_update_products: "Actualización masiva",
 };
 
