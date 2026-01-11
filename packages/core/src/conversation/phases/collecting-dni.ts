@@ -62,7 +62,7 @@ export function transitionCollectingDni(
   }
 
   // For pure acknowledgment messages, stay silent
-  const isAck = /^(ok|ya|listo|ahi|ahí|va|bien|dale|okey|oki)$/i.test(
+  const isAck = /^(ok|ya|listo|ahi|ahí|va|bien|dale|okey|oki|vale)$/i.test(
     message.trim(),
   );
   if (isAck) {
