@@ -58,6 +58,26 @@ export async function forwardToBackend(msg: Message): Promise<void> {
   // Map whatsapp-web.js message types to Cloud API format
   const messageType = msg.type === "chat" ? "text" : msg.type;
 
+  // Extract quoted message context if available
+  let quotedContext = undefined;
+  if (msg.hasQuotedMsg) {
+    try {
+      const quotedMsg = await msg.getQuotedMessage();
+      quotedContext = {
+        id: quotedMsg.id._serialized,
+        body: quotedMsg.body,
+        type: quotedMsg.type,
+        timestamp: quotedMsg.timestamp,
+      };
+      logger.debug(
+        { messageId, quotedId: quotedContext.id },
+        "Quoted message detected",
+      );
+    } catch (error) {
+      logger.warn({ error, messageId }, "Failed to extract quoted message");
+    }
+  }
+
   // Build payload matching WhatsApp Cloud API webhook format
   const payload = {
     entry: [
@@ -72,6 +92,9 @@ export async function forwardToBackend(msg: Message): Promise<void> {
                   timestamp: msg.timestamp,
                   type: messageType,
                   text: msg.type === "chat" ? { body: msg.body } : undefined,
+                  context: quotedContext
+                    ? { quoted_message: quotedContext }
+                    : undefined,
                 },
               ],
             },

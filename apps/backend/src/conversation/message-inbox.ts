@@ -28,13 +28,20 @@ export function storeIncomingMessage(
   text: string,
   messageId: string,
   whatsappTimestamp: number,
+  quotedMessage?: {
+    id: string;
+    body: string;
+    type: string;
+    timestamp: number;
+  },
 ): void {
   const now = Date.now();
+  const quotedContextJson = quotedMessage ? JSON.stringify(quotedMessage) : null;
 
   db.prepare(
-    `INSERT INTO message_inbox (phone_number, message_text, message_id, whatsapp_timestamp, created_at)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(phoneNumber, text, messageId, whatsappTimestamp, now);
+    `INSERT INTO message_inbox (phone_number, message_text, message_id, whatsapp_timestamp, created_at, quoted_message_context)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(phoneNumber, text, messageId, whatsappTimestamp, now, quotedContextJson);
 }
 
 export function getReadyForAggregation(

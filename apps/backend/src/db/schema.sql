@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS message_inbox (
     message_text TEXT NOT NULL,
     message_id TEXT UNIQUE NOT NULL,
     whatsapp_timestamp INTEGER NOT NULL,
+    quoted_message_context TEXT,
     status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'processed', 'failed')),
     aggregate_id TEXT,
     attempts INTEGER DEFAULT 0,
