@@ -61,6 +61,8 @@
       "version": "1.0.0",
       "dependencies": {
         "@totem/logger": "workspace:*",
+        "@totem/types": "workspace:*",
+        "@totem/whatsapp-utils": "workspace:*",
         "hono": "^4.11.1",
         "qrcode-terminal": "^0.12.0",
         "whatsapp-web.js": "^1.34.5-alpha.3",
@@ -90,6 +92,10 @@
     },
     "packages/types": {
       "name": "@totem/types",
+      "version": "1.0.0",
+    },
+    "packages/whatsapp-utils": {
+      "name": "@totem/whatsapp-utils",
       "version": "1.0.0",
     },
   },
@@ -369,6 +375,8 @@
     "@totem/tsconfig": ["@totem/tsconfig@workspace:packages/tsconfig"],
 
     "@totem/types": ["@totem/types@workspace:packages/types"],
+
+    "@totem/whatsapp-utils": ["@totem/whatsapp-utils@workspace:packages/whatsapp-utils"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 
