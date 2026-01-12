@@ -1,73 +1,52 @@
 #!/usr/bin/env bash
 
-service_file_changed() {
-	local service_name="$1"
-	local deploy_user="$2"
-	local project_root="$3"
-
-	local template="$project_root/deployment/systemd/$service_name.service"
-	local service_file="/etc/systemd/system/$service_name.service"
-
-	if [ ! -f "$service_file" ]; then
-		return 0
-	fi
-
-	local new_content=$(sed "s|DEPLOY_USER|$deploy_user|g; s|PROJECT_ROOT|$project_root|g" "$template")
-	local old_content=$(sudo cat "$service_file" 2>/dev/null || echo "")
-
-	[ "$new_content" != "$old_content" ]
-}
-
 install_service() {
-	local service_name="$1"
-	local deploy_user="$2"
-	local project_root="$3"
+	local name="$1"
+	local user="$2"
+	local root="$3"
+	local template="$root/deployment/systemd/$name.service"
+	local target="/etc/systemd/system/$name.service"
 
-	local template="$project_root/deployment/systemd/$service_name.service"
-	local service_file="/etc/systemd/system/$service_name.service"
-
-	if [ ! -f "$template" ]; then
-		echo "Error: Service template not found: $template" >&2
+	[ ! -f "$template" ] && {
+		echo "Error: Template not found: $name" >&2
 		exit 1
+	}
+
+	local content
+	content=$(sed "s|DEPLOY_USER|$user|g; s|PROJECT_ROOT|$root|g" "$template") || exit 1
+
+	local needs_restart=false
+
+	if [ ! -f "$target" ] || [ "$(sudo cat "$target")" != "$content" ]; then
+		echo "$content" | sudo tee "$target" >/dev/null || exit 1
+		sudo systemctl daemon-reload || exit 1
+		needs_restart=true
 	fi
 
-	local needs_update=false
+	sudo systemctl is-enabled --quiet "$name" 2>/dev/null || {
+		sudo systemctl enable "$name" || exit 1
+		needs_restart=true
+	}
 
-	if service_file_changed "$service_name" "$deploy_user" "$project_root"; then
-		sed "s|DEPLOY_USER|$deploy_user|g; s|PROJECT_ROOT|$project_root|g" "$template" |
-			sudo tee "$service_file" >/dev/null
-		sudo systemctl daemon-reload
-		needs_update=true
-		echo "$service_name configuration updated"
-	fi
-
-	if ! sudo systemctl is-enabled --quiet "$service_name" 2>/dev/null; then
-		sudo systemctl enable "$service_name"
-		needs_update=true
-	fi
-
-	if [ "$needs_update" = true ]; then
-		sudo systemctl restart "$service_name"
-	fi
-
-	if ! sudo systemctl is-active --quiet "$service_name"; then
-		echo "Error: $service_name failed to start" >&2
-		sudo systemctl status "$service_name" --no-pager
-		exit 1
-	fi
-
-	if [ "$needs_update" = true ]; then
-		echo "$service_name restarted"
+	if [ "$needs_restart" = true ]; then
+		sudo systemctl restart "$name" || exit 1
+		echo "$name: restarted"
 	else
-		echo "$service_name already running (no changes)"
+		echo "$name: running"
 	fi
+
+	sudo systemctl is-active --quiet "$name" || {
+		echo "Error: $name failed to start" >&2
+		sudo systemctl status "$name" --no-pager >&2
+		exit 1
+	}
 }
 
 install_all_services() {
-	local deploy_user="$1"
-	local project_root="$2"
+	local user="$1"
+	local root="$2"
 
-	install_service "totem-backend" "$deploy_user" "$project_root"
-	install_service "totem-frontend" "$deploy_user" "$project_root"
-	install_service "totem-notifier" "$deploy_user" "$project_root"
+	install_service "totem-backend" "$user" "$root"
+	install_service "totem-frontend" "$user" "$root"
+	install_service "totem-notifier" "$user" "$root"
 }
