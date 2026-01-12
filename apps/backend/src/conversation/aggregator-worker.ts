@@ -73,6 +73,7 @@ async function processGroup(group: {
   aggregated_text: string;
   oldest_timestamp: number;
   latest_message_id: string;
+  quoted_message_context: string | null;
 }): Promise<void> {
   try {
     // Mark as processing to prevent double-processing
@@ -83,11 +84,25 @@ async function processGroup(group: {
       "Processing group",
     );
 
+    // Parse quoted context if available
+    let quotedContext = undefined;
+    if (group.quoted_message_context) {
+      try {
+        quotedContext = JSON.parse(group.quoted_message_context);
+      } catch (error) {
+        logger.warn(
+          { error, phoneNumber: group.phone_number },
+          "Failed to parse quoted context",
+        );
+      }
+    }
+
     await handleMessage({
       phoneNumber: group.phone_number,
       content: group.aggregated_text,
       timestamp: group.oldest_timestamp,
       messageId: group.latest_message_id,
+      quotedContext,
     });
 
     markAsProcessed(group.ids);

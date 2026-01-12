@@ -1,3 +1,5 @@
+import type { MessageType } from "./whatsapp.ts";
+
 export type Segment = "fnb" | "gaso";
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 export type UserRole = "admin" | "developer" | "supervisor" | "sales_agent";
@@ -82,7 +84,7 @@ export type ConversationMessage = {
   id: string;
   phone_number: string;
   direction: "inbound" | "outbound";
-  type: "text" | "image";
+  type: MessageType;
   content: string;
   status: string;
   created_at: string;
@@ -174,3 +176,10 @@ export type ReplayData = {
   initialContext: Record<string, any>;
   metadata: ReplayMetadata;
 };
+
+// WhatsApp message types
+export type {
+  MessageType,
+  QuotedMessageContext,
+  IncomingMessage,
+} from "./whatsapp.ts";

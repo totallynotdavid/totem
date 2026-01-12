@@ -1,35 +1,29 @@
+import { MessagingService } from "./messaging-service.ts";
 import { client } from "./whatsapp-client.ts";
-import { MessageMedia } from "whatsapp-web.js";
+
+let messagingService: MessagingService | null = null;
+
+export function getMessagingService(): MessagingService {
+  if (!messagingService && client) {
+    messagingService = new MessagingService(client);
+  }
+  if (!messagingService) {
+    throw new Error("Messaging service not initialized");
+  }
+  return messagingService;
+}
 
 export async function sendDirectMessage(
   phoneNumber: string,
   content: string,
-): Promise<boolean> {
-  if (!client) {
-    throw new Error("WhatsApp client not initialized");
-  }
-
-  const jid = formatPhoneToJid(phoneNumber);
-  await client.sendMessage(jid, content);
-  return true;
+): Promise<string> {
+  return getMessagingService().sendMessage(phoneNumber, content);
 }
 
 export async function sendDirectImage(
   phoneNumber: string,
   imageUrl: string,
   caption?: string,
-): Promise<boolean> {
-  if (!client) {
-    throw new Error("WhatsApp client not initialized");
-  }
-
-  const jid = formatPhoneToJid(phoneNumber);
-  const media = await MessageMedia.fromUrl(imageUrl, { unsafeMime: true });
-  await client.sendMessage(jid, media, { caption });
-  return true;
-}
-
-function formatPhoneToJid(phoneNumber: string): string {
-  const digits = phoneNumber.replace(/\D/g, "");
-  return `${digits}@c.us`;
+): Promise<string> {
+  return getMessagingService().sendImage(phoneNumber, imageUrl, caption);
 }

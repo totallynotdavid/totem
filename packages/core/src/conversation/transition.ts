@@ -10,7 +10,7 @@ import { transitionConfirmingSelection } from "./phases/confirming-selection.ts"
 import { transitionClosing } from "./phases/closing.ts";
 
 export function transition(input: TransitionInput): TransitionResult {
-  const { phase, message, metadata, enrichment } = input;
+  const { phase, message, metadata, enrichment, quotedContext } = input;
 
   switch (phase.phase) {
     case "greeting":
@@ -29,7 +29,13 @@ export function transition(input: TransitionInput): TransitionResult {
       return transitionCollectingAge(phase, message, metadata);
 
     case "offering_products":
-      return transitionOfferingProducts(phase, message, metadata, enrichment);
+      return transitionOfferingProducts(
+        phase,
+        message,
+        metadata,
+        enrichment,
+        quotedContext,
+      );
 
     case "handling_objection":
       return transitionHandlingObjection(phase, message, metadata, enrichment);

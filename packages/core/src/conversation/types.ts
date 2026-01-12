@@ -146,4 +146,10 @@ export type TransitionInput = {
   message: string;
   metadata: ConversationMetadata;
   enrichment?: EnrichmentResult;
+  quotedContext?: {
+    id: string;
+    body: string;
+    type: string;
+    timestamp: number;
+  };
 };

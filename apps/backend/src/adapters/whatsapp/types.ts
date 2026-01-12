@@ -1,12 +1,15 @@
-import type { ConversationMessage } from "@totem/types";
+import type { ConversationMessage, MessageType } from "@totem/types";
 
-export type WhatsAppAdapter = {
-  sendMessage(to: string, content: string): Promise<boolean>;
-  sendImage(to: string, imagePath: string, caption?: string): Promise<boolean>;
+export interface WhatsAppAdapter {
+  sendMessage(to: string, content: string): Promise<string | null>;
+  sendImage(
+    to: string,
+    imagePath: string,
+    caption?: string,
+  ): Promise<string | null>;
   markAsRead(messageId: string): Promise<void>;
-};
+}
 
 export type MessageDirection = "inbound" | "outbound";
-export type MessageType = "text" | "image";
 
-export type { ConversationMessage };
+export type { ConversationMessage, MessageType };

@@ -1,4 +1,4 @@
-import { client } from "./whatsapp-client.ts";
+import { getMessagingService } from "./direct-messaging.ts";
 import { getGroupJID } from "./group-registry.ts";
 import { createLogger } from "./logger.ts";
 
@@ -86,14 +86,11 @@ async function sendMessage(
   message: string,
   phoneNumber?: string,
 ) {
-  if (!client) {
-    throw new Error("WhatsApp client not initialized");
-  }
+  const messagingService = getMessagingService();
 
   // Direct messaging to specific phone number
   if (channel === "direct" && phoneNumber) {
-    const formattedJid = `${phoneNumber.replace(/\D/g, "")}@s.whatsapp.net`;
-    await client.sendMessage(formattedJid, message);
+    await messagingService.sendToCloudJid(phoneNumber, message);
     return;
   }
 
@@ -104,5 +101,5 @@ async function sendMessage(
     throw new Error(`No group JID configured for channel: ${channelName}`);
   }
 
-  await client.sendMessage(jid, message);
+  await messagingService.sendToGroup(jid, message);
 }

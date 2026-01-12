@@ -64,6 +64,7 @@ export async function sendBundleImages(
         phoneNumber,
         `images/${bundle.image_id}.jpg`,
         caption,
+        bundle.id, // Pass product ID for tracking
       );
     }
 

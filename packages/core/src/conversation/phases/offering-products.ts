@@ -19,11 +19,57 @@ export function transitionOfferingProducts(
   message: string,
   _metadata: unknown,
   enrichment?: EnrichmentResult,
+  quotedContext?: {
+    id: string;
+    body: string;
+    type: string;
+    timestamp: number;
+  },
 ): TransitionResult {
   const lower = message.toLowerCase();
 
   if (enrichment) {
     return handleEnrichmentResult(phase, message, enrichment);
+  }
+
+  // If user is responding to a specific product
+  if (quotedContext && phase.sentProducts && phase.sentProducts.length > 0) {
+    const quotedProduct = phase.sentProducts.find((product) =>
+      quotedContext.body.toLowerCase().includes(product.name.toLowerCase()),
+    );
+
+    if (quotedProduct) {
+      console.log(
+        `[OfferingProducts] Found quoted product:`,
+        quotedProduct.name,
+      );
+      const priceText = quotedProduct.price
+        ? ` (S/ ${quotedProduct.price.toFixed(2)})`
+        : "";
+
+      const confirmationText = `Perfecto 😊\n\nHas elegido: ${quotedProduct.name}${priceText}\n\n¿Confirmas tu elección?`;
+
+      return {
+        type: "update",
+        nextPhase: {
+          phase: "confirming_selection",
+          segment: phase.segment,
+          credit: phase.credit,
+          name: phase.name || "",
+          selectedProduct: {
+            name: quotedProduct.name,
+            price: quotedProduct.price || 0,
+            productId: quotedProduct.productId || "",
+          },
+        },
+        commands: [
+          {
+            type: "SEND_MESSAGE",
+            text: confirmationText,
+          },
+        ],
+      };
+    }
   }
 
   // If we have sent products, check for product match first (even without explicit interest phrase)

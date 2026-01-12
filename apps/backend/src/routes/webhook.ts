@@ -4,6 +4,7 @@ import { WhatsAppService } from "../adapters/whatsapp/index.ts";
 import { isMaintenanceMode } from "../domains/settings/system.ts";
 import { holdMessage } from "../conversation/held-messages.ts";
 import { storeIncomingMessage } from "../conversation/message-inbox.ts";
+import { parseIncomingMessage } from "../adapters/whatsapp/parsers/index.ts";
 import { createLogger } from "../lib/logger.ts";
 
 const logger = createLogger("webhook");
@@ -29,43 +30,71 @@ webhook.post("/", async (c) => {
   let phoneNumber: string | undefined;
   try {
     const body = await c.req.json();
-    const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const webhookMessage = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-    if (!message) {
+    if (!webhookMessage) {
       return c.json({ status: "no_message" });
     }
 
-    phoneNumber = message.from;
+    const incomingMessage = parseIncomingMessage(webhookMessage);
+    phoneNumber = incomingMessage.from;
+
+    // Log quoted message detection
+    if (incomingMessage.quotedContext) {
+      logger.info(
+        {
+          messageId: incomingMessage.id,
+          from: phoneNumber,
+          quotedMessage: incomingMessage.quotedContext,
+        },
+        "Quoted message received",
+      );
+    }
 
     if (phoneNumber === "0" || !phoneNumber) {
       return c.json({ status: "ignored_system_message" });
     }
 
-    if (message.type !== "text") {
-      return c.json({ status: "non_text_ignored", type: message.type });
+    if (incomingMessage.type !== "text") {
+      return c.json({ status: "non_text_ignored", type: incomingMessage.type });
     }
 
-    const text = message.text.body;
-    const messageId = message.id;
-    // WhatsApp timestamp is in seconds, convert to milliseconds
-    const timestamp =
-      (message.timestamp || Math.floor(Date.now() / 1000)) * 1000;
+    if (incomingMessage.quotedContext) {
+      const quotedProductId = WhatsAppService.findProductByQuotedMessage(
+        incomingMessage.quotedContext.id,
+      );
+      if (quotedProductId) {
+        logger.info(
+          {
+            messageId: incomingMessage.id,
+            quotedMessageId: incomingMessage.quotedContext.id,
+            quotedProductId,
+          },
+          "Resolved product from quoted message",
+        );
+      }
+    }
 
     WhatsAppService.logMessage(
       phoneNumber,
       "inbound",
       "text",
-      text,
+      incomingMessage.body,
       "received",
     );
 
     // During maintenance, hold messages for later processing
     if (isMaintenanceMode()) {
-      holdMessage(phoneNumber, text, messageId, timestamp);
+      holdMessage(
+        phoneNumber,
+        incomingMessage.body,
+        incomingMessage.id,
+        incomingMessage.timestamp,
+      );
       return c.json({ status: "maintenance_held" });
     }
 
-    storeIncomingMessage(phoneNumber, text, messageId, timestamp);
+    storeIncomingMessage(incomingMessage);
 
     return c.json({ status: "received" });
   } catch (error) {

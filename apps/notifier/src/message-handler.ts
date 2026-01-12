@@ -2,6 +2,7 @@ import type { Client, Message } from "whatsapp-web.js";
 import process from "node:process";
 import { forwardToBackend } from "./message-forwarder.ts";
 import { saveGroupMapping } from "./group-registry.ts";
+import { isGroupJid, isBroadcastJid } from "@totem/whatsapp-utils";
 import { createLogger } from "./logger.ts";
 
 const logger = createLogger("messages");
@@ -18,16 +19,13 @@ export function setupMessageHandler(client: Client) {
 }
 
 async function handleMessage(msg: Message) {
-  const isGroupMessage = msg.from.endsWith("@g.us");
+  const isGroupMessage = isGroupJid(msg.from);
   const isCommand = msg.body?.startsWith("@") || false;
 
-  // Ignore system messages
-  if (msg.from === "0@c.us") return;
+  // Ignore system messages and broadcasts
+  if (isBroadcastJid(msg.from)) return;
 
-  // Ignore status updates
-  if (msg.from === "status@broadcast") return;
-
-  // Ignore empty messages
+  // Ignore empty messages (except for group commands)
   const hasContent = msg.body && msg.body.trim().length > 0;
   if (!hasContent && !isGroupMessage) return;
 

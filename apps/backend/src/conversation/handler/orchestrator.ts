@@ -1,17 +1,17 @@
 import { withLock } from "../locks.ts";
-
 import {
   getOrCreateConversation,
   isSessionTimedOut,
   resetSession,
 } from "../store.ts";
-import { WhatsAppService } from "../../adapters/whatsapp/index.ts";
 import { runEnrichmentLoop } from "./enrichment-loop.ts";
 import { executeCommands } from "./command-executor.ts";
 import { calculateResponseDelay } from "./response-timing.ts";
 import { sleep } from "./sleep.ts";
 import { createLogger } from "../../lib/logger.ts";
 import { notifyTeam } from "../../adapters/notifier/client.ts";
+import type { QuotedMessageContext } from "@totem/types";
+import { WhatsAppService } from "../../adapters/whatsapp/index.ts";
 
 const logger = createLogger("conversation");
 
@@ -20,6 +20,7 @@ export type IncomingMessage = {
   content: string;
   timestamp: number; // WhatsApp message timestamp
   messageId: string;
+  quotedContext?: QuotedMessageContext;
 };
 
 /**
@@ -36,10 +37,13 @@ export type IncomingMessage = {
  * @param message - Incoming message details
  */
 export async function handleMessage(message: IncomingMessage): Promise<void> {
-  const { phoneNumber, content, timestamp, messageId } = message;
+  const { phoneNumber, content, timestamp, messageId, quotedContext } = message;
 
   await withLock(phoneNumber, async () => {
-    logger.debug({ phoneNumber, messageId }, "Processing message");
+    logger.debug(
+      { phoneNumber, messageId, hasQuoted: !!quotedContext },
+      "Processing message",
+    );
 
     let conversation = getOrCreateConversation(phoneNumber);
 
@@ -61,6 +65,7 @@ export async function handleMessage(message: IncomingMessage): Promise<void> {
         content,
         conversation.metadata,
         phoneNumber,
+        quotedContext,
       );
 
       const delay = calculateResponseDelay(timestamp, Date.now());

@@ -24,6 +24,12 @@ export async function runEnrichmentLoop(
   message: string,
   metadata: ConversationMetadata,
   phoneNumber: string,
+  quotedContext?: {
+    id: string;
+    body: string;
+    type: string;
+    timestamp: number;
+  },
 ): Promise<TransitionResult> {
   let currentPhase = phase;
   let enrichment: EnrichmentResult | undefined;
@@ -37,6 +43,7 @@ export async function runEnrichmentLoop(
       message,
       metadata,
       enrichment,
+      quotedContext,
     });
 
     if (result.type !== "need_enrichment") {

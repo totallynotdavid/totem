@@ -9,27 +9,25 @@ const TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_ID = process.env.WHATSAPP_PHONE_ID;
 
 function getPublicUrl(): string {
-  const tunnelFile = resolve(import.meta.dir, "../../../../.cloudflare-url");
+  const tunnelFile = resolve(import.meta.dir, "../../../../../.cloudflare-url");
+
   if (existsSync(tunnelFile)) {
     const url = readFileSync(tunnelFile, "utf-8").trim();
     if (url) {
-      logger.debug({ url, source: "tunnel" }, "Public URL configured");
       return url;
     }
   }
-  const fallback = process.env.PUBLIC_URL || "http://localhost:3000";
-  logger.debug({ url: fallback, source: "env" }, "Public URL configured");
-  return fallback;
+
+  return process.env.PUBLIC_URL || "http://localhost:3000";
 }
 
-const PUBLIC_URL = getPublicUrl();
 const API_URL = `https://graph.facebook.com/v17.0/${PHONE_ID}/messages`;
 
 export const CloudApiAdapter: WhatsAppAdapter = {
-  async sendMessage(to: string, content: string): Promise<boolean> {
+  async sendMessage(to: string, content: string): Promise<string | null> {
     if (!TOKEN || !PHONE_ID) {
       logger.warn("WhatsApp not configured");
-      return false;
+      return null;
     }
 
     try {
@@ -53,13 +51,16 @@ export const CloudApiAdapter: WhatsAppAdapter = {
           { error, to, status: response.status },
           "WhatsApp send failed",
         );
-        return false;
+        return null;
       }
 
-      return true;
+      const data = (await response.json()) as {
+        messages?: Array<{ id: string }>;
+      };
+      return data.messages?.[0]?.id ?? null;
     } catch (error) {
       logger.error({ error, to }, "WhatsApp send failed");
-      return false;
+      return null;
     }
   },
 
@@ -67,13 +68,14 @@ export const CloudApiAdapter: WhatsAppAdapter = {
     to: string,
     imagePath: string,
     caption?: string,
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     if (!TOKEN || !PHONE_ID) {
       logger.warn({ imagePath }, "WhatsApp not configured");
-      return false;
+      return null;
     }
 
-    const link = `${PUBLIC_URL}/static/${imagePath}`;
+    const publicUrl = getPublicUrl();
+    const link = `${publicUrl}/static/${imagePath}`;
 
     try {
       const payload: Record<string, unknown> = {
@@ -95,16 +97,20 @@ export const CloudApiAdapter: WhatsAppAdapter = {
       if (!response.ok) {
         const error = await response.json();
         logger.error(
-          { error, to, imagePath, status: response.status },
+          { error, to, imagePath, link, status: response.status, payload },
           "WhatsApp image send failed",
         );
-        return false;
+        return null;
       }
 
-      return true;
+      const responseData = (await response.json()) as {
+        messages?: Array<{ id: string }>;
+      };
+
+      return responseData.messages?.[0]?.id ?? null;
     } catch (error) {
       logger.error({ error, to, imagePath }, "WhatsApp image send failed");
-      return false;
+      return null;
     }
   },
 

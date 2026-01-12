@@ -18,8 +18,8 @@ app.post("/send", async (c) => {
   }
 
   try {
-    await sendDirectMessage(phoneNumber, content);
-    return c.json({ status: "sent" });
+    const messageId = await sendDirectMessage(phoneNumber, content);
+    return c.json({ status: "sent", messageId });
   } catch (error) {
     logger.error({ error, phoneNumber }, "Direct message send failed");
     return c.json({ error: "Failed to send message" }, 500);
@@ -35,8 +35,8 @@ app.post("/send-image", async (c) => {
   }
 
   try {
-    await sendDirectImage(phoneNumber, imageUrl, caption);
-    return c.json({ status: "sent" });
+    const messageId = await sendDirectImage(phoneNumber, imageUrl, caption);
+    return c.json({ status: "sent", messageId });
   } catch (error) {
     logger.error({ error, phoneNumber, imageUrl }, "Direct image send failed");
     return c.json({ error: "Failed to send image" }, 500);

@@ -8,7 +8,7 @@ const NOTIFIER_URL = process.env.NOTIFIER_URL || "http://localhost:3001";
 const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost:3000";
 
 export const DevAdapter: WhatsAppAdapter = {
-  async sendMessage(to: string, content: string): Promise<boolean> {
+  async sendMessage(to: string, content: string): Promise<string | null> {
     try {
       const response = await fetch(`${NOTIFIER_URL}/send`, {
         method: "POST",
@@ -22,13 +22,17 @@ export const DevAdapter: WhatsAppAdapter = {
           { to, status: response.status, error: errorText },
           "Dev adapter send failed",
         );
-        return false;
+        return null;
       }
 
-      return true;
+      const data = (await response.json()) as {
+        status: string;
+        messageId?: string;
+      };
+      return data.messageId ?? null;
     } catch (error) {
       logger.error({ error, to }, "Dev adapter send error");
-      return false;
+      return null;
     }
   },
 
@@ -36,7 +40,7 @@ export const DevAdapter: WhatsAppAdapter = {
     to: string,
     imagePath: string,
     caption?: string,
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     const imageUrl = `${PUBLIC_URL}/static/${imagePath}`;
 
     try {
@@ -52,13 +56,17 @@ export const DevAdapter: WhatsAppAdapter = {
           { to, imagePath, error: errorText },
           "Dev adapter image send failed",
         );
-        return false;
+        return null;
       }
 
-      return true;
+      const data = (await response.json()) as {
+        status: string;
+        messageId?: string;
+      };
+      return data.messageId ?? null;
     } catch (error) {
       logger.error({ error, to, imagePath }, "Dev adapter image send error");
-      return false;
+      return null;
     }
   },
 

@@ -1,5 +1,9 @@
 import process from "node:process";
-import type { ConversationMessage, WhatsAppAdapter } from "./types.ts";
+import type {
+  ConversationMessage,
+  WhatsAppAdapter,
+  MessageType,
+} from "./types.ts";
 import { CloudApiAdapter } from "./cloud-api.ts";
 import { DevAdapter } from "./dev-adapter.ts";
 import { MessageStore } from "./message-store.ts";
@@ -17,19 +21,35 @@ const adapter = getAdapter();
 
 export const WhatsAppService = {
   async sendMessage(to: string, content: string): Promise<void> {
-    const success = await adapter.sendMessage(to, content);
-    const status = success ? "sent" : "failed";
-    MessageStore.log(to, "outbound", "text", content, status);
+    const messageId = await adapter.sendMessage(to, content);
+    const status = messageId ? "sent" : "failed";
+    MessageStore.log(
+      to,
+      "outbound",
+      "text",
+      content,
+      status,
+      messageId ?? undefined,
+    );
   },
 
   async sendImage(
     to: string,
     imagePath: string,
     caption?: string,
+    productId?: string,
   ): Promise<void> {
-    const success = await adapter.sendImage(to, imagePath, caption);
-    const status = success ? "sent" : "failed";
-    MessageStore.log(to, "outbound", "image", imagePath, status);
+    const messageId = await adapter.sendImage(to, imagePath, caption);
+    const status = messageId ? "sent" : "failed";
+    MessageStore.log(
+      to,
+      "outbound",
+      "image",
+      imagePath,
+      status,
+      messageId ?? undefined,
+      productId,
+    );
   },
 
   async markAsReadAndShowTyping(messageId: string): Promise<void> {
@@ -39,7 +59,7 @@ export const WhatsAppService = {
   logMessage(
     phoneNumber: string,
     direction: "inbound" | "outbound",
-    type: "text" | "image",
+    type: MessageType,
     content: string,
     status: string = "sent",
   ): void {
@@ -55,5 +75,9 @@ export const WhatsAppService = {
 
   clearMessageHistory(phoneNumber: string): void {
     MessageStore.clear(phoneNumber);
+  },
+
+  findProductByQuotedMessage(whatsappMessageId: string): string | null {
+    return MessageStore.findProductByMessageId(whatsappMessageId);
   },
 };
