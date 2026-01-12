@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import process from "node:process";
+import { conversationLogger } from "@totem/logger";
 
 const client = new OpenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -85,12 +86,16 @@ Ejemplo de respuesta correcta:
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
-      console.error(`[Vision] Failed to parse JSON in extractProductInfo:`, {
-        error:
-          parseError instanceof Error ? parseError.message : String(parseError),
-        rawContent: content,
-        contentPreview: content.substring(0, 300),
-      });
+      conversationLogger.error(
+        {
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+          contentPreview: content.substring(0, 300),
+        },
+        "Failed to parse JSON in extractProductInfo",
+      );
       return {};
     }
 
@@ -106,7 +111,7 @@ Ejemplo de respuesta correcta:
       category: extractString(parsed.category),
     };
   } catch (error) {
-    console.error("Main flyer extraction error:", error);
+    conversationLogger.error({ error }, "Main flyer extraction error");
     return {};
   }
 }
@@ -175,12 +180,16 @@ Ejemplo de respuesta correcta:
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
-      console.error(`[Vision] Failed to parse JSON in extractSpecifications:`, {
-        error:
-          parseError instanceof Error ? parseError.message : String(parseError),
-        rawContent: content,
-        contentPreview: content.substring(0, 300),
-      });
+      conversationLogger.error(
+        {
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+          contentPreview: content.substring(0, 300),
+        },
+        "Failed to parse JSON in extractSpecifications",
+      );
       return {};
     }
 
@@ -190,7 +199,7 @@ Ejemplo de respuesta correcta:
         extractString(parsed.specifications),
     };
   } catch (error) {
-    console.error("Specs flyer extraction error:", error);
+    conversationLogger.error({ error }, "Specs flyer extraction error");
     return {};
   }
 }

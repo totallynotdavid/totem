@@ -3,12 +3,13 @@ import type { ConversationMessage, WhatsAppAdapter } from "./types.ts";
 import { CloudApiAdapter } from "./cloud-api.ts";
 import { DevAdapter } from "./dev-adapter.ts";
 import { MessageStore } from "./message-store.ts";
+import { appLogger } from "@totem/logger";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
 function getAdapter(): WhatsAppAdapter {
   if (IS_DEV) {
-    console.log("[WhatsApp] Dev mode: using whatsapp-web.js via notifier");
+    appLogger.info("Using whatsapp-web.js via notifier (dev mode)");
     return DevAdapter;
   }
   return CloudApiAdapter;

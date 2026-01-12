@@ -4,6 +4,7 @@ import { checkEligibilityWithFallback } from "../domains/eligibility/orchestrato
 import * as LLM from "../adapters/llm/index.ts";
 import { BundleService } from "../domains/catalog/index.ts";
 import { getCategoryDisplayNames } from "../adapters/catalog/display.ts";
+import { conversationLogger } from "@totem/logger";
 
 export async function executeEnrichment(
   request: EnrichmentRequest,
@@ -72,6 +73,18 @@ async function executeEligibilityCheck(
       const categoryDisplayNames =
         getCategoryDisplayNames(affordableCategories);
 
+      conversationLogger.info(
+        {
+          dni,
+          phoneNumber,
+          segment,
+          credit,
+          eligible: true,
+          name: result.name,
+        },
+        "Customer eligible",
+      );
+
       return {
         type: "eligibility_result",
         status: "eligible",
@@ -90,7 +103,10 @@ async function executeEligibilityCheck(
       status: "not_eligible",
     };
   } catch (error) {
-    console.error(`[Enrichment] Eligibility check failed for ${dni}:`, error);
+    conversationLogger.error(
+      { error, dni, phoneNumber, enrichmentType: "check_eligibility" },
+      "Eligibility check failed",
+    );
 
     return {
       type: "eligibility_result",
@@ -115,7 +131,10 @@ async function executeDetectQuestion(
       isQuestion,
     };
   } catch (error) {
-    console.error(`[Enrichment] Detect question failed:`, error);
+    conversationLogger.error(
+      { error, phoneNumber, enrichmentType: "detect_question", message },
+      "Detect question failed",
+    );
     return {
       type: "question_detected",
       isQuestion: false,
@@ -138,7 +157,10 @@ async function executeShouldEscalate(
       shouldEscalate,
     };
   } catch (error) {
-    console.error(`[Enrichment] Should escalate failed:`, error);
+    conversationLogger.error(
+      { error, phoneNumber, enrichmentType: "should_escalate", message },
+      "Should escalate check failed",
+    );
     return {
       type: "escalation_needed",
       shouldEscalate: false,
@@ -158,12 +180,29 @@ async function executeExtractCategory(
       phoneNumber,
       "offering_products",
     );
+
+    if (category) {
+      conversationLogger.info(
+        { phoneNumber, category, availableCategories },
+        "Category extracted from message",
+      );
+    }
+
     return {
       type: "category_extracted",
       category,
     };
   } catch (error) {
-    console.error(`[Enrichment] Extract category failed:`, error);
+    conversationLogger.error(
+      {
+        error,
+        phoneNumber,
+        enrichmentType: "extract_category",
+        message,
+        availableCategories,
+      },
+      "Extract category failed",
+    );
     return {
       type: "category_extracted",
       category: null,
@@ -197,7 +236,16 @@ async function executeAnswerQuestion(
       answer,
     };
   } catch (error) {
-    console.error(`[Enrichment] Answer question failed:`, error);
+    conversationLogger.error(
+      {
+        error,
+        phoneNumber,
+        enrichmentType: "answer_question",
+        message,
+        phase: context.phase,
+      },
+      "Answer question failed",
+    );
     return {
       type: "question_answered",
       answer: "Déjame revisar eso y te respondo.",
@@ -222,7 +270,15 @@ async function executeBacklogApology(
       apology: apology || "Disculpa la demora, recién vi tu mensaje.",
     };
   } catch (error) {
-    console.error(`[Enrichment] Backlog apology failed:`, error);
+    conversationLogger.error(
+      {
+        error,
+        phoneNumber,
+        enrichmentType: "generate_backlog_apology",
+        ageMinutes,
+      },
+      "Backlog apology generation failed",
+    );
     return {
       type: "backlog_apology",
       apology: "Disculpa la demora, recién vi tu mensaje.",

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import process from "node:process";
+import { conversationLogger } from "@totem/logger";
 
 export const client = new OpenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -14,19 +15,22 @@ export function parseLLMResponse<T = Record<string, unknown>>(
   defaultValue: T,
 ): T {
   if (!content) {
-    console.error(`[LLM] Empty response from ${context}`);
+    conversationLogger.error({ context }, "Empty LLM response");
     return defaultValue;
   }
 
   try {
     return JSON.parse(content) as T;
   } catch (error) {
-    console.error(`[LLM] Failed to parse JSON from ${context}:`, {
-      error: error instanceof Error ? error.message : String(error),
-      rawContent: content,
-      contentPreview: content.substring(0, 300),
-      contentLength: content.length,
-    });
+    conversationLogger.error(
+      {
+        error: error instanceof Error ? error.message : String(error),
+        context,
+        contentPreview: content.substring(0, 300),
+        contentLength: content.length,
+      },
+      "Failed to parse LLM JSON response",
+    );
     return defaultValue;
   }
 }

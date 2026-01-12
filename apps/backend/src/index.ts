@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import process from "node:process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { appLogger } from "@totem/logger";
 import {
   startAggregatorWorker,
   stopAggregatorWorker,
@@ -14,12 +15,18 @@ function getFrontendUrl(): string {
   if (existsSync(tunnelFile)) {
     const url = readFileSync(tunnelFile, "utf-8").trim();
     if (url) {
-      console.log(`[backend] Using tunnel URL from .cloudflare-url: ${url}`);
+      appLogger.info(
+        { url, source: "cloudflare-tunnel" },
+        "Using tunnel URL from .cloudflare-url",
+      );
       return url;
     }
   }
   const fallback = process.env.FRONTEND_URL || "http://localhost:5173";
-  console.log(`[backend] Using fallback URL: ${fallback}`);
+  appLogger.info(
+    { url: fallback, source: "env-fallback" },
+    "Using fallback URL",
+  );
   return fallback;
 }
 
@@ -311,16 +318,16 @@ app.onError(errorHandler);
 const port = parseInt(process.env.PORT || "3000", 10);
 
 process.on("SIGINT", async () => {
-  console.log("\nShutting down gracefully...");
+  appLogger.info("Shutting down gracefully (SIGINT)...");
   await stopAggregatorWorker();
-  console.log("Shutdown complete");
+  appLogger.info("Shutdown complete");
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  console.log("\nShutting down gracefully...");
+  appLogger.info("Shutting down gracefully (SIGTERM)...");
   await stopAggregatorWorker();
-  console.log("Shutdown complete");
+  appLogger.info("Shutdown complete");
   process.exit(0);
 });
 

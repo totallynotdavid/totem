@@ -1,4 +1,5 @@
 import process from "node:process";
+import { appLogger } from "@totem/logger";
 
 const NOTIFIER_URL = process.env.NOTIFIER_URL || "http://localhost:3001";
 
@@ -20,7 +21,7 @@ export async function notifyTeam(
 
     return response.ok;
   } catch (error) {
-    console.error("Notifier service error:", error);
+    appLogger.error({ error, channel }, "Notifier service error");
     return false;
   }
 }

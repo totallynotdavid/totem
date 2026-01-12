@@ -2,6 +2,7 @@ import process from "node:process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { WhatsAppAdapter } from "./types.ts";
+import { appLogger, requestLogger } from "@totem/logger";
 
 const TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_ID = process.env.WHATSAPP_PHONE_ID;
@@ -11,12 +12,18 @@ function getPublicUrl(): string {
   if (existsSync(tunnelFile)) {
     const url = readFileSync(tunnelFile, "utf-8").trim();
     if (url) {
-      console.log(`[WhatsApp] Using tunnel URL from .cloudflare-url: ${url}`);
+      appLogger.info(
+        { url, source: "cloudflare-tunnel" },
+        "Using tunnel URL from .cloudflare-url",
+      );
       return url;
     }
   }
   const fallback = process.env.PUBLIC_URL || "http://localhost:3000";
-  console.log(`[WhatsApp] Using fallback URL: ${fallback}`);
+  appLogger.info(
+    { url: fallback, source: "env-fallback" },
+    "Using fallback URL",
+  );
   return fallback;
 }
 
@@ -26,7 +33,7 @@ const API_URL = `https://graph.facebook.com/v17.0/${PHONE_ID}/messages`;
 export const CloudApiAdapter: WhatsAppAdapter = {
   async sendMessage(to: string, content: string): Promise<boolean> {
     if (!TOKEN || !PHONE_ID) {
-      console.warn("[CloudAPI] Not configured, message not sent");
+      requestLogger.warn("WhatsApp Cloud API not configured, message not sent");
       return false;
     }
 
@@ -47,13 +54,16 @@ export const CloudApiAdapter: WhatsAppAdapter = {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error("[CloudAPI] Error:", error);
+        requestLogger.error(
+          { error, to, status: response.status },
+          "WhatsApp API send failed",
+        );
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("[CloudAPI] Send error:", error);
+      requestLogger.error({ error, to }, "WhatsApp send message failed");
       return false;
     }
   },
@@ -64,7 +74,10 @@ export const CloudApiAdapter: WhatsAppAdapter = {
     caption?: string,
   ): Promise<boolean> {
     if (!TOKEN || !PHONE_ID) {
-      console.warn("[CloudAPI] Not configured, image not sent:", imagePath);
+      requestLogger.warn(
+        { imagePath },
+        "WhatsApp Cloud API not configured, image not sent",
+      );
       return false;
     }
 
@@ -89,13 +102,19 @@ export const CloudApiAdapter: WhatsAppAdapter = {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error("[CloudAPI] Image error:", error);
+        requestLogger.error(
+          { error, to, imagePath, status: response.status },
+          "WhatsApp API image send failed",
+        );
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error("[CloudAPI] Send image error:", error);
+      requestLogger.error(
+        { error, to, imagePath },
+        "WhatsApp send image failed",
+      );
       return false;
     }
   },

@@ -10,6 +10,7 @@ import { db } from "../db/index.ts";
 import { getOne, getAll } from "../db/query.ts";
 import { requireRole } from "../middleware/auth.ts";
 import type { Conversation } from "@totem/types";
+import { requestLogger } from "@totem/logger";
 
 const simulator = new Hono();
 
@@ -56,7 +57,7 @@ simulator.post("/personas", async (c) => {
     );
     return c.json(persona);
   } catch (error) {
-    console.error("Failed to create persona:", error);
+    requestLogger.error({ error, user: user.id }, "Failed to create persona");
     return c.json({ error: "Failed to create persona" }, 500);
   }
 });
@@ -71,7 +72,7 @@ simulator.patch("/personas/:id", async (c) => {
     const updated = PersonasService.getById(personaId);
     return c.json(updated);
   } catch (error) {
-    console.error("Failed to update persona:", error);
+    requestLogger.error({ error, personaId }, "Failed to update persona");
     return c.json({ error: "Failed to update persona" }, 500);
   }
 });
@@ -84,7 +85,7 @@ simulator.delete("/personas/:id", (c) => {
     PersonasService.delete(personaId);
     return c.json({ status: "deleted" });
   } catch (error) {
-    console.error("Failed to delete persona:", error);
+    requestLogger.error({ error, personaId }, "Failed to delete persona");
     return c.json({ error: "Failed to delete persona" }, 500);
   }
 });

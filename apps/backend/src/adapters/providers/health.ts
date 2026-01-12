@@ -1,3 +1,5 @@
+import { eligibilityLogger } from "@totem/logger";
+
 type ProviderName = "fnb" | "gaso" | "powerbi";
 
 type HealthStatus = {
@@ -33,8 +35,9 @@ export function markBlocked(provider: ProviderName, errorMsg: string): void {
   health.blockedUntil = new Date(Date.now() + BLOCK_DURATION_MS);
 
   if (wasHealthy) {
-    console.error(
-      `[${provider.toUpperCase()}] BLOCKED for 30min - ${errorMsg}`,
+    eligibilityLogger.error(
+      { provider, errorMsg, blockedUntil: health.blockedUntil },
+      "Provider blocked for 30 minutes",
     );
   }
 }

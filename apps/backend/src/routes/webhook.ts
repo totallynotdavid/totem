@@ -4,6 +4,7 @@ import { WhatsAppService } from "../adapters/whatsapp/index.ts";
 import { isMaintenanceMode } from "../domains/settings/system.ts";
 import { holdMessage } from "../conversation/held-messages.ts";
 import { storeIncomingMessage } from "../conversation/message-inbox.ts";
+import { requestLogger } from "@totem/logger";
 
 const webhook = new Hono();
 
@@ -23,6 +24,7 @@ webhook.get("/", (c) => {
 });
 
 webhook.post("/", async (c) => {
+  let phoneNumber: string | undefined;
   try {
     const body = await c.req.json();
     const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
@@ -31,7 +33,7 @@ webhook.post("/", async (c) => {
       return c.json({ status: "no_message" });
     }
 
-    const phoneNumber = message.from;
+    phoneNumber = message.from;
 
     if (phoneNumber === "0" || !phoneNumber) {
       return c.json({ status: "ignored_system_message" });
@@ -65,7 +67,7 @@ webhook.post("/", async (c) => {
 
     return c.json({ status: "received" });
   } catch (error) {
-    console.error("Webhook error:", error);
+    requestLogger.error({ error, phoneNumber }, "Webhook error");
     return c.json({ status: "error" }, 500);
   }
 });

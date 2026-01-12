@@ -10,6 +10,8 @@ import { runEnrichmentLoop } from "./enrichment-loop.ts";
 import { executeCommands } from "./command-executor.ts";
 import { calculateResponseDelay } from "./response-timing.ts";
 import { sleep } from "./sleep.ts";
+import { conversationLogger } from "@totem/logger";
+import { notifyTeam } from "../../adapters/notifier/client.ts";
 
 export type IncomingMessage = {
   phoneNumber: string;
@@ -35,12 +37,15 @@ export async function handleMessage(message: IncomingMessage): Promise<void> {
   const { phoneNumber, content, timestamp, messageId } = message;
 
   await withLock(phoneNumber, async () => {
-    console.log(`[Handler] Processing message from ${phoneNumber}`);
+    conversationLogger.debug({ phoneNumber, messageId }, "Processing message");
 
     let conversation = getOrCreateConversation(phoneNumber);
 
     if (isSessionTimedOut(conversation.metadata)) {
-      console.log(`[Handler] Session timed out, resetting for ${phoneNumber}`);
+      conversationLogger.info(
+        { phoneNumber, lastCategory: conversation.metadata.lastCategory },
+        "Session timed out, resetting",
+      );
       resetSession(phoneNumber, conversation.metadata.lastCategory);
       conversation = getOrCreateConversation(phoneNumber);
       conversation.metadata.isReturningUser = true;
@@ -48,23 +53,35 @@ export async function handleMessage(message: IncomingMessage): Promise<void> {
 
     await WhatsAppService.markAsReadAndShowTyping(messageId);
 
-    const result = await runEnrichmentLoop(
-      conversation.phase,
-      content,
-      conversation.metadata,
-      phoneNumber,
-    );
+    try {
+      const result = await runEnrichmentLoop(
+        conversation.phase,
+        content,
+        conversation.metadata,
+        phoneNumber,
+      );
 
-    const delay = calculateResponseDelay(timestamp, Date.now());
-    if (delay > 0) {
-      await sleep(delay);
+      const delay = calculateResponseDelay(timestamp, Date.now());
+      if (delay > 0) {
+        await sleep(delay);
+      }
+
+      await executeCommands(
+        result,
+        phoneNumber,
+        conversation.metadata,
+        conversation.isSimulation,
+      );
+    } catch (error) {
+      conversationLogger.error(
+        { error, phoneNumber, messageId, phase: conversation.phase.phase },
+        "Failed to process message",
+      );
+
+      await notifyTeam(
+        "dev",
+        `CRITICAL: Message processing failed for ${phoneNumber}\nPhase: ${conversation.phase.phase}\nError: ${error instanceof Error ? error.message : String(error)}`,
+      ).catch(() => {});
     }
-
-    await executeCommands(
-      result,
-      phoneNumber,
-      conversation.metadata,
-      conversation.isSimulation,
-    );
   });
 }

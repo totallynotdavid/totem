@@ -2,6 +2,7 @@ import type { ProviderCheckResult } from "@totem/types";
 import { checkFNB } from "./fnb.ts";
 import { checkGASO } from "./gaso.ts";
 import { notifyTeam } from "../../adapters/notifier/client.ts";
+import { eligibilityLogger } from "@totem/logger";
 
 type ProviderResult = {
   success: boolean;
@@ -58,18 +59,27 @@ export async function checkEligibilityWithFallback(
 
     // Check FNB first (premium segment priority)
     if (fnbResult.eligible) {
-      console.log(`[Orchestrator] Customer eligible via FNB: ${dni}`);
+      eligibilityLogger.info(
+        { dni, segment: "fnb", eligible: true, credit: fnbResult.credit },
+        "Customer eligible via FNB",
+      );
       return fnbResult;
     }
 
     // FNB not eligible, try GASO
     if (gasoResult.eligible) {
-      console.log(`[Orchestrator] Customer eligible via GASO: ${dni}`);
+      eligibilityLogger.info(
+        { dni, segment: "gaso", eligible: true, credit: gasoResult.credit },
+        "Customer eligible via GASO",
+      );
       return gasoResult;
     }
 
     // Neither eligible
-    console.log(`[Orchestrator] Customer not eligible in any segment: ${dni}`);
+    eligibilityLogger.info(
+      { dni, eligible: false },
+      "Customer not eligible in any segment",
+    );
     return { eligible: false, credit: 0, reason: "not_qualified" };
   }
 
@@ -79,15 +89,17 @@ export async function checkEligibilityWithFallback(
 
     const fnbResult = results.fnb.result!;
     if (fnbResult.eligible) {
-      console.log(
-        `[Orchestrator] Customer eligible via FNB (PowerBI degraded): ${dni}`,
+      eligibilityLogger.warn(
+        { dni, segment: "fnb", eligible: true, degraded: "powerbi" },
+        "Customer eligible via FNB (PowerBI degraded)",
       );
       return fnbResult;
     }
 
     // FNB says not found, customer likely is not a Calidda customer
-    console.log(
-      `[Orchestrator] FNB returned not found (PowerBI unavailable): ${dni}`,
+    eligibilityLogger.info(
+      { dni, eligible: false, degraded: "powerbi" },
+      "FNB returned not found (PowerBI unavailable)",
     );
     return { eligible: false, credit: 0, reason: "not_qualified" };
   }
@@ -102,21 +114,23 @@ export async function checkEligibilityWithFallback(
 
     const gasoResult = results.powerbi.result!;
     if (gasoResult.eligible) {
-      console.log(
-        `[Orchestrator] Customer eligible via PowerBI (FNB degraded): ${dni}`,
+      eligibilityLogger.warn(
+        { dni, segment: "gaso", eligible: true, degraded: "fnb" },
+        "Customer eligible via PowerBI (FNB degraded)",
       );
       return gasoResult;
     }
 
-    console.log(
-      `[Orchestrator] Customer not eligible (FNB unavailable): ${dni}`,
+    eligibilityLogger.info(
+      { dni, eligible: false, degraded: "fnb" },
+      "Customer not eligible (FNB unavailable)",
     );
     return { eligible: false, credit: 0, reason: "not_qualified" };
   }
 
-  // If both providers fail, we escalate
-  console.error(
-    `[Orchestrator] CRITICAL: Both providers failed for DNI ${dni}`,
+  eligibilityLogger.error(
+    { dni, errors: results.errors },
+    "CRITICAL: Both providers failed",
   );
 
   await escalateToHuman(
@@ -137,13 +151,13 @@ function silentlyNotifyDev(
   dni: string,
   errors: string[],
 ): void {
-  console.warn(`[Orchestrator] ${message} for DNI ${dni}`);
+  eligibilityLogger.warn({ dni, errors }, message);
 
   notifyTeam(
     "dev",
     `${message}\nDNI: ${dni}\nErrors: ${errors.join(", ")}`,
   ).catch((error) => {
-    console.error("[Orchestrator] Failed to notify dev:", error);
+    eligibilityLogger.error({ error }, "Failed to notify dev");
   });
 }
 
@@ -151,7 +165,7 @@ async function escalateToHuman(message: string): Promise<void> {
   try {
     await notifyTeam("agent", message);
   } catch (error) {
-    console.error("[Orchestrator] Failed to escalate to human:", error);
+    eligibilityLogger.error({ error, message }, "Failed to escalate to human");
     await notifyTeam("dev", `Escalation failed: ${message}`).catch(() => {});
   }
 }

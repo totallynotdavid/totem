@@ -1,0 +1,18 @@
+{
+    "name": "@totem/logger",
+    "version": "1.0.0",
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "test": "bun test",
+        "test:watch": "bun test --watch"
+    },
+    "dependencies": {
+        "pino": "^10.1.1"
+    },
+    "devDependencies": {
+        "pino-pretty": "^13.1.3"
+    }
+}

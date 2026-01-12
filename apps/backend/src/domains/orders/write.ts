@@ -4,6 +4,7 @@ import { notifyTeam } from "../../adapters/notifier/client.ts";
 import { generateOrderNumber } from "./utils.ts";
 import { getOrderById } from "./read.ts";
 import type { CreateOrderInput } from "./types.ts";
+import { orderLogger } from "@totem/logger";
 
 export function createOrder(input: CreateOrderInput): Order {
   const id = crypto.randomUUID();
@@ -40,13 +41,18 @@ export function createOrder(input: CreateOrderInput): Order {
 
   notifyTeam(
     "sales",
-    `🔔 Nueva orden para aprobación\n\n` +
-      `📋 Orden: ${orderNumber}\n` +
-      `👤 Cliente: ${input.clientName}\n` +
-      `💰 Monto: S/ ${input.totalAmount.toFixed(2)}\n` +
-      `📱 Teléfono: ${input.conversationPhone}\n\n` +
+    `🔔 Nueva orden para aprobación:\n` +
+      `- Orden: ${orderNumber}\n` +
+      `- Cliente: ${input.clientName}\n` +
+      `- Monto: S/ ${input.totalAmount.toFixed(2)}\n` +
+      `- Teléfono: ${input.conversationPhone}\n\n` +
       `Revisar en: [Dashboard]/orders/${id}`,
-  ).catch((err) => console.error("Failed to notify team:", err));
+  ).catch((err) =>
+    orderLogger.error(
+      { err, orderId: id, orderNumber },
+      "Failed to notify team",
+    ),
+  );
 
   return order;
 }
