@@ -3,7 +3,9 @@
  * while allowing messages from different users to be processed in parallel.
  */
 
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../lib/logger.ts";
+
+const logger = createLogger("locks");
 
 type LockEntry = {
   promise: Promise<void>;
@@ -19,7 +21,7 @@ export async function acquireLock(phoneNumber: string): Promise<void> {
   // Wait for any existing lock
   const existing = locks.get(phoneNumber);
   if (existing) {
-    conversationLogger.debug({ phoneNumber }, "Waiting for lock");
+    logger.debug({ phoneNumber }, "Waiting for lock");
     await existing.promise;
   }
 
@@ -30,7 +32,7 @@ export async function acquireLock(phoneNumber: string): Promise<void> {
   });
 
   locks.set(phoneNumber, { promise, resolve: resolve! });
-  conversationLogger.debug({ phoneNumber }, "Lock acquired");
+  logger.debug({ phoneNumber }, "Lock acquired");
 }
 
 /**
@@ -41,7 +43,7 @@ export function releaseLock(phoneNumber: string): void {
   if (entry) {
     locks.delete(phoneNumber);
     entry.resolve();
-    conversationLogger.debug({ phoneNumber }, "Lock released");
+    logger.debug({ phoneNumber }, "Lock released");
   }
 }
 

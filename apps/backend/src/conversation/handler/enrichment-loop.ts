@@ -7,8 +7,9 @@ import type {
 import { transition } from "@totem/core";
 import { executeEnrichment } from "../enrichment.ts";
 import { updateConversation } from "../store.ts";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
 
+const logger = createLogger("enrichment");
 const MAX_ENRICHMENT_LOOPS = 10; // Safety limit
 
 /**
@@ -40,15 +41,15 @@ export async function runEnrichmentLoop(
 
     if (result.type !== "need_enrichment") {
       if (iterations > 1) {
-        conversationLogger.debug(
+        logger.debug(
           { phoneNumber, iterations, finalPhase: result.nextPhase.phase },
-          "Enrichment loop completed",
+          "Enrichment complete",
         );
       }
       return result;
     }
 
-    conversationLogger.debug(
+    logger.debug(
       {
         phoneNumber,
         enrichmentType: result.enrichment.type,
@@ -67,7 +68,7 @@ export async function runEnrichmentLoop(
   }
 
   // Safety: too many loops, escalate
-  conversationLogger.error(
+  logger.error(
     {
       phoneNumber,
       iterations: MAX_ENRICHMENT_LOOPS,

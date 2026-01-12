@@ -4,7 +4,9 @@ import { isAvailable, markBlocked } from "../../adapters/providers/health.ts";
 import { PersonasService } from "../../domains/personas/index.ts";
 import { isProviderForcedDown } from "../settings/system.ts";
 import { getSimulationPersona } from "./shared.ts";
-import { eligibilityLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("eligibility");
 
 export async function checkFNB(
   dni: string,
@@ -13,21 +15,18 @@ export async function checkFNB(
   if (phoneNumber) {
     const persona = await getSimulationPersona(phoneNumber);
     if (persona) {
-      eligibilityLogger.debug(
-        { dni, persona: persona.name },
-        "Using test persona",
-      );
+      logger.debug({ dni, persona: persona.name }, "Test persona");
       return PersonasService.toProviderResult(persona);
     }
   }
 
   if (isProviderForcedDown("fnb")) {
-    eligibilityLogger.debug({ dni }, "Provider forced down by admin");
+    logger.debug({ dni }, "Provider forced down");
     return { eligible: false, credit: 0, reason: "provider_forced_down" };
   }
 
   if (!isAvailable("fnb")) {
-    eligibilityLogger.debug({ dni }, "Provider unavailable");
+    logger.debug({ dni }, "Provider unavailable");
     return { eligible: false, credit: 0, reason: "provider_unavailable" };
   }
 
@@ -39,14 +38,11 @@ export async function checkFNB(
     }
 
     const credit = parseFloat(data.data.lineaCredito || "0");
-    eligibilityLogger.info(
-      { dni, credit, name: data.data.nombre },
-      "Found credit for DNI",
-    );
+    logger.info({ dni, credit, name: data.data.nombre }, "Credit found");
 
     return { eligible: true, credit, name: data.data.nombre };
   } catch (error) {
-    eligibilityLogger.error({ err: error, dni }, "Credit check failed");
+    logger.error({ error, dni }, "Credit check failed");
 
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();

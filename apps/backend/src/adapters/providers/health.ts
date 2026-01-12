@@ -1,4 +1,6 @@
-import { eligibilityLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("providers");
 
 type ProviderName = "fnb" | "gaso" | "powerbi";
 
@@ -35,7 +37,7 @@ export function markBlocked(provider: ProviderName, errorMsg: string): void {
   health.blockedUntil = new Date(Date.now() + BLOCK_DURATION_MS);
 
   if (wasHealthy) {
-    eligibilityLogger.error(
+    logger.error(
       { provider, errorMsg, blockedUntil: health.blockedUntil },
       "Provider blocked for 30 minutes",
     );

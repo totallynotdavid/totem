@@ -10,7 +10,9 @@ import { sendBundleImages } from "../images.ts";
 import { trackEvent } from "../../domains/analytics/index.ts";
 import { getOrCreateConversation, updateConversation } from "../store.ts";
 import { sleep } from "./sleep.ts";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("commands");
 
 /**
  * Execute commands returned by the state machine.
@@ -26,7 +28,7 @@ export async function executeCommands(
 ): Promise<void> {
   if (result.type === "need_enrichment") {
     // Should not reach here, enrichment loop should handle it
-    conversationLogger.error(
+    logger.error(
       { phoneNumber, resultType: result.type },
       "Unexpected need_enrichment in executeCommands",
     );
@@ -42,7 +44,7 @@ export async function executeCommands(
     JSON.stringify(currentConversation.phase) !==
     JSON.stringify(result.nextPhase)
   ) {
-    conversationLogger.info(
+    logger.info(
       {
         phoneNumber,
         fromPhase: currentConversation.phase.phase,
@@ -104,9 +106,9 @@ async function executeCommand(
 
     case "ESCALATE":
       // Phase update already handled in executeCommands
-      conversationLogger.warn(
+      logger.warn(
         { phoneNumber, reason: command.reason },
-        "Conversation escalated to human",
+        "Conversation escalated",
       );
       break;
   }
@@ -140,7 +142,7 @@ async function executeImages(
     phase.phase !== "offering_products" &&
     phase.phase !== "handling_objection"
   ) {
-    conversationLogger.warn(
+    logger.warn(
       { phoneNumber, currentPhase: phase.phase },
       "Images requested outside offering phase",
     );

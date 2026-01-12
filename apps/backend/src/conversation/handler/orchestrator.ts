@@ -10,8 +10,10 @@ import { runEnrichmentLoop } from "./enrichment-loop.ts";
 import { executeCommands } from "./command-executor.ts";
 import { calculateResponseDelay } from "./response-timing.ts";
 import { sleep } from "./sleep.ts";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
 import { notifyTeam } from "../../adapters/notifier/client.ts";
+
+const logger = createLogger("conversation");
 
 export type IncomingMessage = {
   phoneNumber: string;
@@ -37,14 +39,14 @@ export async function handleMessage(message: IncomingMessage): Promise<void> {
   const { phoneNumber, content, timestamp, messageId } = message;
 
   await withLock(phoneNumber, async () => {
-    conversationLogger.debug({ phoneNumber, messageId }, "Processing message");
+    logger.debug({ phoneNumber, messageId }, "Processing message");
 
     let conversation = getOrCreateConversation(phoneNumber);
 
     if (isSessionTimedOut(conversation.metadata)) {
-      conversationLogger.info(
+      logger.info(
         { phoneNumber, lastCategory: conversation.metadata.lastCategory },
-        "Session timed out, resetting",
+        "Session timeout reset",
       );
       resetSession(phoneNumber, conversation.metadata.lastCategory);
       conversation = getOrCreateConversation(phoneNumber);
@@ -73,9 +75,9 @@ export async function handleMessage(message: IncomingMessage): Promise<void> {
         conversation.isSimulation,
       );
     } catch (error) {
-      conversationLogger.error(
+      logger.error(
         { error, phoneNumber, messageId, phase: conversation.phase.phase },
-        "Failed to process message",
+        "Message processing failed",
       );
 
       await notifyTeam(

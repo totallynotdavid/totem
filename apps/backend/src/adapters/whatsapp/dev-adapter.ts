@@ -1,6 +1,8 @@
 import process from "node:process";
 import type { WhatsAppAdapter } from "./types.ts";
-import { requestLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("whatsapp");
 
 const NOTIFIER_URL = process.env.NOTIFIER_URL || "http://localhost:3001";
 const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost:3000";
@@ -16,7 +18,7 @@ export const DevAdapter: WhatsAppAdapter = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        requestLogger.error(
+        logger.error(
           { to, status: response.status, error: errorText },
           "Dev adapter send failed",
         );
@@ -25,7 +27,7 @@ export const DevAdapter: WhatsAppAdapter = {
 
       return true;
     } catch (error) {
-      requestLogger.error({ error, to }, "Dev adapter send error");
+      logger.error({ error, to }, "Dev adapter send error");
       return false;
     }
   },
@@ -46,7 +48,7 @@ export const DevAdapter: WhatsAppAdapter = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        requestLogger.error(
+        logger.error(
           { to, imagePath, error: errorText },
           "Dev adapter image send failed",
         );
@@ -55,10 +57,7 @@ export const DevAdapter: WhatsAppAdapter = {
 
       return true;
     } catch (error) {
-      requestLogger.error(
-        { error, to, imagePath },
-        "Dev adapter image send error",
-      );
+      logger.error({ error, to, imagePath }, "Dev adapter image send error");
       return false;
     }
   },

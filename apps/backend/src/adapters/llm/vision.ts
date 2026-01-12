@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import process from "node:process";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("llm");
 
 const client = new OpenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -86,7 +88,7 @@ Ejemplo de respuesta correcta:
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
-      conversationLogger.error(
+      logger.error(
         {
           error:
             parseError instanceof Error
@@ -111,7 +113,7 @@ Ejemplo de respuesta correcta:
       category: extractString(parsed.category),
     };
   } catch (error) {
-    conversationLogger.error({ error }, "Main flyer extraction error");
+    logger.error({ error }, "Main flyer extraction error");
     return {};
   }
 }
@@ -180,7 +182,7 @@ Ejemplo de respuesta correcta:
     try {
       parsed = JSON.parse(content);
     } catch (parseError) {
-      conversationLogger.error(
+      logger.error(
         {
           error:
             parseError instanceof Error
@@ -199,7 +201,7 @@ Ejemplo de respuesta correcta:
         extractString(parsed.specifications),
     };
   } catch (error) {
-    conversationLogger.error({ error }, "Specs flyer extraction error");
+    logger.error({ error }, "Specs flyer extraction error");
     return {};
   }
 }

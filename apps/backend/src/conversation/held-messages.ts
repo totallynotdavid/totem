@@ -1,6 +1,8 @@
 import { db } from "../db/index.ts";
 import { getAll } from "../db/query.ts";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../lib/logger.ts";
+
+const logger = createLogger("held-messages");
 
 type AggregatedHeldGroup = {
   phone_number: string;
@@ -25,10 +27,7 @@ export function holdMessage(
      VALUES (?, ?, ?, ?)`,
   ).run(phoneNumber, text, messageId, whatsappTimestamp);
 
-  conversationLogger.info(
-    { phoneNumber, messageId, whatsappTimestamp },
-    "Message held during maintenance",
-  );
+  logger.debug({ phoneNumber, messageId, whatsappTimestamp }, "Message held");
 }
 
 /**
@@ -60,10 +59,7 @@ export function clearHeldMessages(ids: number[]): void {
     ...ids,
   );
 
-  conversationLogger.info(
-    { count: ids.length },
-    "Cleared processed held messages",
-  );
+  logger.debug({ count: ids.length }, "Cleared held messages");
 }
 
 /**

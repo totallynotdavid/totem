@@ -4,7 +4,9 @@ import { checkEligibilityWithFallback } from "../domains/eligibility/orchestrato
 import * as LLM from "../adapters/llm/index.ts";
 import { BundleService } from "../domains/catalog/index.ts";
 import { getCategoryDisplayNames } from "../adapters/catalog/display.ts";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../lib/logger.ts";
+
+const logger = createLogger("enrichment");
 
 export async function executeEnrichment(
   request: EnrichmentRequest,
@@ -73,13 +75,12 @@ async function executeEligibilityCheck(
       const categoryDisplayNames =
         getCategoryDisplayNames(affordableCategories);
 
-      conversationLogger.info(
+      logger.info(
         {
           dni,
           phoneNumber,
           segment,
           credit,
-          eligible: true,
           name: result.name,
         },
         "Customer eligible",
@@ -103,7 +104,7 @@ async function executeEligibilityCheck(
       status: "not_eligible",
     };
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       { error, dni, phoneNumber, enrichmentType: "check_eligibility" },
       "Eligibility check failed",
     );
@@ -131,7 +132,7 @@ async function executeDetectQuestion(
       isQuestion,
     };
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       { error, phoneNumber, enrichmentType: "detect_question", message },
       "Detect question failed",
     );
@@ -157,7 +158,7 @@ async function executeShouldEscalate(
       shouldEscalate,
     };
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       { error, phoneNumber, enrichmentType: "should_escalate", message },
       "Should escalate check failed",
     );
@@ -181,19 +182,12 @@ async function executeExtractCategory(
       "offering_products",
     );
 
-    if (category) {
-      conversationLogger.info(
-        { phoneNumber, category, availableCategories },
-        "Category extracted from message",
-      );
-    }
-
     return {
       type: "category_extracted",
       category,
     };
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       {
         error,
         phoneNumber,
@@ -236,7 +230,7 @@ async function executeAnswerQuestion(
       answer,
     };
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       {
         error,
         phoneNumber,
@@ -270,14 +264,14 @@ async function executeBacklogApology(
       apology: apology || "Disculpa la demora, recién vi tu mensaje.",
     };
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       {
         error,
         phoneNumber,
         enrichmentType: "generate_backlog_apology",
         ageMinutes,
       },
-      "Backlog apology generation failed",
+      "Backlog apology failed",
     );
     return {
       type: "backlog_apology",

@@ -4,7 +4,9 @@ import { isAvailable, markBlocked } from "../../adapters/providers/health.ts";
 import { PersonasService } from "../../domains/personas/index.ts";
 import { isProviderForcedDown } from "../settings/system.ts";
 import { getSimulationPersona } from "./shared.ts";
-import { eligibilityLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("eligibility");
 
 function parseCreditString(saldoStr: string | undefined): number {
   if (!saldoStr || typeof saldoStr !== "string" || saldoStr === "undefined") {
@@ -25,21 +27,17 @@ export async function checkGASO(
   if (phoneNumber) {
     const persona = await getSimulationPersona(phoneNumber);
     if (persona) {
-      eligibilityLogger.debug(
-        { dni, persona: persona.name },
-        "Using test persona",
-      );
       return PersonasService.toProviderResult(persona);
     }
   }
 
   if (isProviderForcedDown("gaso")) {
-    eligibilityLogger.debug({ dni }, "Provider forced down by admin");
+    logger.debug({ dni }, "Provider forced down");
     return { eligible: false, credit: 0, reason: "provider_forced_down" };
   }
 
   if (!isAvailable("powerbi")) {
-    eligibilityLogger.debug({ dni }, "PowerBI unavailable");
+    logger.debug({ dni }, "Provider unavailable");
     return { eligible: false, credit: 0, reason: "provider_unavailable" };
   }
 
@@ -67,7 +65,7 @@ export async function checkGASO(
 
     return { eligible: true, credit, name: nombre, nse };
   } catch (error) {
-    eligibilityLogger.error({ err: error, dni }, "PowerBI query failed");
+    logger.error({ error, dni }, "PowerBI query failed");
 
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();

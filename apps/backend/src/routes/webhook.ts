@@ -4,7 +4,9 @@ import { WhatsAppService } from "../adapters/whatsapp/index.ts";
 import { isMaintenanceMode } from "../domains/settings/system.ts";
 import { holdMessage } from "../conversation/held-messages.ts";
 import { storeIncomingMessage } from "../conversation/message-inbox.ts";
-import { requestLogger } from "@totem/logger";
+import { createLogger } from "../lib/logger.ts";
+
+const logger = createLogger("webhook");
 
 const webhook = new Hono();
 
@@ -67,7 +69,7 @@ webhook.post("/", async (c) => {
 
     return c.json({ status: "received" });
   } catch (error) {
-    requestLogger.error({ error, phoneNumber }, "Webhook error");
+    logger.error({ error, phoneNumber }, "Webhook processing failed");
     return c.json({ status: "error" }, 500);
   }
 });

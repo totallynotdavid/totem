@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import process from "node:process";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("llm");
 
 export const client = new OpenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -15,14 +17,14 @@ export function parseLLMResponse<T = Record<string, unknown>>(
   defaultValue: T,
 ): T {
   if (!content) {
-    conversationLogger.error({ context }, "Empty LLM response");
+    logger.error({ context }, "Empty LLM response");
     return defaultValue;
   }
 
   try {
     return JSON.parse(content) as T;
   } catch (error) {
-    conversationLogger.error(
+    logger.error(
       {
         error: error instanceof Error ? error.message : String(error),
         context,

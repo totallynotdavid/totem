@@ -1,9 +1,11 @@
 import type { Context } from "hono";
 import process from "node:process";
-import { appLogger } from "@totem/logger";
+import { createLogger } from "../lib/logger.ts";
+
+const logger = createLogger("app");
 
 export async function errorHandler(err: Error, c: Context) {
-  appLogger.error(
+  logger.error(
     { err, path: c.req.path, method: c.req.method },
     "Unhandled error",
   );

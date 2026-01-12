@@ -3,7 +3,9 @@ import {
   getAggregatedHeldMessages,
 } from "./held-messages.ts";
 import { handleMessage } from "./handler/index.ts";
-import { conversationLogger } from "@totem/logger";
+import { createLogger } from "../lib/logger.ts";
+
+const logger = createLogger("held-messages");
 
 /**
  * Process all held messages from maintenance mode
@@ -16,11 +18,11 @@ export async function processHeldMessages(): Promise<{
   const aggregatedGroups = getAggregatedHeldMessages();
 
   if (aggregatedGroups.length === 0) {
-    conversationLogger.info("No held messages to process");
+    logger.debug("No held messages");
     return { usersProcessed: 0, messagesProcessed: 0, errors: 0 };
   }
 
-  conversationLogger.info(
+  logger.debug(
     { count: aggregatedGroups.length },
     "Processing held messages from users",
   );
@@ -30,7 +32,7 @@ export async function processHeldMessages(): Promise<{
 
   for (const group of aggregatedGroups) {
     try {
-      conversationLogger.debug(
+      logger.debug(
         { phoneNumber: group.phone_number, count: group.message_count },
         "Processing held messages for user",
       );
@@ -45,13 +47,13 @@ export async function processHeldMessages(): Promise<{
       // Track IDs for cleanup
       const ids = group.message_ids.split(",").map((id) => parseInt(id, 10));
       processedIds.push(...ids);
-      conversationLogger.debug(
+      logger.debug(
         { phoneNumber: group.phone_number, messageIds: ids },
         "Processed held messages for user",
       );
     } catch (error) {
       errorCount++;
-      conversationLogger.error(
+      logger.error(
         { error, phoneNumber: group.phone_number },
         "Failed to process held messages for user",
       );
@@ -70,7 +72,7 @@ export async function processHeldMessages(): Promise<{
     errors: errorCount,
   };
 
-  conversationLogger.info(result, "Held messages processing completed");
+  logger.debug(result, "Held messages processed");
 
   return result;
 }

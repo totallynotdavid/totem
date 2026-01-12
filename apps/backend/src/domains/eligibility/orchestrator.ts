@@ -2,7 +2,9 @@ import type { ProviderCheckResult } from "@totem/types";
 import { checkFNB } from "./fnb.ts";
 import { checkGASO } from "./gaso.ts";
 import { notifyTeam } from "../../adapters/notifier/client.ts";
-import { eligibilityLogger } from "@totem/logger";
+import { createLogger } from "../../lib/logger.ts";
+
+const logger = createLogger("eligibility");
 
 type ProviderResult = {
   success: boolean;
@@ -59,27 +61,22 @@ export async function checkEligibilityWithFallback(
 
     // Check FNB first (premium segment priority)
     if (fnbResult.eligible) {
-      eligibilityLogger.info(
-        { dni, segment: "fnb", eligible: true, credit: fnbResult.credit },
-        "Customer eligible via FNB",
+      logger.info(
+        { dni, segment: "fnb", credit: fnbResult.credit },
+        "Eligible via FNB",
       );
       return fnbResult;
     }
 
     // FNB not eligible, try GASO
     if (gasoResult.eligible) {
-      eligibilityLogger.info(
-        { dni, segment: "gaso", eligible: true, credit: gasoResult.credit },
-        "Customer eligible via GASO",
+      logger.info(
+        { dni, segment: "gaso", credit: gasoResult.credit },
+        "Eligible via GASO",
       );
       return gasoResult;
     }
 
-    // Neither eligible
-    eligibilityLogger.info(
-      { dni, eligible: false },
-      "Customer not eligible in any segment",
-    );
     return { eligible: false, credit: 0, reason: "not_qualified" };
   }
 
@@ -89,18 +86,14 @@ export async function checkEligibilityWithFallback(
 
     const fnbResult = results.fnb.result!;
     if (fnbResult.eligible) {
-      eligibilityLogger.warn(
-        { dni, segment: "fnb", eligible: true, degraded: "powerbi" },
-        "Customer eligible via FNB (PowerBI degraded)",
+      logger.warn(
+        { dni, segment: "fnb", credit: fnbResult.credit, degraded: "powerbi" },
+        "Eligible (PowerBI degraded)",
       );
       return fnbResult;
     }
 
-    // FNB says not found, customer likely is not a Calidda customer
-    eligibilityLogger.info(
-      { dni, eligible: false, degraded: "powerbi" },
-      "FNB returned not found (PowerBI unavailable)",
-    );
+    // FNB says not found
     return { eligible: false, credit: 0, reason: "not_qualified" };
   }
 
@@ -114,24 +107,18 @@ export async function checkEligibilityWithFallback(
 
     const gasoResult = results.powerbi.result!;
     if (gasoResult.eligible) {
-      eligibilityLogger.warn(
+      logger.warn(
         { dni, segment: "gaso", eligible: true, degraded: "fnb" },
         "Customer eligible via PowerBI (FNB degraded)",
       );
       return gasoResult;
     }
 
-    eligibilityLogger.info(
-      { dni, eligible: false, degraded: "fnb" },
-      "Customer not eligible (FNB unavailable)",
-    );
-    return { eligible: false, credit: 0, reason: "not_qualified" };
+    return { eligible: false, credit: 0 };
   }
 
-  eligibilityLogger.error(
-    { dni, errors: results.errors },
-    "CRITICAL: Both providers failed",
-  );
+  // Both failed
+  logger.error({ dni, errors: results.errors }, "Both providers failed");
 
   await escalateToHuman(
     `URGENTE: Ambos proveedores caídos. Cliente esperando: DNI ${dni}${phoneNumber ? `, WhatsApp ${phoneNumber}` : ""}`,
@@ -151,13 +138,13 @@ function silentlyNotifyDev(
   dni: string,
   errors: string[],
 ): void {
-  eligibilityLogger.warn({ dni, errors }, message);
+  logger.warn({ dni, errors }, message);
 
   notifyTeam(
     "dev",
     `${message}\nDNI: ${dni}\nErrors: ${errors.join(", ")}`,
   ).catch((error) => {
-    eligibilityLogger.error({ error }, "Failed to notify dev");
+    logger.error({ error }, "Notify dev failed");
   });
 }
 
@@ -165,7 +152,6 @@ async function escalateToHuman(message: string): Promise<void> {
   try {
     await notifyTeam("agent", message);
   } catch (error) {
-    eligibilityLogger.error({ error, message }, "Failed to escalate to human");
-    await notifyTeam("dev", `Escalation failed: ${message}`).catch(() => {});
+    logger.error({ error, message }, "Escalation failed");
   }
 }
