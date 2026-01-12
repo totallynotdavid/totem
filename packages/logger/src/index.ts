@@ -1,100 +1,101 @@
 import pino from "pino";
 import type { Logger, LoggerOptions } from "pino";
-import path from "node:path";
 import process from "node:process";
 
-const LOG_LEVEL = process.env.LOG_LEVEL || "info";
-const IS_DEV = process.env.NODE_ENV === "development";
+export function parseLogConfig(): {
+  default: string;
+  modules: Record<string, string>;
+} {
+  const config = {
+    default: process.env.LOG_LEVEL || "info",
+    modules: {} as Record<string, string>,
+  };
 
-// Base configuration for all loggers
-const baseConfig: LoggerOptions = {
-  level: LOG_LEVEL,
-  timestamp: pino.stdTimeFunctions.isoTime,
-};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("LOG_LEVEL_") && value) {
+      const moduleName = key.replace("LOG_LEVEL_", "").toLowerCase();
+      config.modules[moduleName] = value;
+    }
+  }
 
-/**
- * Creates a logger instance with the given name and optional file output
- *
- * @param name - Logger name (will appear in logs)
- * @param options - Optional configuration
- * @param options.filename - Optional filename for file logging (relative to data/logs/)
- * @param options.dataPath - Optional data directory path (default: ./data)
- * @returns Pino logger instance
- */
-export function createLogger(
-  name: string,
-  options?: {
-    filename?: string;
-    dataPath?: string;
-  },
-): Logger {
-  const dataPath = options?.dataPath || "./data";
+  return config;
+}
 
-  if (IS_DEV) {
-    // Development: pretty console output + optional file
-    const targets: Array<{
-      target: string;
-      level: string;
-      options?: Record<string, unknown>;
-    }> = [
+export interface LoggerConfig {
+  name: string;
+  logDir: string;
+  filename?: string;
+  isDevelopment?: boolean;
+  baseLevel?: string;
+}
+
+export function createRootLogger(config: LoggerConfig): Logger {
+  const isDev = config.isDevelopment ?? process.env.NODE_ENV === "development";
+  const level = config.baseLevel || parseLogConfig().default;
+
+  const baseConfig: LoggerOptions = {
+    level,
+    name: config.name,
+    timestamp: pino.stdTimeFunctions.isoTime,
+  };
+
+  if (isDev) {
+    // Dev: pretty console + JSON file
+    const targets: any[] = [
       {
         target: "pino-pretty",
-        level: LOG_LEVEL,
+        level,
         options: {
           colorize: true,
-          translateTime: "HH:MM:ss",
+          translateTime: "HH:MM:ss.l",
           ignore: "pid,hostname",
         },
       },
     ];
 
-    // Add file target if filename specified
-    if (options?.filename) {
+    if (config.filename) {
       targets.push({
         target: "pino/file",
-        level: LOG_LEVEL,
+        level,
         options: {
-          destination: path.join(dataPath, "logs", options.filename),
+          destination: `${config.logDir}/${config.filename}`,
           mkdir: true,
         },
       });
     }
 
-    return pino({
-      ...baseConfig,
-      name,
-      transport: { targets },
-    });
+    return pino({ ...baseConfig, transport: { targets } });
   }
 
-  // Production: JSON to file (or stdout if no filename)
-  if (options?.filename) {
+  // Production: JSON to file or stdout
+  if (config.filename) {
     return pino(
-      { ...baseConfig, name },
+      baseConfig,
       pino.destination({
-        dest: path.join(dataPath, "logs", options.filename),
+        dest: `${config.logDir}/${config.filename}`,
         sync: false,
         mkdir: true,
       }),
     );
   }
 
-  // No file specified - just use stdout
-  return pino({ ...baseConfig, name });
+  return pino(baseConfig);
 }
 
-// Domain-specific loggers for apps/backend
-export const appLogger = createLogger("app", { filename: "app.log" });
-export const requestLogger = createLogger("request", {
-  filename: "requests.log",
-});
-export const conversationLogger = createLogger("conversation", {
-  filename: "conversations.log",
-});
-export const eligibilityLogger = createLogger("eligibility", {
-  filename: "eligibility.log",
-});
-export const orderLogger = createLogger("order", { filename: "orders.log" });
+export function createModuleLogger(
+  rootLogger: Logger,
+  moduleName: string,
+): Logger {
+  const config = parseLogConfig();
+  const moduleLevel = config.modules[moduleName.toLowerCase()];
 
-// Export types for convenience
+  const child = rootLogger.child({ module: moduleName });
+
+  if (moduleLevel && moduleLevel !== config.default) {
+    child.level = moduleLevel;
+  }
+
+  return child;
+}
+
 export type { Logger } from "pino";

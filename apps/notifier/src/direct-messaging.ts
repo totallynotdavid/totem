@@ -1,6 +1,5 @@
 import { client } from "./whatsapp-client.ts";
 import { MessageMedia } from "whatsapp-web.js";
-import { messageLogger } from "./logger.ts";
 
 export async function sendDirectMessage(
   phoneNumber: string,
@@ -10,18 +9,9 @@ export async function sendDirectMessage(
     throw new Error("WhatsApp client not initialized");
   }
 
-  try {
-    const jid = formatPhoneToJid(phoneNumber);
-    await client.sendMessage(jid, content);
-    messageLogger.debug({ phoneNumber, jid }, "Direct message sent");
-    return true;
-  } catch (error) {
-    messageLogger.error(
-      { error, phoneNumber },
-      "Failed to send direct message",
-    );
-    throw error;
-  }
+  const jid = formatPhoneToJid(phoneNumber);
+  await client.sendMessage(jid, content);
+  return true;
 }
 
 export async function sendDirectImage(
@@ -33,19 +23,10 @@ export async function sendDirectImage(
     throw new Error("WhatsApp client not initialized");
   }
 
-  try {
-    const jid = formatPhoneToJid(phoneNumber);
-    const media = await MessageMedia.fromUrl(imageUrl, { unsafeMime: true });
-    await client.sendMessage(jid, media, { caption });
-    messageLogger.debug({ phoneNumber, imageUrl, jid }, "Direct image sent");
-    return true;
-  } catch (error) {
-    messageLogger.error(
-      { error, phoneNumber, imageUrl },
-      "Failed to send direct image",
-    );
-    throw error;
-  }
+  const jid = formatPhoneToJid(phoneNumber);
+  const media = await MessageMedia.fromUrl(imageUrl, { unsafeMime: true });
+  await client.sendMessage(jid, media, { caption });
+  return true;
 }
 
 function formatPhoneToJid(phoneNumber: string): string {

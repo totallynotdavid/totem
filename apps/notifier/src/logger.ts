@@ -1,61 +1,28 @@
-import pino from "pino";
-import path from "node:path";
+import { createRootLogger, type Logger } from "@totem/logger";
 import process from "node:process";
 
 const DATA_PATH = process.env.NOTIFIER_DATA_PATH || "./data/notifier";
-const LOG_LEVEL = process.env.LOG_LEVEL || "info";
-const IS_DEV = process.env.NODE_ENV === "development";
 
-// Base configuration
-const baseConfig = {
-  level: LOG_LEVEL,
-  timestamp: pino.stdTimeFunctions.isoTime,
-};
+const rootLogger = createRootLogger({
+  name: "notifier",
+  logDir: `${DATA_PATH}/logs`,
+  filename: "notifier.log",
+  isDevelopment: process.env.NODE_ENV === "development",
+});
 
-// Create logger that writes to both console and file
-function createLogger(filename: string, name?: string) {
-  if (IS_DEV) {
-    // Dev: pretty console + file
-    return pino({
-      ...baseConfig,
-      name,
-      transport: {
-        targets: [
-          {
-            target: "pino-pretty",
-            level: LOG_LEVEL,
-            options: {
-              colorize: true,
-              translateTime: "HH:MM:ss",
-              ignore: "pid,hostname",
-            },
-          },
-          {
-            target: "pino/file",
-            level: LOG_LEVEL,
-            options: {
-              destination: path.join(DATA_PATH, "logs", filename),
-              mkdir: true,
-            },
-          },
-        ],
-      },
-    });
+export function createLogger(
+  module: string,
+  context?: Record<string, unknown>,
+): Logger {
+  const child = rootLogger.child({ module, ...context });
+
+  // Check for module-specific log level override
+  const moduleEnvKey = `LOG_LEVEL_${module.toUpperCase()}`;
+  const moduleLevel = process.env[moduleEnvKey];
+
+  if (moduleLevel) {
+    child.level = moduleLevel;
   }
 
-  // Production: JSON to file only
-  return pino(
-    baseConfig,
-    pino.destination({
-      dest: path.join(DATA_PATH, "logs", filename),
-      sync: false,
-      mkdir: true,
-    }),
-  );
+  return child;
 }
-
-// Application logger: service lifecycle, errors, important events
-export const appLogger = createLogger("notifier.log");
-
-// Message logger: WhatsApp events, message flows, debugging
-export const messageLogger = createLogger("messages.log", "messages");

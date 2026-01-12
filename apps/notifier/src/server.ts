@@ -3,7 +3,9 @@ import { enqueueMessage } from "./queue.ts";
 import { sendDirectMessage, sendDirectImage } from "./direct-messaging.ts";
 import { client } from "./whatsapp-client.ts";
 import process from "node:process";
-import { appLogger } from "./logger.ts";
+import { createLogger } from "./logger.ts";
+
+const logger = createLogger("server");
 
 const app = new Hono();
 
@@ -19,7 +21,7 @@ app.post("/send", async (c) => {
     await sendDirectMessage(phoneNumber, content);
     return c.json({ status: "sent" });
   } catch (error) {
-    appLogger.error({ error, phoneNumber }, "Failed to send direct message");
+    logger.error({ error, phoneNumber }, "Direct message send failed");
     return c.json({ error: "Failed to send message" }, 500);
   }
 });
@@ -36,10 +38,7 @@ app.post("/send-image", async (c) => {
     await sendDirectImage(phoneNumber, imageUrl, caption);
     return c.json({ status: "sent" });
   } catch (error) {
-    appLogger.error(
-      { error, phoneNumber, imageUrl },
-      "Failed to send direct image",
-    );
+    logger.error({ error, phoneNumber, imageUrl }, "Direct image send failed");
     return c.json({ error: "Failed to send image" }, 500);
   }
 });
@@ -90,5 +89,5 @@ export async function startServer() {
     fetch: app.fetch,
   });
 
-  appLogger.info({ port }, "HTTP server listening");
+  logger.info({ port }, "HTTP server listening");
 }

@@ -2,8 +2,9 @@ import type { Client, Message } from "whatsapp-web.js";
 import process from "node:process";
 import { forwardToBackend } from "./message-forwarder.ts";
 import { saveGroupMapping } from "./group-registry.ts";
-import { appLogger, messageLogger } from "./logger.ts";
+import { createLogger } from "./logger.ts";
 
+const logger = createLogger("messages");
 const IS_DEV = process.env.NODE_ENV === "development";
 
 export function setupMessageHandler(client: Client) {
@@ -11,7 +12,7 @@ export function setupMessageHandler(client: Client) {
     try {
       await handleMessage(msg);
     } catch (error) {
-      messageLogger.error({ error, from: msg.from }, "Error handling message");
+      logger.error({ error, from: msg.from }, "Message handling failed");
     }
   });
 }
@@ -20,38 +21,26 @@ async function handleMessage(msg: Message) {
   const isGroupMessage = msg.from.endsWith("@g.us");
   const isCommand = msg.body?.startsWith("@") || false;
 
-  // Ignore WhatsApp system messages from 0@c.us
-  if (msg.from === "0@c.us") {
-    messageLogger.debug(
-      { from: msg.from },
-      "Ignoring system message from 0@c.us",
-    );
-    return;
-  }
+  // Ignore system messages
+  if (msg.from === "0@c.us") return;
 
-  // Ignore empty messages or placeholder messages (encryption handshake)
+  // Ignore empty messages
   const hasContent = msg.body && msg.body.trim().length > 0;
-  if (!hasContent && !isGroupMessage) {
-    messageLogger.debug(
-      { from: msg.from, body: msg.body },
-      "Ignoring empty/placeholder message",
-    );
-    return;
-  }
+  if (!hasContent && !isGroupMessage) return;
 
-  messageLogger.info(
+  // Debug: log all incoming messages
+  logger.debug(
     {
       from: msg.from,
-      body: msg.body?.substring(0, 50),
+      preview: msg.body?.substring(0, 50),
       isGroup: isGroupMessage,
       isCommand,
       fromMe: msg.fromMe,
     },
-    "Received message",
+    "Message received",
   );
 
   if (IS_DEV && !isGroupMessage && !isCommand && msg.fromMe === false) {
-    messageLogger.debug({ from: msg.from }, "Forwarding message to backend");
     await forwardToBackend(msg);
     return;
   }
@@ -71,8 +60,5 @@ async function handleActivateCommand(msg: Message) {
     `Grupo "${groupName}" activado para notificaciones.\nJID: ${msg.from}`,
   );
 
-  appLogger.info(
-    { groupName, jid: msg.from },
-    "Group registered via @activate",
-  );
+  logger.info({ groupName, jid: msg.from }, "Group registered");
 }

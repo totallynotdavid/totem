@@ -1,6 +1,8 @@
 import { client } from "./whatsapp-client.ts";
 import { getGroupJID } from "./group-registry.ts";
-import { appLogger, messageLogger } from "./logger.ts";
+import { createLogger } from "./logger.ts";
+
+const logger = createLogger("queue");
 
 type QueuedMessage = {
   channel: "agent" | "dev" | "sales" | "direct";
@@ -34,11 +36,10 @@ async function processQueue() {
 
     try {
       await sendMessage(item.channel, item.message, item.phoneNumber);
-      messageLogger.info(
+      logger.debug(
         {
           channel: item.channel,
           phoneNumber: item.phoneNumber,
-          messagePreview: item.message.substring(0, 50),
         },
         "Message sent",
       );
@@ -50,26 +51,25 @@ async function processQueue() {
           : { raw: String(error) };
 
       if (item.attempts < MAX_RETRIES) {
-        appLogger.warn(
+        logger.warn(
           {
             ...errorDetails,
             channel: item.channel,
             attempt: item.attempts,
-            maxRetries: MAX_RETRIES,
           },
-          "Message send failed, retrying",
+          "Send failed, retrying",
         );
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-        queue.unshift(item); // Re-queue at front
+        queue.unshift(item);
       } else {
-        appLogger.error(
+        logger.error(
           {
             ...errorDetails,
             channel: item.channel,
             phoneNumber: item.phoneNumber,
-            message: item.message,
+            messagePreview: item.message.substring(0, 100),
           },
-          "Message permanently failed after max retries",
+          "Message permanently failed",
         );
       }
     }
