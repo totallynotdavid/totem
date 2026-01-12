@@ -17,9 +17,9 @@ setup_environment() {
 		return
 	fi
 
-    echo "==="
+	echo "==="
 	echo "Environment setup"
-    echo "==="
+	echo "==="
 
 	JWT_SECRET=$(openssl rand -base64 32)
 	echo "Generated JWT_SECRET"
