@@ -20,7 +20,7 @@ export async function initializeWhatsAppClient() {
     puppeteer: {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
       headless: process.env.NODE_ENV === "production",
-      executablePath: process.env.CHROMIUM_PATH || "",
+      executablePath: process.env.CHROMIUM_PATH || undefined,
     },
   });
 
