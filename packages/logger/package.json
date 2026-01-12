@@ -5,10 +5,6 @@
     "exports": {
         ".": "./src/index.ts"
     },
-    "scripts": {
-        "test": "bun test",
-        "test:watch": "bun test --watch"
-    },
     "dependencies": {
         "pino": "^10.1.1"
     },
