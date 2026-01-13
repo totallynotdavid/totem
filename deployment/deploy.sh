@@ -3,36 +3,77 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-DEPLOY_USER="${SUDO_USER:-$USER}"
-DEPLOY_HOME=$(eval echo "~$DEPLOY_USER")
+PROVIDED_ENV="${1:-}"
 
 [ ! -d "$SCRIPT_DIR/lib" ] && {
-    echo "Error: Missing lib directory" >&2
-    exit 1
+	echo "Error: Missing lib directory" >&2
+	exit 1
 }
 
-source "$SCRIPT_DIR/lib/tools.sh"
-source "$SCRIPT_DIR/lib/build.sh"
+source "$SCRIPT_DIR/lib/output.sh"
+source "$SCRIPT_DIR/lib/preflight.sh"
+source "$SCRIPT_DIR/lib/bun.sh"
+source "$SCRIPT_DIR/lib/system.sh"
 source "$SCRIPT_DIR/lib/env.sh"
-source "$SCRIPT_DIR/lib/envfile.sh"
-source "$SCRIPT_DIR/lib/services.sh"
+source "$SCRIPT_DIR/lib/build.sh"
+source "$SCRIPT_DIR/lib/service-install.sh"
+
+deploy_as_system() {
+	local source_root="$1"
+	local env_file="$2"
+
+	local repo_url=$(git -C "$source_root" config --get remote.origin.url 2>/dev/null || echo "https://github.com/totallynotdavid/totem")
+
+	setup_system_deployment "$repo_url"
+	copy_env_to_system "$source_root" "$env_file"
+
+	sudo -H -u totem bash -c "
+        export HOME=/opt/totem
+        source /opt/totem/deployment/lib/bun.sh
+        install_bun /opt/totem
+    "
+
+	local bun_bin=$(get_bun_path "/opt/totem")
+	set_bun_capabilities "$bun_bin"
+	symlink_bun_globally "$bun_bin"
+}
+
+deploy_as_user() {
+	install_bun "$HOME"
+	local bun_bin=$(get_bun_path "$HOME")
+	set_bun_capabilities "$bun_bin"
+}
 
 main() {
-    echo "==> Installing tools"
-    install_mise "$DEPLOY_HOME"
-    setup_bun "$PROJECT_ROOT" "$DEPLOY_HOME"
-    
-    echo "==> Setting up environment"
-    setup_environment "$PROJECT_ROOT"
-    
-    echo "==> Building project"
-    build_project "$PROJECT_ROOT"
-    
-    echo "==> Installing services"
-    install_all_services "$DEPLOY_USER" "$DEPLOY_HOME" "$PROJECT_ROOT"
-    
-    local ip=$(hostname -I | awk '{print $1}')
-    echo "==> Deployment complete: http://$ip"
+	preflight_check "$PROJECT_ROOT"
+
+	local deploy_user="${SUDO_USER:-$USER}"
+	local deploy_home=$(eval echo "~$deploy_user")
+	local project_root="$PROJECT_ROOT"
+
+	step "Installing Bun runtime"
+	if [ "$(id -u)" -eq 0 ]; then
+		deploy_as_system "$PROJECT_ROOT" "$PROVIDED_ENV"
+		deploy_user="totem"
+		deploy_home="/opt/totem"
+		project_root="/opt/totem"
+	else
+		deploy_as_user
+	fi
+
+	step "Setting up environment"
+	setup_environment "$project_root" "$PROVIDED_ENV"
+
+	step "Building project"
+	local bun_bin=$(get_bun_path "$deploy_home")
+	build_project "$project_root" "$bun_bin"
+
+	step "Installing services"
+	install_all_services "$deploy_user" "$deploy_home" "$project_root"
+
+	local ip=$(hostname -I | awk '{print $1}')
+	echo ""
+	echo "Deployment complete: http://$ip"
 }
 
 main

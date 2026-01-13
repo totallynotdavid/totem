@@ -1,9 +1,7 @@
-#!/usr/bin/env bash
-
 generate_env_file() {
-    local file="$1"
-    
-    cat >"$file" <<EOF
+	local file="$1"
+
+	cat >"$file" <<EOF
 NODE_ENV=production
 LOG_LEVEL=info
 PORT=3000

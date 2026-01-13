@@ -1,29 +1,40 @@
-#!/usr/bin/env bash
+needs_install() {
+	local dir="$1"
+	[ ! -d "$dir/node_modules" ]
+}
 
 build_project() {
-    local root="$1"
-    
-    mkdir -p "$root/data/uploads" "$root/data/notifier"
-    
-    cd "$root" || exit 1
-    [ ! -d "node_modules" ] && {
-        bun install >/dev/null 2>&1 || {
-            echo "Error: Root bun install failed" >&2
-            exit 1
-        }
-    }
-    
-    cd "$root/apps/backend" || exit 1
-    [ ! -d "node_modules" ] && {
-        bun install >/dev/null 2>&1 || {
-            echo "Error: Backend bun install failed" >&2
-            exit 1
-        }
-    }
-    
-    cd "$root/apps/frontend" || exit 1
-    bun run build >/dev/null 2>&1 || {
-        echo "Error: Frontend build failed" >&2
-        exit 1
-    }
+	local root="$1"
+	local bun="$2"
+
+	mkdir -p "$root/data/uploads" "$root/data/notifier"
+
+	if needs_install "$root"; then
+		cd "$root"
+		"$bun" install --silent || {
+			echo "Error: Root dependencies failed" >&2
+			exit 1
+		}
+		substep "root dependencies installed"
+	fi
+
+	if needs_install "$root/apps/backend"; then
+		cd "$root/apps/backend"
+		"$bun" install --silent || {
+			echo "Error: Backend dependencies failed" >&2
+			exit 1
+		}
+		substep "backend dependencies installed"
+	fi
+
+	cd "$root/apps/frontend"
+	if [ ! -d "dist" ] || [ "package.json" -nt "dist" ]; then
+		"$bun" run build --silent || {
+			echo "Error: Frontend build failed" >&2
+			exit 1
+		}
+		substep "frontend built"
+	else
+		substep "frontend up to date"
+	fi
 }
