@@ -1,5 +1,5 @@
 {
-    "name": "@totem/whatsapp-utils",
+    "name": "@totem/utils",
     "version": "1.0.0",
     "type": "module",
     "exports": {

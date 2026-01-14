@@ -20,6 +20,7 @@
         "@totem/core": "workspace:*",
         "@totem/logger": "workspace:*",
         "@totem/types": "workspace:*",
+        "@totem/utils": "workspace:*",
         "@types/jsonwebtoken": "^9.0.10",
         "bcryptjs": "^3.0.3",
         "hono": "^4.11.4",

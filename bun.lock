@@ -20,6 +20,7 @@
         "@totem/core": "workspace:*",
         "@totem/logger": "workspace:*",
         "@totem/types": "workspace:*",
+        "@totem/utils": "workspace:*",
         "@types/jsonwebtoken": "^9.0.10",
         "bcryptjs": "^3.0.3",
         "hono": "^4.11.4",
@@ -38,6 +39,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@totem/types": "workspace:*",
+        "@totem/utils": "workspace:*",
       },
       "devDependencies": {
         "@sveltejs/adapter-auto": "^7.0.0",
@@ -62,7 +64,7 @@
       "dependencies": {
         "@totem/logger": "workspace:*",
         "@totem/types": "workspace:*",
-        "@totem/whatsapp-utils": "workspace:*",
+        "@totem/utils": "workspace:*",
         "hono": "^4.11.1",
         "pino-pretty": "^13.1.3",
         "qrcode-terminal": "^0.12.0",
@@ -95,8 +97,8 @@
       "name": "@totem/types",
       "version": "1.0.0",
     },
-    "packages/whatsapp-utils": {
-      "name": "@totem/whatsapp-utils",
+    "packages/utils": {
+      "name": "@totem/utils",
       "version": "1.0.0",
     },
   },
@@ -377,7 +379,7 @@
 
     "@totem/types": ["@totem/types@workspace:packages/types"],
 
-    "@totem/whatsapp-utils": ["@totem/whatsapp-utils@workspace:packages/whatsapp-utils"],
+    "@totem/utils": ["@totem/utils@workspace:packages/utils"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 
