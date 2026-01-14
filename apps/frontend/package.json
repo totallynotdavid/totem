@@ -22,7 +22,7 @@
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.1.17",
         "@totem/tsconfig": "workspace:*",
-        "svelte": "^5.46.1",
+        "svelte": "^5.46.3",
         "svelte-adapter-bun": "^1.0.1",
         "svelte-check": "^4.3.5",
         "tailwindcss": "^4.1.17",
