@@ -43,6 +43,10 @@ export function getFrontendUrl(): string {
  * Constructs URL from PORT environment variable.
  */
 export function getBackendUrl(): string {
+  if (process.env.NODE_ENV === "production") {
+    return "http://localhost:3001";
+  }
+
   const port = process.env.PORT ?? "3000";
   return `http://localhost:${port}`;
 }
