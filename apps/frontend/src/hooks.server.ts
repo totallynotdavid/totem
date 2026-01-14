@@ -1,24 +1,10 @@
 import type { Handle } from "@sveltejs/kit";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { getBackendUrl } from "@totem/utils";
 
 /**
  * Server hook that runs on every request
  * Validates session and populates event.locals.user
  */
-function getBackendUrl(): string {
-  const tunnelFile = resolve(import.meta.dirname, "../../../.cloudflare-url");
-  if (existsSync(tunnelFile)) {
-    const url = readFileSync(tunnelFile, "utf-8").trim();
-    if (url) {
-      console.log(`[frontend] Using tunnel URL from .cloudflare-url: ${url}`);
-      return url;
-    }
-  }
-  const fallback = process.env.BACKEND_URL || "http://localhost:3000";
-  console.log(`[frontend] Using fallback URL: ${fallback}`);
-  return fallback;
-}
 
 export const handle: Handle = async ({ event, resolve }) => {
   const sessionToken = event.cookies.get("session");

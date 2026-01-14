@@ -1,6 +1,7 @@
 import { db } from "../../db/index.ts";
 import { logAction } from "../../platform/audit/logger.ts";
 import { notifyTeam } from "../../adapters/notifier/client.ts";
+import { getFrontendUrl } from "@totem/utils";
 import { resolve, join } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -55,7 +56,7 @@ export async function uploadContract(
     audioFile: audioFile.name,
   });
 
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const frontendUrl = getFrontendUrl();
   const message =
     `📄 Contrato subido\n\n` +
     `Cliente: ${clientName || phoneNumber}\n` +

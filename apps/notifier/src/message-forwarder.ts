@@ -1,25 +1,10 @@
 import process from "node:process";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import type { Message } from "whatsapp-web.js";
 import { parseIncomingMessage } from "./adapters/webjs-parser.ts";
 import { createLogger } from "./logger.ts";
+import { getBackendUrl } from "@totem/utils";
 
 const logger = createLogger("forwarder");
-
-function getBackendUrl(): string {
-  const tunnelFile = resolve(import.meta.dir, "../../.cloudflare-url");
-  if (existsSync(tunnelFile)) {
-    const url = readFileSync(tunnelFile, "utf-8").trim();
-    if (url) {
-      logger.debug({ url, source: "tunnel" }, "Backend URL configured");
-      return url;
-    }
-  }
-  const fallback = process.env.BACKEND_URL || "http://localhost:3000";
-  logger.debug({ url: fallback, source: "env" }, "Backend URL configured");
-  return fallback;
-}
 
 const BACKEND_URL = getBackendUrl();
 

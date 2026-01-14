@@ -1,5 +1,6 @@
 import { db } from "../../db/index.ts";
 import { createLogger } from "../../lib/logger.ts";
+import { getFrontendUrl } from "@totem/utils";
 
 const logger = createLogger("assignment");
 
@@ -75,7 +76,7 @@ async function sendAssignmentNotification(
   clientName: string | null,
   clientPhone: string,
 ): Promise<void> {
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const frontendUrl = getFrontendUrl();
   const message =
     `🎯 Nueva asignación de cliente\n\n` +
     `Cliente: ${clientName || "Sin nombre"}\n` +

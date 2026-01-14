@@ -2,29 +2,14 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import process from "node:process";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { createLogger } from "./lib/logger.ts";
+import { getFrontendUrl } from "@totem/utils";
 import {
   startAggregatorWorker,
   stopAggregatorWorker,
 } from "./conversation/aggregator-worker.ts";
 
 const logger = createLogger("app");
-
-function getFrontendUrl(): string {
-  const tunnelFile = resolve(import.meta.dir, "../../../.cloudflare-url");
-  if (existsSync(tunnelFile)) {
-    const url = readFileSync(tunnelFile, "utf-8").trim();
-    if (url) {
-      logger.debug({ url, source: "tunnel" }, "Frontend URL configured");
-      return url;
-    }
-  }
-  const fallback = process.env.FRONTEND_URL || "http://localhost:5173";
-  logger.debug({ url: fallback, source: "env" }, "Frontend URL configured");
-  return fallback;
-}
 
 import { db } from "./db/index.ts";
 import { initializeDatabase } from "./db/init.ts";
