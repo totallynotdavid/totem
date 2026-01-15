@@ -9,7 +9,7 @@ User=DEPLOY_USER
 WorkingDirectory=PROJECT_ROOT/apps/frontend
 Environment="NODE_ENV=production"
 Environment="HOST=0.0.0.0"
-Environment="PORT=3000"
+Environment="PORT=5173"
 Environment="PATH=DEPLOY_HOME/.bun/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=DEPLOY_HOME/.bun/bin/bun dist/index.js
 
