@@ -119,7 +119,75 @@ function seedSampleConversations(db: Database, agentId: string) {
     }),
   );
 
-  console.log("Sample conversations created for testing");
+  // Sample messages for Juan Pérez (+51999888777)
+  const juanMessages = [
+    { role: "incoming", text: "Hola", timestamp: now - 3600000 },
+    {
+      role: "outgoing",
+      text: "¡Qué tal! Somos Cálidda. ¿Tu servicio de gas está a tu nombre?",
+      timestamp: now - 3598000,
+    },
+    { role: "incoming", text: "Sí", timestamp: now - 3590000 },
+    {
+      role: "outgoing",
+      text: "Genial 😊. Por favor, indícame tu DNI para verificar tus beneficios.",
+      timestamp: now - 3588000,
+    },
+    { role: "incoming", text: "12345678", timestamp: now - 3580000 },
+    {
+      role: "outgoing",
+      text: "Perfecto. Tienes una línea de crédito de S/ 5,000. Te puedo ofrecer productos financieros.",
+      timestamp: now - 3575000,
+    },
+  ];
+
+  const msgStmt = db.prepare(
+    `INSERT INTO conversation_messages (phone_number, message_id, role, content, timestamp) VALUES (?, ?, ?, ?, ?)`,
+  );
+
+  for (const msg of juanMessages) {
+    msgStmt.run(
+      "+51999888777",
+      `msg_${crypto.randomUUID()}`,
+      msg.role,
+      msg.text,
+      msg.timestamp,
+    );
+  }
+
+  // Sample messages for Ana Torres (+51999888888)
+  const anaMessages = [
+    { role: "incoming", text: "Buenos días", timestamp: now - 7200000 },
+    {
+      role: "outgoing",
+      text: "¡Hola! Somos Cálidda. ¿El servicio de gas está a tu nombre?",
+      timestamp: now - 7198000,
+    },
+    { role: "incoming", text: "Sí es mío", timestamp: now - 7190000 },
+    {
+      role: "outgoing",
+      text: "Perfecto. Indícame tu DNI para verificar tus beneficios.",
+      timestamp: now - 7188000,
+    },
+    { role: "incoming", text: "87654321", timestamp: now - 7180000 },
+    {
+      role: "outgoing",
+      text: "Tienes una línea de crédito de S/ 2,500! Te puedo mostrar equipos disponibles.",
+      timestamp: now - 7175000,
+    },
+  ];
+
+  for (const msg of anaMessages) {
+    msgStmt.run(
+      "+51999888888",
+      `msg_${crypto.randomUUID()}`,
+      msg.role,
+      msg.text,
+      msg.timestamp,
+    );
+  }
+
+  console.log("Sample conversations with messages created for testing");
 }
 
 function seedPeriod(db: Database) {
