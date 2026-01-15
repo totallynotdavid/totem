@@ -296,7 +296,7 @@ app.get("/api/providers/:dni", requireAuth, async (c) => {
 // Error handler
 app.onError(errorHandler);
 
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = 3000;
 
 process.on("SIGINT", async () => {
   logger.info("Shutting down (SIGINT)");
