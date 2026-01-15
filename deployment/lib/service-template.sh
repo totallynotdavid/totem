@@ -33,9 +33,14 @@ render_service_template() {
 add_writable_paths() {
 	local content="$1"
 	local root="$2"
+	local name="$3"
 
 	if echo "$content" | grep -q "ReadWritePaths="; then
-		local paths="$root $root/data $root/apps/backend/data"
+		local paths="$root $root/data"
+		case "$name" in
+			backend) paths="$paths $root/apps/backend/data" ;;
+			notifier) paths="$paths $root/apps/notifier/data" ;;
+		esac
 		for path in $paths; do
 			if ! echo "$content" | grep -q "$path"; then
 				content=$(echo "$content" | sed "s|ReadWritePaths=\(.*\)|ReadWritePaths=\1 $path|")

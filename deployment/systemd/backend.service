@@ -20,7 +20,6 @@ RestartSec=10
 
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=PROJECT_ROOT/data
 

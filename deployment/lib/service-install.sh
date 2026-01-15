@@ -19,7 +19,7 @@ install_service() {
 
 	local template=$(find_service_template "$name" "$root")
 	local content=$(render_service_template "$template" "$user" "$home" "$root")
-	content=$(add_writable_paths "$content" "$root")
+	content=$(add_writable_paths "$content" "$root" "$name")
 
 	local target="/etc/systemd/system/totem-$name.service"
 
