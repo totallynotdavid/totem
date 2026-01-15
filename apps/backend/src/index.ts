@@ -75,6 +75,7 @@ app.use(
   }),
 );
 
+// Unprotected routes
 app.get("/health", async (c) => {
   const providers = getAllStatus();
   const notifier = await checkNotifierHealth();
@@ -91,6 +92,8 @@ app.get("/health", async (c) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.route("/api/webhook", webhook);
 
 // Auth routes
 app.post("/api/auth/login", rateLimiter, async (c) => {
@@ -160,8 +163,6 @@ app.patch("/api/auth/availability", requireAuth, async (c) => {
 });
 
 // Protected routes
-app.route("/webhook", webhook);
-
 app.use("/api/*", requireAuth);
 app.route("/api/simulator", simulator);
 app.route("/api/conversations", conversations);
@@ -296,7 +297,7 @@ app.get("/api/providers/:dni", requireAuth, async (c) => {
 // Error handler
 app.onError(errorHandler);
 
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = 3000;
 
 process.on("SIGINT", async () => {
   logger.info("Shutting down (SIGINT)");

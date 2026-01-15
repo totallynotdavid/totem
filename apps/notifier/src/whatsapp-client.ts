@@ -20,7 +20,7 @@ export async function initializeWhatsAppClient() {
     puppeteer: {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
       headless: true,
-      executablePath: process.env.CHROMIUM_PATH || undefined,
+      executablePath: process.env.CHROME_PATH || undefined,
     },
     webVersionCache: {
       type: "remote",
