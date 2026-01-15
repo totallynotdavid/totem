@@ -38,8 +38,8 @@ add_writable_paths() {
 	if echo "$content" | grep -q "ReadWritePaths="; then
 		local paths="$root $root/data"
 		case "$name" in
-			backend) paths="$paths $root/apps/backend/data" ;;
-			notifier) paths="$paths $root/apps/notifier/data" ;;
+		backend) paths="$paths $root/apps/backend/data" ;;
+		notifier) paths="$paths $root/apps/notifier/data" ;;
 		esac
 		for path in $paths; do
 			if ! echo "$content" | grep -q "$path"; then
