@@ -51,6 +51,11 @@ deploy_as_user() {
 	set_bun_capabilities "$bun_bin"
 }
 
+create_data_dirs() {
+	local root="$1"
+	sudo -u totem mkdir -p "$root/apps/backend/data" "$root/apps/notifier/data" /var/lib/totem/notifier
+}
+
 main() {
 	preflight_check "$PROJECT_ROOT"
 
@@ -74,6 +79,9 @@ main() {
 	step "Building project"
 	local bun_bin=$(get_bun_path "$deploy_home")
 	build_project "$project_root" "$bun_bin"
+
+	step "Creating data directories"
+	create_data_dirs "$project_root"
 
 	step "Installing services"
 	install_all_services "$deploy_user" "$deploy_home" "$project_root"
