@@ -199,16 +199,50 @@ async function executeExtractCategory(
   phoneNumber: string,
 ): Promise<EnrichmentResult> {
   try {
-    const category = await LLM.extractCategory(
+    const taxonomy = BundleService.getAllCategories();
+
+    const result = await LLM.extractCategory(
       message,
       availableCategories,
+      taxonomy,
       phoneNumber,
       "offering_products",
     );
 
+    if (!result.category) {
+      return {
+        type: "category_extracted",
+        category: null,
+        status: "unknown",
+      };
+    }
+
+    let status: "available" | "unavailable" | "unaffordable" | "unknown" =
+      "unknown";
+
+    if (availableCategories.includes(result.category)) {
+      status = "available";
+
+      if (result.requestedProduct) {
+        const hasSpecificProduct = BundleService.hasProduct(
+          result.category,
+          result.requestedProduct,
+        );
+        if (!hasSpecificProduct) {
+          status = "unavailable";
+        }
+      }
+    } else if (taxonomy.includes(result.category)) {
+      status = "unaffordable";
+    } else {
+      status = "unavailable";
+    }
+
     return {
       type: "category_extracted",
-      category,
+      category: result.category,
+      status,
+      requestedProduct: result.requestedProduct,
     };
   } catch (error) {
     logger.error(

@@ -112,18 +112,19 @@ export async function shouldEscalate(
 export async function extractCategory(
   message: string,
   availableCategories: string[],
+  taxonomy: string[],
   phoneNumber: string,
   state?: string,
-): Promise<string | null> {
+): Promise<{ category: string | null; requestedProduct?: string }> {
   try {
-    const metadata = getCategoryMetadata(availableCategories);
+    const metadata = getCategoryMetadata(taxonomy); // Use full taxonomy for metadata
 
     const completion = await client.chat.completions.create({
       model: MODEL,
       messages: [
         {
           role: "system",
-          content: buildExtractCategoryPrompt(metadata),
+          content: buildExtractCategoryPrompt(metadata, availableCategories),
         },
         { role: "user", content: message },
       ],
@@ -132,17 +133,19 @@ export async function extractCategory(
     });
     const choice = completion.choices[0];
     const content = choice?.message.content;
-    const res = parseLLMResponse<{ category?: string }>(
-      content,
-      "extractCategory",
-      {},
-    );
-    return res.category ?? null;
+    const res = parseLLMResponse<{
+      category?: string;
+      requestedProduct?: string;
+    }>(content, "extractCategory", {});
+    return {
+      category: res.category ?? null,
+      requestedProduct: res.requestedProduct,
+    };
   } catch (e) {
     logLLMError(phoneNumber, "extractCategory", classifyLLMError(e), state, {
       availableCategories,
     });
-    return null;
+    return { category: null };
   }
 }
 

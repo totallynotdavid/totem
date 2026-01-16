@@ -135,7 +135,12 @@ export type EnrichmentResult =
     }
   | { type: "question_detected"; isQuestion: boolean }
   | { type: "escalation_needed"; shouldEscalate: boolean }
-  | { type: "category_extracted"; category: string | null }
+  | {
+      type: "category_extracted";
+      category: string | null;
+      status?: "available" | "unavailable" | "unaffordable" | "unknown";
+      requestedProduct?: string;
+    }
   | { type: "question_answered"; answer: string }
   | {
       type: "backlog_apology";
