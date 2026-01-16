@@ -68,10 +68,10 @@ app.use(
 );
 
 app.use(
-  "/static/*",
+  "/media/*",
   serveStatic({
     root: "./data/uploads",
-    rewriteRequestPath: (p) => p.replace(/^\/static/, ""),
+    rewriteRequestPath: (p) => p.replace(/^\/media/, ""),
   }),
 );
 

@@ -41,7 +41,7 @@ export const DevAdapter: WhatsAppAdapter = {
     imagePath: string,
     caption?: string,
   ): Promise<string | null> {
-    const imageUrl = `${publicUrl}/static/${imagePath}`;
+    const imageUrl = `${publicUrl}/media/${imagePath}`;
 
     try {
       const response = await fetch(`${notifierUrl}/send-image`, {

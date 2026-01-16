@@ -61,7 +61,7 @@ export const CloudApiAdapter: WhatsAppAdapter = {
     }
 
     const publicUrl = getPublicUrl();
-    const link = `${publicUrl}/static/${imagePath}`;
+    const link = `${publicUrl}/media/${imagePath}`;
 
     try {
       const payload: Record<string, unknown> = {
