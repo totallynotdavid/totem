@@ -68,13 +68,11 @@ export async function runEnrichmentLoop(
       "Enrichment needed",
     );
 
-    // Persist pending phase immediately to prevent state loss on crash
     if (result.pendingPhase) {
       currentPhase = result.pendingPhase;
       updateConversation(phoneNumber, currentPhase, metadata);
     }
 
-    // Use handler registry to execute enrichment
     const handler = enrichmentRegistry.get(result.enrichment.type);
     enrichment = await handler.execute(result.enrichment, {
       phoneNumber,
