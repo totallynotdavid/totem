@@ -1,12 +1,3 @@
-/**
- * Centralized model configuration for all LLM operations.
- *
- * Update this file when:
- * - Switching models (e.g., GPT-5 → GPT-6)
- * - Adjusting temperature/parameters
- * - Testing different models for specific tasks
- */
-
 type OpConfig = { temperature?: number };
 
 export const MODEL_CONFIG = {
