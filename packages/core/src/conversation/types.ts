@@ -74,7 +74,8 @@ export type ConversationPhase =
       purchaseConfirmed: boolean;
       subPhase?: "just_confirmed" | "post_sale_support";
     }
-  | { phase: "escalated"; reason: string };
+  | { phase: "escalated"; reason: string }
+  | { phase: "waiting_for_recovery"; dni: string; timestamp: number };
 
 export type ConversationMetadata = {
   dni?: string;
@@ -129,7 +130,7 @@ export type EnrichmentRequest =
 export type EnrichmentResult =
   | {
       type: "eligibility_result";
-      status: "eligible" | "not_eligible" | "needs_human";
+      status: "eligible" | "not_eligible" | "needs_human" | "system_outage";
       segment?: Segment;
       credit?: number;
       name?: string;

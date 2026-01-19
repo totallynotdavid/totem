@@ -61,7 +61,8 @@ export function transition(input: TransitionInput): TransitionResult {
       return transitionClosing(phase, message, metadata, enrichment);
 
     case "escalated":
-      // Escalated state is terminal (no transitions)
+    case "waiting_for_recovery":
+      // Escalated/waiting state is terminal (no transitions)
       return { type: "update", nextPhase: phase, commands: [] };
   }
 }
