@@ -12,7 +12,7 @@ import jwt from "jsonwebtoken";
 
 const FAKE_TOKEN = jwt.sign({ commercialAllyId: "123" }, "secret");
 
-describe("Provider Outage Recovery (Full Integration)", () => {
+describe("Provider outage recovery", () => {
   const testPhone = "51999999999";
   const testDNI = "12345678";
   const originalFetch = globalThis.fetch;
