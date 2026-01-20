@@ -1,4 +1,5 @@
 import { eventBus } from "../shared/events/index.ts";
+import { AsyncEventEmitter } from "../shared/events/async-emitter.ts";
 import { DevAlertSubscriber } from "../domains/notifications/subscribers/dev-alert-subscriber.ts";
 import { AgentAlertSubscriber } from "../domains/notifications/subscribers/agent-alert-subscriber.ts";
 import type {
@@ -13,6 +14,8 @@ function subscribe<E extends DomainEvent>(
 ): void {
   eventBus.on<E>(eventType, handler);
 }
+
+export const asyncEmitter = new AsyncEventEmitter(eventBus);
 
 export function setupEventSubscribers(): void {
   const devAlerts = new DevAlertSubscriber();

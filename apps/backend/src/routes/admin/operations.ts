@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { isOk } from "../../shared/result/index.ts";
-import { RetryEligibilityHandler } from "../../domains/recovery/handlers/index.ts";
+import { retryEligibilityHandler } from "../../bootstrap/index.ts";
 import { countWaitingForRecovery } from "../../domains/recovery/store/index.ts";
 import {
   processHeldMessages,
@@ -58,9 +58,8 @@ operations.get("/outage-status", (c) => {
 // Retry eligibility for waiting users
 operations.post("/retry-eligibility", async (c) => {
   const user = c.get("user");
-  const handler = new RetryEligibilityHandler();
 
-  const result = await handler.execute();
+  const result = await retryEligibilityHandler.execute();
 
   if (isOk(result)) {
     const stats = result.value;

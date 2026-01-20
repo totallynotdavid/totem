@@ -4,6 +4,7 @@ import { getWaitingConversations } from "../store/recovery-store.ts";
 import { processConversation } from "../processor/conversation-processor.ts";
 import type { RecoveryResult } from "../processor/conversation-processor.ts";
 import { createLogger } from "../../../lib/logger.ts";
+import { CheckEligibilityHandler } from "../../eligibility/handlers/check-eligibility-handler.ts";
 
 const logger = createLogger("retry-eligibility");
 
@@ -11,6 +12,8 @@ const logger = createLogger("retry-eligibility");
  * Handler for retrying eligibility checks for stuck conversations
  */
 export class RetryEligibilityHandler {
+  constructor(private eligibilityHandler: CheckEligibilityHandler) {}
+
   async execute(): Promise<Result<RecoveryResult, Error>> {
     const waitingResult = getWaitingConversations();
 
@@ -36,7 +39,7 @@ export class RetryEligibilityHandler {
     };
 
     for (const row of stuckConversations) {
-      await processConversation(row, stats);
+      await processConversation(row, stats, this.eligibilityHandler);
     }
 
     logger.info(stats, "Recovery complete");

@@ -9,14 +9,22 @@ import { AnswerQuestionHandler } from "./handlers/answer-question-handler.ts";
 import { GenerateBacklogApologyHandler } from "./handlers/generate-backlog-apology-handler.ts";
 import { RecoverUnclearResponseHandler } from "./handlers/recover-unclear-response-handler.ts";
 
-enrichmentRegistry.register(new CheckEligibilityEnrichmentHandler());
-enrichmentRegistry.register(new DetectQuestionHandler());
-enrichmentRegistry.register(new ShouldEscalateHandler());
-enrichmentRegistry.register(new IsProductRequestHandler());
-enrichmentRegistry.register(new ExtractBundleIntentHandler());
-enrichmentRegistry.register(new AnswerQuestionHandler());
-enrichmentRegistry.register(new GenerateBacklogApologyHandler());
-enrichmentRegistry.register(new RecoverUnclearResponseHandler());
+import { CheckEligibilityHandler } from "../../domains/eligibility/handlers/check-eligibility-handler.ts";
+
+export function initializeEnrichmentRegistry(
+  eligibilityHandler: CheckEligibilityHandler,
+) {
+  enrichmentRegistry.register(
+    new CheckEligibilityEnrichmentHandler(eligibilityHandler),
+  );
+  enrichmentRegistry.register(new DetectQuestionHandler());
+  enrichmentRegistry.register(new ShouldEscalateHandler());
+  enrichmentRegistry.register(new IsProductRequestHandler());
+  enrichmentRegistry.register(new ExtractBundleIntentHandler());
+  enrichmentRegistry.register(new AnswerQuestionHandler());
+  enrichmentRegistry.register(new GenerateBacklogApologyHandler());
+  enrichmentRegistry.register(new RecoverUnclearResponseHandler());
+}
 
 export { enrichmentRegistry };
 export type { EnrichmentContext } from "./handler-interface.ts";

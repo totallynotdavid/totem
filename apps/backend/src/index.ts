@@ -42,7 +42,7 @@ import { getAllStatus } from "./adapters/providers/health.ts";
 import { ReportService } from "./domains/reports/index.ts";
 import { checkNotifierHealth } from "./adapters/notifier/client.ts";
 import { checkAndReassignTimeouts } from "./domains/conversations/assignment.ts";
-import { CheckEligibilityHandler } from "./domains/eligibility/handlers/check-eligibility-handler.ts";
+import { eligibilityHandler } from "./bootstrap/index.ts";
 import { initializeApplication } from "./bootstrap/index.ts";
 import { isOk } from "./shared/result/index.ts";
 
@@ -285,8 +285,7 @@ app.get("/api/providers/:dni", requireAuth, async (c) => {
   }
 
   try {
-    const handler = new CheckEligibilityHandler();
-    const result = await handler.execute(dni);
+    const result = await eligibilityHandler.execute(dni);
     const healthStatus = getAllStatus();
 
     let displayResult: any = result;

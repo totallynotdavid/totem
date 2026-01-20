@@ -16,7 +16,7 @@ export type RecoveryResult = {
 export async function processConversation(
   row: { phone_number: string; context_data: string },
   stats: RecoveryResult,
-  eligibilityHandler = new CheckEligibilityHandler(),
+  eligibilityHandler: CheckEligibilityHandler,
 ): Promise<void> {
   try {
     const context = JSON.parse(row.context_data);

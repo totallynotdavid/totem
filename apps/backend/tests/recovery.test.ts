@@ -1,25 +1,13 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { CheckEligibilityHandler } from "../src/domains/eligibility/handlers/check-eligibility-handler.ts";
 import { RetryEligibilityHandler } from "../src/domains/recovery/handlers/retry-eligibility-handler.ts";
+import { FNBProvider } from "../src/domains/eligibility/providers/fnb-provider.ts";
+import { PowerBIProvider } from "../src/domains/eligibility/providers/powerbi-provider.ts";
+import { initializeEnrichmentRegistry } from "../src/conversation/enrichment/index.ts";
 import { db } from "../src/db/index.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import jwt from "jsonwebtoken";
-
-mock.module("../src/config.ts", () => ({
-  config: {
-    calidda: {
-      baseUrl: "http://fnb.fake",
-      credentials: { username: "test", password: "test" },
-    },
-    powerbi: {
-      datasetId: "fake-ds",
-      reportId: "fake-rep",
-      modelId: "0",
-      resourceKey: "fake-key",
-    },
-  },
-}));
 
 const FAKE_TOKEN = jwt.sign({ commercialAllyId: "123" }, "secret");
 
@@ -40,6 +28,14 @@ describe("Provider Outage Recovery (Full Integration)", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
+    // Set required env vars
+    process.env.CALIDDA_BASE_URL = "http://fnb.fake";
+    process.env.CALIDDA_USERNAME = "test";
+    process.env.CALIDDA_PASSWORD = "test";
+    process.env.POWERBI_DATASET_ID = "fake-ds";
+    process.env.POWERBI_REPORT_ID = "fake-rep";
+    process.env.POWERBI_MODEL_ID = "0";
+    process.env.POWERBI_RESOURCE_KEY = "fake-key";
     const schemaPath = join(import.meta.dir, "../src/db/schema.sql");
     const schema = readFileSync(schemaPath, "utf-8");
 
@@ -55,6 +51,15 @@ describe("Provider Outage Recovery (Full Integration)", () => {
       testPhone,
     );
     db.prepare("DELETE FROM users WHERE id = 'test-agent'").run();
+
+    // Initialize enrichment registry
+    const fnbProvider = new FNBProvider();
+    const powerbiProvider = new PowerBIProvider();
+    const eligibilityHandler = new CheckEligibilityHandler(
+      fnbProvider,
+      powerbiProvider,
+    );
+    initializeEnrichmentRegistry(eligibilityHandler);
   });
 
   afterEach(() => {
@@ -81,8 +86,13 @@ describe("Provider Outage Recovery (Full Integration)", () => {
       return new Response("Not Found", { status: 404 });
     }) as any;
 
-    const handler = new CheckEligibilityHandler();
-    const result = await handler.execute(testDNI, testPhone);
+    const fnbProvider = new FNBProvider();
+    const powerbiProvider = new PowerBIProvider();
+    const eligibilityHandler = new CheckEligibilityHandler(
+      fnbProvider,
+      powerbiProvider,
+    );
+    const result = await eligibilityHandler.execute(testDNI, testPhone);
 
     if (result.ok && result.value.type === "eligibility_result") {
       expect(result.value.status).toBe("system_outage");
@@ -129,7 +139,13 @@ describe("Provider Outage Recovery (Full Integration)", () => {
       return new Response("Not Found", { status: 404 });
     }) as any;
 
-    const handler = new RetryEligibilityHandler();
+    const fnbProvider = new FNBProvider();
+    const powerbiProvider = new PowerBIProvider();
+    const eligibilityHandler = new CheckEligibilityHandler(
+      fnbProvider,
+      powerbiProvider,
+    );
+    const handler = new RetryEligibilityHandler(eligibilityHandler);
     const result = await handler.execute();
 
     if (result.ok) {

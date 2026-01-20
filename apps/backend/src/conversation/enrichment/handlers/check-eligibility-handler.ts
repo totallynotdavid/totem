@@ -18,14 +18,17 @@ export class CheckEligibilityEnrichmentHandler
 {
   readonly type = "check_eligibility" as const;
 
+  constructor(private eligibilityHandler: CheckEligibilityHandler) {}
+
   async execute(
     request: Extract<EnrichmentRequest, { type: "check_eligibility" }>,
     context: EnrichmentContext,
   ): Promise<Extract<EnrichmentResult, { type: "eligibility_result" }>> {
-    const handler = new CheckEligibilityHandler();
-
     try {
-      const result = await handler.execute(request.dni, context.phoneNumber);
+      const result = await this.eligibilityHandler.execute(
+        request.dni,
+        context.phoneNumber,
+      );
 
       if (isOk(result)) {
         return result.value as Extract<

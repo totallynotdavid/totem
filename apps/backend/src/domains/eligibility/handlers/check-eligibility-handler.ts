@@ -1,6 +1,6 @@
 import type { Result } from "../../../shared/result/index.ts";
 import { isErr } from "../../../shared/result/index.ts";
-import { eventBus } from "../../../shared/events/index.ts";
+import { asyncEmitter } from "../../../bootstrap/event-bus-setup.ts";
 import { FNBProvider } from "../providers/fnb-provider.ts";
 import { PowerBIProvider } from "../providers/powerbi-provider.ts";
 import { evaluateResults } from "../strategy/eligibility-strategy.ts";
@@ -14,8 +14,8 @@ const logger = createLogger("check-eligibility");
 
 export class CheckEligibilityHandler {
   constructor(
-    private fnbProvider = new FNBProvider(),
-    private powerbiProvider = new PowerBIProvider(),
+    private fnbProvider: FNBProvider,
+    private powerbiProvider: PowerBIProvider,
   ) {}
 
   async execute(
@@ -37,7 +37,7 @@ export class CheckEligibilityHandler {
     // 3. Handle evaluation result
     if (isErr(evaluation)) {
       // If system outage, emit event
-      await eventBus.emit(
+      await asyncEmitter.emitCritical(
         SystemOutageDetected({
           dni,
           errors: [
@@ -69,7 +69,7 @@ export class CheckEligibilityHandler {
     // 4. Success with potential warnings
     if (evaluation.value.warnings?.length) {
       const warning = evaluation.value.warnings[0]!;
-      await eventBus.emit(
+      asyncEmitter.emitAsync(
         ProviderDegraded({
           failedProvider: warning.failedProvider,
           workingProvider: warning.workingProvider,
@@ -108,6 +108,6 @@ export class CheckEligibilityHandler {
       needsHuman: false,
     });
 
-    return { ok: true, value: enrichmentResult } as Result<EnrichmentResult>;
+    return { ok: true, value: enrichmentResult };
   }
 }
