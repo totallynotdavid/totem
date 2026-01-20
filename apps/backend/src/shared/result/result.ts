@@ -52,9 +52,6 @@ export function map<T, U, E>(
   return result.ok ? Ok(fn(result.value)) : result;
 }
 
-/**
- * FlatMap (monadic bind)
- */
 export function flatMap<T, U, E>(
   result: Result<T, E>,
   fn: (value: T) => Result<U, E>,
