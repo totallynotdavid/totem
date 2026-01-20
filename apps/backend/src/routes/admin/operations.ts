@@ -13,7 +13,6 @@ const logger = createLogger("admin-operations");
 
 const operations = new Hono();
 
-// Get held messages status
 operations.get("/held-messages-status", (c) => {
   const count = countHeldMessages();
   return c.json({ pendingCount: count });
@@ -51,7 +50,6 @@ operations.post("/process-held-messages", async (c) => {
   });
 });
 
-// Get system outage status
 operations.get("/outage-status", (c) => {
   const waitingCount = countWaitingForRecovery();
   return c.json({ waitingCount });
