@@ -5,7 +5,7 @@ import type {
   SystemOutageDetectedEvent,
   ProviderDegradedEvent,
 } from "../domains/eligibility/events/index.ts";
-import type { DomainEvent } from "../shared/events/event-types.ts";
+import type { DomainEvent } from "../shared/events/types.ts";
 
 function subscribe<E extends DomainEvent>(
   eventType: string,
