@@ -84,7 +84,6 @@ describe("Provider Outage Recovery (Full Integration)", () => {
     const handler = new CheckEligibilityHandler();
     const result = await handler.execute(testDNI, testPhone);
 
-    // Result always returns ok, check the eligibility_result status
     if (result.ok && result.value.type === "eligibility_result") {
       expect(result.value.status).toBe("system_outage");
       expect(result.value.handoffReason).toBe("both_providers_down");
