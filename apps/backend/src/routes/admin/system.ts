@@ -4,7 +4,6 @@ import { logAction, getAuditTrail } from "../../platform/audit/logger.ts";
 
 const system = new Hono();
 
-// Get LLM errors
 system.get("/llm-errors", (c) => {
   const phoneFilter = c.req.query("phone");
   const operationFilter = c.req.query("operation");
@@ -50,7 +49,6 @@ system.get("/llm-errors", (c) => {
   });
 });
 
-// Get audit trail
 system.get("/audit", (c) => {
   const userIdFilter = c.req.query("user_id");
   const limitStr = c.req.query("limit");
@@ -77,7 +75,6 @@ system.get("/audit", (c) => {
   return c.json({ logs: logsWithNames });
 });
 
-// Get system settings
 system.get("/settings", (c) => {
   const settings = db.prepare("SELECT * FROM system_settings").all() as {
     key: string;
@@ -96,7 +93,6 @@ system.get("/settings", (c) => {
   return c.json(formatted);
 });
 
-// Update system settings
 system.post("/settings", async (c) => {
   const user = c.get("user");
   const settings = await c.req.json();
