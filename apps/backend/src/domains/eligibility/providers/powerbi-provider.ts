@@ -47,11 +47,7 @@ export class PowerBIProvider implements EligibilityProvider {
     if (isProviderForcedDown("gaso")) {
       logger.debug({ dni }, "Provider forced down");
       return Err(
-        new ProviderError(
-          "PowerBI",
-          "forced_down",
-          "Provider forced down",
-        ),
+        new ProviderError("PowerBI", "forced_down", "Provider forced down"),
       );
     }
 
@@ -59,11 +55,7 @@ export class PowerBIProvider implements EligibilityProvider {
     if (!isAvailable("powerbi")) {
       logger.debug({ dni }, "Provider unavailable (circuit breaker)");
       return Err(
-        new ProviderError(
-          "PowerBI",
-          "unavailable",
-          "Circuit breaker open",
-        ),
+        new ProviderError("PowerBI", "unavailable", "Circuit breaker open"),
       );
     }
 
@@ -75,11 +67,7 @@ export class PowerBIProvider implements EligibilityProvider {
       // All fields empty => provider unavailable
       if (!estado && !nombre && !saldoStr && !nseStr) {
         return Err(
-          new ProviderError(
-            "PowerBI",
-            "unavailable",
-            "No data returned",
-          ),
+          new ProviderError("PowerBI", "unavailable", "No data returned"),
         );
       }
 

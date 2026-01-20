@@ -3,10 +3,7 @@ import { CheckEligibilityHandler } from "../../eligibility/handlers/check-eligib
 import { executeCommands } from "../../../conversation/handler/command-executor.ts";
 import { transitionCheckingEligibility } from "@totem/core";
 import { createLogger } from "../../../lib/logger.ts";
-import type {
-  ConversationPhase,
-  ConversationMetadata,
-} from "@totem/core";
+import type { ConversationPhase, ConversationMetadata } from "@totem/core";
 
 const logger = createLogger("recovery-processor");
 

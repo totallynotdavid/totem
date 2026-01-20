@@ -35,11 +35,7 @@ export class FNBProvider implements EligibilityProvider {
     if (isProviderForcedDown("fnb")) {
       logger.debug({ dni }, "Provider forced down");
       return Err(
-        new ProviderError(
-          "FNB",
-          "forced_down",
-          "Provider forced down",
-        ),
+        new ProviderError("FNB", "forced_down", "Provider forced down"),
       );
     }
 
@@ -47,11 +43,7 @@ export class FNBProvider implements EligibilityProvider {
     if (!isAvailable("fnb")) {
       logger.debug({ dni }, "Provider unavailable (circuit breaker)");
       return Err(
-        new ProviderError(
-          "FNB",
-          "unavailable",
-          "Circuit breaker open",
-        ),
+        new ProviderError("FNB", "unavailable", "Circuit breaker open"),
       );
     }
 
