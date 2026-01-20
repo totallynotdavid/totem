@@ -33,6 +33,13 @@ export class EnrichmentHandlerRegistry {
     }
     return handler;
   }
+
+  /**
+   * Clear all registered handlers. Used for testing.
+   */
+  clear(): void {
+    this.handlers.clear();
+  }
 }
 
 export const enrichmentRegistry = new EnrichmentHandlerRegistry();

@@ -4,6 +4,7 @@ import { RetryEligibilityHandler } from "../src/domains/recovery/handlers/retry-
 import { FNBProvider } from "../src/domains/eligibility/providers/fnb-provider.ts";
 import { PowerBIProvider } from "../src/domains/eligibility/providers/powerbi-provider.ts";
 import { initializeEnrichmentRegistry } from "../src/conversation/enrichment/index.ts";
+import { enrichmentRegistry } from "../src/conversation/enrichment/registry.ts";
 import { db } from "../src/db/index.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -11,31 +12,16 @@ import jwt from "jsonwebtoken";
 
 const FAKE_TOKEN = jwt.sign({ commercialAllyId: "123" }, "secret");
 
-mock.module("../src/adapters/providers/health.ts", () => ({
-  isAvailable: () => true,
-  markBlocked: () => {},
-}));
-mock.module("../src/domains/settings/system.ts", () => ({
-  isProviderForcedDown: () => false,
-}));
-mock.module("../src/domains/eligibility/shared.ts", () => ({
-  getSimulationPersona: () => null,
-}));
-
 describe("Provider Outage Recovery (Full Integration)", () => {
   const testPhone = "51999999999";
   const testDNI = "12345678";
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    // Set required env vars
-    process.env.CALIDDA_BASE_URL = "http://fnb.fake";
-    process.env.CALIDDA_USERNAME = "test";
-    process.env.CALIDDA_PASSWORD = "test";
-    process.env.POWERBI_DATASET_ID = "fake-ds";
-    process.env.POWERBI_REPORT_ID = "fake-rep";
-    process.env.POWERBI_MODEL_ID = "0";
-    process.env.POWERBI_RESOURCE_KEY = "fake-key";
+    process.env.CALIDDA_BASE_URL = "https://test.calidda.com";
+    process.env.CALIDDA_USERNAME = "testuser";
+    process.env.CALIDDA_PASSWORD = "testpass";
+
     const schemaPath = join(import.meta.dir, "../src/db/schema.sql");
     const schema = readFileSync(schemaPath, "utf-8");
 
@@ -59,6 +45,7 @@ describe("Provider Outage Recovery (Full Integration)", () => {
       fnbProvider,
       powerbiProvider,
     );
+    enrichmentRegistry.clear();
     initializeEnrichmentRegistry(eligibilityHandler);
   });
 
