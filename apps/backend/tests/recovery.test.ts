@@ -2,8 +2,8 @@ import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { CheckEligibilityHandler } from "../src/domains/eligibility/handlers/check-eligibility-handler.ts";
 import { RetryEligibilityHandler } from "../src/domains/recovery/handlers/retry-eligibility-handler.ts";
 import { db } from "../src/db/index.ts";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import jwt from "jsonwebtoken";
 
 mock.module("../src/config.ts", () => ({
