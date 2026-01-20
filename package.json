@@ -7,6 +7,7 @@
         "packages/*"
     ],
     "scripts": {
+        "seed": "cd apps/backend && bun run seed",
         "clean": "bun run clean:deps && bun run clean:sessions && bun run clean:logs",
         "clean:deps": "bun x shx rm -rf apps/*/node_modules node_modules",
         "clean:sessions": "bun x shx rm -rf apps/notifier/data",
@@ -21,7 +22,6 @@
         "build": "bun run build:frontend",
         "prod:soft": "bun x pm2 start ecosystem.config.js",
         "prod:soft:stop": "bun x pm2 stop ecosystem.config.js",
-        "seed": "cd apps/backend && bun run seed",
         "deploy": "bash deployment/deploy.sh",
         "format": "biome format --write",
         "format:md": "bun x prettier \"**/*.{md,yml,yaml}\" --write --print-width=80 --prose-wrap=always",
