@@ -163,7 +163,7 @@ export type Command =
   | { type: "SEND_MESSAGE"; text: string }
   | {
       type: "SEND_IMAGES";
-      category: string;
+      category?: string;
       offset?: number;
       query?: string;
     }
