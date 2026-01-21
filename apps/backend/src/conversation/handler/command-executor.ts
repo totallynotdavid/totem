@@ -213,6 +213,8 @@ async function executeImages(
     category: command.category,
     creditLine: credit,
     isSimulation,
+    offset: command.offset,
+    query: command.query,
   });
 
   // Update phase with sent products for validation in next message

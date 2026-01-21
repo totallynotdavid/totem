@@ -8,6 +8,8 @@ export type SendBundleParams = {
   category: string;
   creditLine: number;
   isSimulation: boolean;
+  offset?: number;
+  query?: string;
 };
 
 export type SendBundleResult = {
@@ -27,13 +29,26 @@ export type SendBundleResult = {
 export async function sendBundleImages(
   params: SendBundleParams,
 ): Promise<SendBundleResult> {
-  const { phoneNumber, segment, category, creditLine, isSimulation } = params;
+  const {
+    phoneNumber,
+    segment,
+    category,
+    creditLine,
+    isSimulation,
+    offset,
+    query,
+  } = params;
+
+  const strictPriceLimit = segment === "gaso";
 
   const bundles = BundleService.getAvailable({
     maxPrice: creditLine,
     category,
     segment,
-  }).slice(0, 3);
+    strictPriceLimit,
+    offset: offset || 0,
+    query,
+  });
 
   if (bundles.length === 0) {
     return { success: false, products: [] };
