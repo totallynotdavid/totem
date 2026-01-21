@@ -5,7 +5,7 @@ import { WhatsAppService } from "../adapters/whatsapp/index.ts";
 export type SendBundleParams = {
   phoneNumber: string;
   segment: Segment;
-  category: string;
+  category?: string;
   creditLine: number;
   isSimulation: boolean;
   offset?: number;
