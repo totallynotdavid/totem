@@ -16,37 +16,15 @@ import { getFrontendUrl } from "@totem/utils";
 
 const logger = createLogger("commands");
 
+import { formatConversationDetails } from "../../domains/conversations/notifications.ts";
+
 function formatTeamNotification(
   originalMessage: string,
   phoneNumber: string,
   phase: ConversationPhase,
   metadata: ConversationMetadata,
 ): string {
-  const name =
-    metadata.name || ("name" in phase ? phase.name : null) || "No disponible";
-  const dni =
-    metadata.dni || ("dni" in phase ? phase.dni : null) || "No disponible";
-  const telefono = phoneNumber;
-
-  let producto = "No disponible";
-  if (
-    "selectedProduct" in phase &&
-    phase.selectedProduct &&
-    phase.selectedProduct.name
-  ) {
-    const price = phase.selectedProduct.price || 0;
-    producto = `${phase.selectedProduct.name} (S/ ${price.toFixed(2)})`;
-  } else if (
-    "interestedProduct" in phase &&
-    phase.interestedProduct &&
-    phase.interestedProduct.name
-  ) {
-    const price = phase.interestedProduct.price || 0;
-    producto = `${phase.interestedProduct.name} (S/ ${price.toFixed(2)})`;
-  }
-
-  // Build the formatted message
-  const header = `Nombre: ${name}\nDNI: ${dni}\nTeléfono: ${telefono}\nProducto: ${producto}`;
+  const header = formatConversationDetails(metadata, phase, phoneNumber);
 
   // Add URL for purchase confirmations
   let urlSection = "";
