@@ -41,14 +41,12 @@ export function transitionCheckingEligibility(
         },
         commands: [
           {
-            type: "NOTIFY_TEAM",
-            channel: "dev",
-            message: `CRÍTICO: Todos los proveedores de elegibilidad caídos`,
-          },
-          {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Sistema de verificación no disponible temporalmente`,
+            type: "SIGNAL_ATTENTION",
+            reason: "system_outage",
+            metadata: {
+              context: "eligibility_check",
+              error: "all_providers_down",
+            },
           },
         ],
       };
@@ -75,9 +73,11 @@ export function transitionCheckingEligibility(
         commands: [
           ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
           {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Verificación de elegibilidad requiere revisión manual`,
+            type: "SIGNAL_ATTENTION",
+            reason: "needs_human_intervention",
+            metadata: {
+              reason: "eligibility_check_failed",
+            },
           },
           {
             type: "ESCALATE",

@@ -117,6 +117,33 @@ async function executeCommand(
       );
       break;
 
+    case "SIGNAL_ATTENTION":
+      if (command.reason === "system_outage") {
+        await NotificationService.notifySystemOutage(
+          "dev",
+          { phoneNumber, dni: metadata.dni },
+          ["System reported outage via core signal"],
+        );
+        // Also notify agent if needed
+        await NotificationService.notifySystemOutage(
+          "agent",
+          { phoneNumber, dni: metadata.dni },
+          ["Sistema de verificación no disponible"],
+        );
+      } else if (command.reason === "needs_human_intervention") {
+        await NotificationService.notifyGeneric(
+          "agent",
+          {
+            phoneNumber,
+            clientName: metadata.name,
+            dni: metadata.dni,
+            urlSuffix: `/conversations/${phoneNumber}`,
+          },
+          "Verificación de elegibilidad requiere revisión manual",
+        );
+      }
+      break;
+
     case "ESCALATE":
       // Phase update already handled in executeCommands
       logger.warn(
