@@ -3,9 +3,11 @@ version = "2.3.13"
 backend = "npm:@biomejs/biome"
 
 [[tools.bun]]
-version = "1.3.6"
+version = "1.3.7"
 backend = "core:bun"
+"platforms.windows-x64" = { checksum = "blake3:6daa5dbd155ccd4547b9be6bd039d7470c412f271b30a477e0f5b8e6ccb4a72b"}
 
 [[tools.cloudflared]]
-version = "2026.1.1"
+version = "2026.1.2"
 backend = "aqua:cloudflare/cloudflared"
+"platforms.windows-x64" = { checksum = "sha256:6304f5e1c017c038fb74a02c0157b2b63d4bc1f15709c639fcc08cb6dbe4c126", url = "https://github.com/cloudflare/cloudflared/releases/download/2026.1.2/cloudflared-windows-amd64.exe"}
