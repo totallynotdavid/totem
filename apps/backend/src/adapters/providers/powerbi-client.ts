@@ -1,4 +1,8 @@
 import { config } from "../../config.ts";
+import { createLogger } from "../../lib/logger.ts";
+import { createAbortTimeout, TIMEOUTS } from "../../config/timeouts.ts";
+
+const logger = createLogger("powerbi-client");
 
 type PowerBIResponse = {
   results?: Array<{
@@ -95,43 +99,92 @@ async function queryField(
     modelId: parseInt(config.powerbi.modelId || "0", 10),
   };
 
-  const res = await fetch(
-    "https://wabi-south-central-us-api.analysis.windows.net/public/reports/querydata?synchronous=true",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-PowerBI-ResourceKey": config.powerbi.resourceKey,
-      },
-      body: JSON.stringify(payload),
-    },
-  );
-
-  if (!res.ok) {
-    throw new Error(`PowerBI Query Failed: ${res.status} ${res.statusText}`);
-  }
-
-  const data = (await res.json()) as PowerBIResponse;
+  const { signal, cleanup } = createAbortTimeout(TIMEOUTS.POWERBI_QUERY);
 
   try {
-    const val =
-      data.results?.[0]?.result?.data?.dsr?.DS?.[0]?.PH?.[0]?.DM0?.[0]?.M0;
-    if (val === undefined || val === null) return undefined;
-    return String(val).trim();
-  } catch {
-    return undefined;
+    const res = await fetch(
+      "https://wabi-south-central-us-api.analysis.windows.net/public/reports/querydata?synchronous=true",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-PowerBI-ResourceKey": config.powerbi.resourceKey,
+        },
+        body: JSON.stringify(payload),
+        signal,
+      },
+    );
+
+    cleanup();
+
+    if (!res.ok) {
+      throw new Error(`PowerBI Query Failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as PowerBIResponse;
+
+    try {
+      const val =
+        data.results?.[0]?.result?.data?.dsr?.DS?.[0]?.PH?.[0]?.DM0?.[0]?.M0;
+      if (val === undefined || val === null) return undefined;
+      return String(val).trim();
+    } catch {
+      return undefined;
+    }
+  } catch (error) {
+    cleanup();
+
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        logger.error(
+          { dni, propertyName, timeoutMs: TIMEOUTS.POWERBI_QUERY },
+          "PowerBI query timeout",
+        );
+        throw new Error(
+          `PowerBI Query Timeout after ${TIMEOUTS.POWERBI_QUERY}ms`,
+        );
+      }
+      logger.error(
+        { error: error.message, dni, propertyName },
+        "PowerBI query failed",
+      );
+    }
+
+    throw error;
   }
 }
 
 async function queryAll(dni: string) {
-  const [estado, nombre, saldoStr, nseStr] = await Promise.all([
-    queryField(dni, "Estado", VISUAL_IDS.estado),
-    queryField(dni, "Cliente", VISUAL_IDS.nombre),
-    queryField(dni, "Saldo", VISUAL_IDS.saldo),
-    queryField(dni, "NSE", VISUAL_IDS.nse),
-  ]);
+  logger.debug({ dni }, "Starting PowerBI queryAll");
 
-  return { estado, nombre, saldoStr, nseStr };
+  const startTime = Date.now();
+
+  try {
+    const [estado, nombre, saldoStr, nseStr] = await Promise.all([
+      queryField(dni, "Estado", VISUAL_IDS.estado),
+      queryField(dni, "Cliente", VISUAL_IDS.nombre),
+      queryField(dni, "Saldo", VISUAL_IDS.saldo),
+      queryField(dni, "NSE", VISUAL_IDS.nse),
+    ]);
+
+    const duration = Date.now() - startTime;
+
+    logger.debug(
+      { dni, durationMs: duration, hasEstado: !!estado, hasNombre: !!nombre },
+      "PowerBI queryAll completed",
+    );
+
+    return { estado, nombre, saldoStr, nseStr };
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    logger.error(
+      { error, dni, durationMs: duration },
+      "PowerBI queryAll failed",
+    );
+
+    throw error;
+  }
 }
 
 export const PowerBIClient = {
