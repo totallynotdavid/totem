@@ -2,6 +2,7 @@ import process from "node:process";
 import type { WhatsAppAdapter } from "./types.ts";
 import { createLogger } from "../../lib/logger.ts";
 import { getPublicUrl } from "@totem/utils";
+import { createAbortTimeout, TIMEOUTS } from "../../config/timeouts.ts";
 
 const logger = createLogger("whatsapp");
 const TOKEN = process.env.WHATSAPP_TOKEN;
@@ -16,6 +17,8 @@ export const CloudApiAdapter: WhatsAppAdapter = {
       return null;
     }
 
+    const { signal, cleanup } = createAbortTimeout(TIMEOUTS.WHATSAPP_SEND);
+
     try {
       const response = await fetch(API_URL, {
         method: "POST",
@@ -29,7 +32,10 @@ export const CloudApiAdapter: WhatsAppAdapter = {
           type: "text",
           text: { body: content },
         }),
+        signal,
       });
+
+      cleanup();
 
       if (!response.ok) {
         const error = await response.json();
@@ -43,9 +49,22 @@ export const CloudApiAdapter: WhatsAppAdapter = {
       const data = (await response.json()) as {
         messages?: Array<{ id: string }>;
       };
+
       return data.messages?.[0]?.id ?? null;
     } catch (error) {
-      logger.error({ error, to }, "WhatsApp send failed");
+      cleanup();
+
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          logger.error(
+            { to, timeoutMs: TIMEOUTS.WHATSAPP_SEND },
+            "WhatsApp send timeout",
+          );
+        } else {
+          logger.error({ error, to }, "WhatsApp send failed");
+        }
+      }
+
       return null;
     }
   },
@@ -63,6 +82,8 @@ export const CloudApiAdapter: WhatsAppAdapter = {
     const publicUrl = getPublicUrl();
     const link = `${publicUrl}/media/${imagePath}`;
 
+    const { signal, cleanup } = createAbortTimeout(TIMEOUTS.WHATSAPP_IMAGE);
+
     try {
       const payload: Record<string, unknown> = {
         messaging_product: "whatsapp",
@@ -78,7 +99,10 @@ export const CloudApiAdapter: WhatsAppAdapter = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
+        signal,
       });
+
+      cleanup();
 
       if (!response.ok) {
         const error = await response.json();
@@ -95,13 +119,27 @@ export const CloudApiAdapter: WhatsAppAdapter = {
 
       return responseData.messages?.[0]?.id ?? null;
     } catch (error) {
-      logger.error({ error, to, imagePath }, "WhatsApp image send failed");
+      cleanup();
+
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          logger.error(
+            { to, imagePath, timeoutMs: TIMEOUTS.WHATSAPP_IMAGE },
+            "WhatsApp image send timeout",
+          );
+        } else {
+          logger.error({ error, to, imagePath }, "WhatsApp image send failed");
+        }
+      }
+
       return null;
     }
   },
 
   async markAsRead(messageId: string): Promise<void> {
     if (!TOKEN || !PHONE_ID) return;
+
+    const { signal, cleanup } = createAbortTimeout(5_000);
 
     try {
       await fetch(API_URL, {
@@ -116,8 +154,12 @@ export const CloudApiAdapter: WhatsAppAdapter = {
           message_id: messageId,
           typing_indicator: { type: "text" },
         }),
+        signal,
       });
+
+      cleanup();
     } catch {
+      cleanup();
       // Non-critical, silently fail
     }
   },

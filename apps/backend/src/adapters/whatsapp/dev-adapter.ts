@@ -1,6 +1,7 @@
 import type { WhatsAppAdapter } from "./types.ts";
 import { createLogger } from "../../lib/logger.ts";
 import { getNotifierUrl, getPublicUrl } from "@totem/utils";
+import { createAbortTimeout, TIMEOUTS } from "../../config/timeouts.ts";
 
 const logger = createLogger("whatsapp");
 
@@ -9,12 +10,17 @@ const publicUrl = getPublicUrl();
 
 export const DevAdapter: WhatsAppAdapter = {
   async sendMessage(to: string, content: string): Promise<string | null> {
+    const { signal, cleanup } = createAbortTimeout(TIMEOUTS.WHATSAPP_SEND);
+
     try {
       const response = await fetch(`${notifierUrl}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: to, content }),
+        signal,
       });
+
+      cleanup();
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -29,9 +35,22 @@ export const DevAdapter: WhatsAppAdapter = {
         status: string;
         messageId?: string;
       };
+
       return data.messageId ?? null;
     } catch (error) {
-      logger.error({ error, to }, "Dev adapter send error");
+      cleanup();
+
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          logger.error(
+            { to, timeoutMs: TIMEOUTS.WHATSAPP_SEND },
+            "Dev adapter send timeout",
+          );
+        } else {
+          logger.error({ error, to }, "Dev adapter send error");
+        }
+      }
+
       return null;
     }
   },
@@ -43,12 +62,17 @@ export const DevAdapter: WhatsAppAdapter = {
   ): Promise<string | null> {
     const imageUrl = `${publicUrl}/media/${imagePath}`;
 
+    const { signal, cleanup } = createAbortTimeout(TIMEOUTS.WHATSAPP_IMAGE);
+
     try {
       const response = await fetch(`${notifierUrl}/send-image`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: to, imageUrl, caption }),
+        signal,
       });
+
+      cleanup();
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -63,9 +87,25 @@ export const DevAdapter: WhatsAppAdapter = {
         status: string;
         messageId?: string;
       };
+
       return data.messageId ?? null;
     } catch (error) {
-      logger.error({ error, to, imagePath }, "Dev adapter image send error");
+      cleanup();
+
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          logger.error(
+            { to, imagePath, timeoutMs: TIMEOUTS.WHATSAPP_IMAGE },
+            "Dev adapter image send timeout",
+          );
+        } else {
+          logger.error(
+            { error, to, imagePath },
+            "Dev adapter image send error",
+          );
+        }
+      }
+
       return null;
     }
   },

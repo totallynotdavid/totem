@@ -1,5 +1,6 @@
 import { createLogger } from "../../lib/logger.ts";
 import { getNotifierUrl } from "@totem/utils";
+import { createAbortTimeout, TIMEOUTS } from "../../config/timeouts.ts";
 
 const logger = createLogger("notifier");
 
@@ -16,6 +17,8 @@ export async function notifyTeam(
   message: string,
   options?: { phoneNumber?: string },
 ): Promise<boolean> {
+  const { signal, cleanup } = createAbortTimeout(TIMEOUTS.NOTIFIER);
+
   try {
     const payload: NotifyRequest = { channel, message };
     if (options?.phoneNumber) {
@@ -26,22 +29,43 @@ export async function notifyTeam(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal,
     });
+
+    cleanup();
 
     return response.ok;
   } catch (error) {
-    logger.error({ error, channel }, "Notifier service error");
+    cleanup();
+
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        logger.error(
+          { channel, timeoutMs: TIMEOUTS.NOTIFIER },
+          "Notifier timeout",
+        );
+      } else {
+        logger.error({ error, channel }, "Notifier service error");
+      }
+    }
+
     return false;
   }
 }
 
 export async function checkNotifierHealth(): Promise<boolean> {
+  const { signal, cleanup } = createAbortTimeout(3000); // Shorter timeout for health check
+
   try {
     const response = await fetch(`${notifierUrl}/health`, {
       method: "GET",
+      signal,
     });
+
+    cleanup();
     return response.ok;
   } catch {
+    cleanup();
     return false;
   }
 }
