@@ -11,6 +11,16 @@ export type DomainEvent =
         agentId: string;
         agentPhone: string | null;
         clientName: string | null;
+        dni?: string | null;
+      };
+    })
+  | (BaseEvent & {
+      type: "contract_uploaded";
+      payload: {
+        phoneNumber: string;
+        clientName: string;
+        contractPath: string;
+        dni?: string;
       };
     })
   | (BaseEvent & {

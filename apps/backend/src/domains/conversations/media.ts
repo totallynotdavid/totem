@@ -1,6 +1,6 @@
 import { db } from "../../db/index.ts";
 import { logAction } from "../../platform/audit/logger.ts";
-import { NotificationService } from "../notifications/service.ts";
+import { eventBus, createEvent } from "../../shared/events/index.ts";
 import { resolve, join } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -51,12 +51,13 @@ export async function uploadContract(
   // Contract path for reference
   const contractRelPath = `contracts/${phoneNumber}/contract.${contractExt}`;
 
-  await NotificationService.notifyContractUploaded({
-    phoneNumber,
-    clientName: clientName || "Cliente",
-    details: contractRelPath,
-    urlSuffix: `/conversations/${phoneNumber}`,
-  });
+  eventBus.emit(
+    createEvent("contract_uploaded", {
+      phoneNumber,
+      clientName: clientName || "Cliente",
+      contractPath: contractRelPath,
+    }),
+  );
 
   return { success: true };
 }

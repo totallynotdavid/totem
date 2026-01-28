@@ -60,6 +60,10 @@ export async function assignNextAgent(
      WHERE phone_number = ?`,
   ).run(assignedAgent.id, Date.now(), phoneNumber);
 
+  const conversation = db
+    .prepare("SELECT dni FROM conversations WHERE phone_number = ?")
+    .get(phoneNumber) as { dni: string } | undefined;
+
   if (assignedAgent.phone_number) {
     eventBus.emit(
       createEvent("agent_assigned", {
@@ -67,6 +71,7 @@ export async function assignNextAgent(
         clientName,
         agentId: assignedAgent.id,
         agentPhone: assignedAgent.phone_number,
+        dni: conversation?.dni,
       }),
     );
   }

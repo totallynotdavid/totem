@@ -28,8 +28,7 @@ export const notificationRules: NotificationRule[] = [
       return templates.assignment({
         phoneNumber: event.payload.phoneNumber,
         clientName: event.payload.clientName,
-        // DNI not currently in agent_assigned payload, strictly speaking. Maybe add it?
-        // Current payload: { phoneNumber, agentId, agentPhone, clientName }
+        dni: event.payload.dni,
       });
     },
   },
@@ -43,6 +42,21 @@ export const notificationRules: NotificationRule[] = [
       if (event.type !== "enrichment_limit_exceeded") return "";
       return templates.enrichmentLoop({
         phoneNumber: event.payload.phoneNumber,
+      });
+    },
+  },
+  {
+    id: "contract_uploaded_alert",
+    triggerEvent: "contract_uploaded",
+    channel: "whatsapp",
+    target: "sales",
+    condition: (event) => event.type === "contract_uploaded",
+    template: (event) => {
+      if (event.type !== "contract_uploaded") return "";
+      return templates.contractUploaded({
+        phoneNumber: event.payload.phoneNumber,
+        clientName: event.payload.clientName,
+        details: event.payload.contractPath,
       });
     },
   },
