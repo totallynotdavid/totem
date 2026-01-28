@@ -5,7 +5,7 @@ export type NotificationRule = {
   id: string;
   triggerEvent: DomainEvent["type"];
   channel: "whatsapp" | "slack" | "email";
-  target: string;
+  target: string | ((event: DomainEvent) => string | undefined);
   condition: (event: DomainEvent) => boolean;
   template: (event: DomainEvent) => string;
 };
@@ -15,7 +15,10 @@ export const notificationRules: NotificationRule[] = [
     id: "agent_assignment_whatsapp",
     triggerEvent: "agent_assigned",
     channel: "whatsapp",
-    target: "dynamic_agent",
+    target: (event) => {
+      if (event.type !== "agent_assigned") return undefined;
+      return event.payload.agentPhone || undefined;
+    },
     condition: (event) => {
       if (event.type !== "agent_assigned") return false;
       return !!event.payload.agentPhone;
@@ -55,12 +58,12 @@ export const notificationRules: NotificationRule[] = [
         {
           phoneNumber: event.payload.phoneNumber,
           clientName: event.payload.clientName || "Cliente",
-          dni: event.payload.dni, // Added in Types update
+          dni: event.payload.dni,
           urlSuffix: `/orders/${event.payload.orderId}`,
         },
         event.payload.orderNumber,
         event.payload.amount,
-        event.payload.productName, // Added in Types update
+        event.payload.productName,
       );
     },
   },
@@ -74,7 +77,6 @@ export const notificationRules: NotificationRule[] = [
       if (event.type !== "escalation_triggered") return "";
       let reason = event.payload.reason;
 
-      // Translate raw reasons to friendly text
       const map: Record<string, string> = {
         customer_question_during_objection:
           "Pregunta durante manejo de objeción",
@@ -88,7 +90,7 @@ export const notificationRules: NotificationRule[] = [
       }
 
       return templates.escalation(
-        { phoneNumber: event.payload.phoneNumber }, // Need to pass name? Escalation payload lacks name/dni currently.
+        { phoneNumber: event.payload.phoneNumber },
         reason,
       );
     },

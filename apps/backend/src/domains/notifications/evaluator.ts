@@ -41,18 +41,21 @@ export function evaluateNotifications(
       }
 
       const content = rule.template(event);
-      let target = rule.target;
 
-      if (target === "dynamic_agent" && event.type === "agent_assigned") {
-        if (!event.payload.agentPhone) {
-          decisions.push({
-            status: "skipped",
-            reason: "missing_target_phone",
-            ruleId: rule.id,
-          });
-          continue;
-        }
-        target = event.payload.agentPhone;
+      let target: string | undefined;
+      if (typeof rule.target === "function") {
+        target = rule.target(event);
+      } else {
+        target = rule.target;
+      }
+
+      if (!target) {
+        decisions.push({
+          status: "skipped",
+          reason: "missing_target",
+          ruleId: rule.id,
+        });
+        continue;
       }
 
       decisions.push({
