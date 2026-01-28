@@ -16,14 +16,7 @@ type UploadContractInput = {
 export async function uploadContract(
   input: UploadContractInput,
 ): Promise<{ success: boolean }> {
-  const {
-    phoneNumber,
-    userId,
-    contractFile,
-    audioFile,
-    clientName,
-    userDisplayName,
-  } = input;
+  const { phoneNumber, userId, contractFile, audioFile, clientName } = input;
 
   const contractsDir = resolve(process.cwd(), "data", "contracts", phoneNumber);
   await mkdir(contractsDir, { recursive: true });
@@ -55,14 +48,15 @@ export async function uploadContract(
     audioFile: audioFile.name,
   });
 
-  await NotificationService.notifyContractUploaded(
-    {
-      clientName,
-      phoneNumber,
-      urlSuffix: `/conversations/${phoneNumber}`,
-    },
-    userDisplayName,
-  );
+  // Contract path for reference
+  const contractRelPath = `contracts/${phoneNumber}/contract.${contractExt}`;
+
+  await NotificationService.notifyContractUploaded({
+    phoneNumber,
+    clientName: clientName || "Cliente",
+    details: contractRelPath,
+    urlSuffix: `/conversations/${phoneNumber}`,
+  });
 
   return { success: true };
 }

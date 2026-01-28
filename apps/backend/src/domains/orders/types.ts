@@ -1,8 +1,15 @@
+export interface OrderItem {
+  productId: string;
+  name?: string;
+  price: number;
+  quantity: number;
+}
+
 export interface CreateOrderInput {
   conversationPhone: string;
   clientName: string;
   clientDni: string;
-  products: string;
+  products: OrderItem[];
   totalAmount: number;
   deliveryAddress: string;
   deliveryReference?: string;

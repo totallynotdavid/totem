@@ -19,13 +19,16 @@ export function createOrder(input: CreateOrderInput): Order {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
   `);
 
+  const productJson = JSON.stringify(input.products);
+  const mainProduct = input.products[0];
+
   stmt.run(
     id,
     orderNumber,
     input.conversationPhone,
     input.clientName,
     input.clientDni,
-    input.products,
+    productJson,
     input.totalAmount,
     input.deliveryAddress,
     input.deliveryReference || null,
@@ -49,6 +52,8 @@ export function createOrder(input: CreateOrderInput): Order {
       amount: input.totalAmount,
       clientName: input.clientName,
       phoneNumber: input.conversationPhone,
+      dni: input.clientDni,
+      productName: mainProduct?.name || "Producto",
     },
   });
 

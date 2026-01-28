@@ -25,7 +25,8 @@ export const notificationRules: NotificationRule[] = [
       return templates.assignment({
         phoneNumber: event.payload.phoneNumber,
         clientName: event.payload.clientName,
-        urlSuffix: `/conversations/${event.payload.phoneNumber}`,
+        // DNI not currently in agent_assigned payload, strictly speaking. Maybe add it?
+        // Current payload: { phoneNumber, agentId, agentPhone, clientName }
       });
     },
   },
@@ -37,10 +38,9 @@ export const notificationRules: NotificationRule[] = [
     condition: (event) => event.type === "enrichment_limit_exceeded",
     template: (event) => {
       if (event.type !== "enrichment_limit_exceeded") return "";
-      return templates.generic(
-        { phoneNumber: event.payload.phoneNumber },
-        `Límite de bucles de enriquecimiento excedido en conversación`,
-      );
+      return templates.enrichmentLoop({
+        phoneNumber: event.payload.phoneNumber,
+      });
     },
   },
   {
@@ -55,10 +55,12 @@ export const notificationRules: NotificationRule[] = [
         {
           phoneNumber: event.payload.phoneNumber,
           clientName: event.payload.clientName || "Cliente",
+          dni: event.payload.dni, // Added in Types update
           urlSuffix: `/orders/${event.payload.orderId}`,
         },
         event.payload.orderNumber,
         event.payload.amount,
+        event.payload.productName, // Added in Types update
       );
     },
   },
@@ -70,23 +72,24 @@ export const notificationRules: NotificationRule[] = [
     condition: (event) => event.type === "escalation_triggered",
     template: (event) => {
       if (event.type !== "escalation_triggered") return "";
-      let message = "";
-      switch (event.payload.reason) {
-        case "customer_question_during_objection":
-          message = "Pregunta durante manejo de objeción";
-          break;
-        case "multiple_objections":
-          message = "Cliente rechazó múltiples ofertas";
-          break;
-        case "customer_question_requires_human":
-          message = "Pregunta del cliente requiere atención humana";
-          break;
-        default:
-          message = `Escalamiento: ${event.payload.reason}`;
+      let reason = event.payload.reason;
+
+      // Translate raw reasons to friendly text
+      const map: Record<string, string> = {
+        customer_question_during_objection:
+          "Pregunta durante manejo de objeción",
+        multiple_objections: "Cliente rechazó múltiples ofertas",
+        customer_question_requires_human:
+          "Pregunta del cliente requiere atención humana",
+      };
+
+      if (map[reason]) {
+        reason = map[reason]!;
       }
-      return templates.generic(
-        { phoneNumber: event.payload.phoneNumber },
-        message,
+
+      return templates.escalation(
+        { phoneNumber: event.payload.phoneNumber }, // Need to pass name? Escalation payload lacks name/dni currently.
+        reason,
       );
     },
   },
@@ -98,9 +101,9 @@ export const notificationRules: NotificationRule[] = [
     condition: (event) => event.type === "system_error_occurred",
     template: (event) => {
       if (event.type !== "system_error_occurred") return "";
-      return templates.generic(
+      return templates.systemError(
         { phoneNumber: event.payload.phoneNumber },
-        `Error del Sistema: ${event.payload.error}`,
+        event.payload.error,
       );
     },
   },
@@ -112,13 +115,11 @@ export const notificationRules: NotificationRule[] = [
     condition: (event) => event.type === "attention_required",
     template: (event) => {
       if (event.type !== "attention_required") return "";
-      return templates.generic(
-        {
-          phoneNumber: event.payload.phoneNumber,
-          clientName: event.payload.clientName,
-        },
-        `${event.payload.reason}. Revisa la conversación.`,
-      );
+      return templates.attention({
+        phoneNumber: event.payload.phoneNumber,
+        clientName: event.payload.clientName,
+        dni: event.payload.dni,
+      });
     },
   },
   {
@@ -129,9 +130,9 @@ export const notificationRules: NotificationRule[] = [
     condition: (event) => event.type === "system_outage_detected",
     template: (event) => {
       if (event.type !== "system_outage_detected") return "";
-      return templates.generic(
-        { phoneNumber: "N/A" },
-        `🚨 System outage: DNI ${event.payload.dni}\nErrors: ${event.payload.errors.join(", ")}`,
+      return templates.systemOutage(
+        { phoneNumber: "N/A", dni: event.payload.dni },
+        event.payload.errors,
       );
     },
   },
@@ -143,9 +144,10 @@ export const notificationRules: NotificationRule[] = [
     condition: (event) => event.type === "provider_degraded",
     template: (event) => {
       if (event.type !== "provider_degraded") return "";
-      return templates.generic(
-        { phoneNumber: "N/A" },
-        `Provider Degraded: ${event.payload.failedProvider} failed.\nUsing ${event.payload.workingProvider}\nDNI: ${event.payload.dni}`,
+      return templates.degradation(
+        { phoneNumber: "N/A", dni: event.payload.dni },
+        event.payload.failedProvider,
+        event.payload.workingProvider,
       );
     },
   },

@@ -28,14 +28,15 @@ export class DevAlertSubscriber {
   async onProviderDegraded(
     event: DomainEvent & { type: "provider_degraded" },
   ): Promise<void> {
-    const { failedProvider, workingProvider, dni, errors } = event.payload;
+    const { failedProvider, workingProvider, dni } = event.payload;
 
     await NotificationService.notifyDegradation(
       {
         phoneNumber: "N/A",
         dni,
       },
-      `${failedProvider} caído, usando ${workingProvider}\nError: ${errors.join(", ")}`,
+      failedProvider,
+      workingProvider,
     );
     logger.warn(
       { failedProvider, workingProvider },

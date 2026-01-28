@@ -35,13 +35,14 @@ export function setupEventSubscribers(): void {
         conversationPhone: event.payload.phoneNumber,
         clientName: event.payload.clientName,
         clientDni: event.payload.dni,
-        products: JSON.stringify([
+        products: [
           {
             productId: event.payload.productId,
+            name: event.payload.productName,
             quantity: 1,
             price: event.payload.amount,
           },
-        ]),
+        ],
         totalAmount: event.payload.amount,
         deliveryAddress: "Pendiente de coordinación",
       });

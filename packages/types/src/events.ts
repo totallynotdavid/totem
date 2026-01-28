@@ -41,6 +41,8 @@ export type DomainEvent =
         amount: number;
         clientName: string;
         phoneNumber: string;
+        dni?: string;
+        productName?: string;
       };
     })
   | (BaseEvent & {
