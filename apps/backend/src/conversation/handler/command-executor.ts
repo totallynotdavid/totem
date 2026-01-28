@@ -5,7 +5,7 @@ import type {
   Command,
 } from "@totem/core";
 import { WhatsAppService } from "../../adapters/whatsapp/index.ts";
-import { NotificationService } from "../../domains/notifications/service.ts";
+import { eventBus, createEvent } from "../../shared/events/index.ts";
 import { sendBundleImages } from "../images.ts";
 import { trackEvent } from "../../domains/analytics/index.ts";
 import { BundleService } from "../../domains/catalog/index.ts";
@@ -20,21 +20,27 @@ export async function executeCommands(
   phoneNumber: string,
   metadata: ConversationMetadata,
   isSimulation: boolean,
+  traceId: string,
 ): Promise<void> {
   if (result.type === "need_enrichment") {
     // Should not reach here, enrichment loop should handle it
     logger.error(
-      { phoneNumber, resultType: result.type },
+      { phoneNumber, resultType: result.type, traceId },
       "Unexpected need_enrichment in executeCommands",
     );
-    await NotificationService.notifyGeneric(
-      "dev",
-      {
-        phoneNumber,
-        clientName: metadata.name,
-        dni: metadata.dni,
-      },
-      "Error en ejecución de comandos",
+    eventBus.emit(
+      createEvent(
+        "system_error_occurred",
+        {
+          phoneNumber,
+          error: "Error en ejecución de comandos (enrichment loop bypass)",
+          context: {
+            clientName: metadata.name || "Unknown",
+            dni: metadata.dni || "Unknown",
+          },
+        },
+        { traceId },
+      ),
     );
     return;
   }
@@ -102,27 +108,6 @@ async function executeCommand(
         segment: metadata.segment,
         ...command.metadata,
       });
-      break;
-
-    case "NOTIFY_TEAM":
-      await NotificationService.notifyGeneric(
-        command.channel,
-        {
-          phoneNumber,
-          clientName: metadata.name,
-          dni: metadata.dni,
-          urlSuffix: `/conversations/${phoneNumber}`,
-        },
-        command.message,
-      );
-      break;
-
-    case "ESCALATE":
-      // Phase update already handled in executeCommands
-      logger.warn(
-        { phoneNumber, reason: command.reason },
-        "Conversation escalated",
-      );
       break;
   }
 }

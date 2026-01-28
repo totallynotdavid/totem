@@ -4,6 +4,7 @@ import type {
   EnrichmentResult,
   ConversationMetadata,
 } from "../types.ts";
+import { createTraceId } from "@totem/utils";
 import { selectVariant } from "../../messaging/variation-selector.ts";
 import { checkFNBEligibility } from "../../eligibility/fnb-logic.ts";
 import * as T from "../../templates/standard.ts";
@@ -39,18 +40,7 @@ export function transitionCheckingEligibility(
           dni: phase.dni,
           timestamp: Date.now(),
         },
-        commands: [
-          {
-            type: "NOTIFY_TEAM",
-            channel: "dev",
-            message: `CRÍTICO: Todos los proveedores de elegibilidad caídos`,
-          },
-          {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Sistema de verificación no disponible temporalmente`,
-          },
-        ],
+        commands: [],
       };
     }
 
@@ -74,14 +64,18 @@ export function transitionCheckingEligibility(
         },
         commands: [
           ...message.map((text) => ({ type: "SEND_MESSAGE" as const, text })),
+        ],
+        events: [
           {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Verificación de elegibilidad requiere revisión manual`,
-          },
-          {
-            type: "ESCALATE",
-            reason: enrichment.handoffReason || "eligibility_check_failed",
+            type: "attention_required",
+            traceId: createTraceId(),
+            timestamp: Date.now(),
+            payload: {
+              phoneNumber: metadata.phoneNumber || "Unknown",
+              reason: "eligibility_check_failed",
+              clientName: metadata.name || "Unknown",
+              dni: phase.dni,
+            },
           },
         ],
       };

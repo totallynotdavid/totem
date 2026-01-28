@@ -3,7 +3,9 @@ import type {
   TransitionResult,
   EnrichmentResult,
   Command,
+  ConversationMetadata,
 } from "../types.ts";
+import { createTraceId } from "@totem/utils";
 import { selectVariant } from "../../messaging/variation-selector.ts";
 import { matchCategory } from "../../matching/category-matcher.ts";
 import { matchGroup } from "../../matching/group-matcher.ts";
@@ -23,7 +25,7 @@ type OfferingProductsPhase = Extract<
 export function transitionOfferingProducts(
   phase: OfferingProductsPhase,
   message: string,
-  _metadata: unknown,
+  _metadata: ConversationMetadata,
   enrichment?: EnrichmentResult,
   quotedContext?: {
     id: string;
@@ -35,7 +37,7 @@ export function transitionOfferingProducts(
   const lower = message.toLowerCase();
 
   if (enrichment) {
-    return handleEnrichmentResult(phase, message, enrichment);
+    return handleEnrichmentResult(phase, message, enrichment, _metadata);
   }
 
   if (quotedContext && phase.sentProducts && phase.sentProducts.length > 0) {
@@ -517,6 +519,7 @@ function handleEnrichmentResult(
   phase: OfferingProductsPhase,
   message: string,
   enrichment: EnrichmentResult,
+  _metadata: ConversationMetadata,
 ): TransitionResult {
   if (enrichment.type === "recovery_response") {
     return {
@@ -543,13 +546,19 @@ function handleEnrichmentResult(
           phase: "escalated",
           reason: "customer_question_requires_human",
         },
-        commands: [
+        commands: [],
+        events: [
           {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Pregunta del cliente requiere atención humana`,
+            type: "escalation_triggered",
+            traceId: createTraceId(),
+            timestamp: Date.now(),
+            payload: {
+              reason: "customer_question_requires_human",
+              phoneNumber:
+                _metadata?.phoneNumber?.replace(/\D/g, "") || "unknown",
+              context: { message },
+            },
           },
-          { type: "ESCALATE", reason: "customer_question_requires_human" },
         ],
       };
     }

@@ -36,11 +36,8 @@ export class NotificationService {
     await this.send("sales", message);
   }
 
-  static async notifyContractUploaded(
-    ctx: NotificationContext,
-    agentName: string,
-  ): Promise<void> {
-    const message = templates.contractUploaded(ctx, agentName);
+  static async notifyContractUploaded(ctx: NotificationContext): Promise<void> {
+    const message = templates.contractUploaded(ctx);
     await this.send("sales", message);
   }
 
@@ -55,25 +52,18 @@ export class NotificationService {
 
   static async notifyDegradation(
     ctx: NotificationContext,
-    details: string,
+    failed: string,
+    working: string,
   ): Promise<void> {
-    const message = templates.degradation(ctx, details);
+    const message = templates.degradation(ctx, failed, working);
     await this.send("dev", message);
   }
 
-  static async notifyError(
+  static async notifySystemError(
     ctx: NotificationContext,
-    errorDetails: string,
+    error: string,
   ): Promise<void> {
-    const message = templates.error(ctx, errorDetails);
+    const message = templates.systemError(ctx, error);
     await this.send("dev", message);
-  }
-  static async notifyGeneric(
-    channel: Channel,
-    ctx: NotificationContext,
-    message: string,
-  ): Promise<void> {
-    const formattedMessage = templates.generic(ctx, message);
-    await this.send(channel, formattedMessage);
   }
 }

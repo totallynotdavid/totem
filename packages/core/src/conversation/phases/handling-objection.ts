@@ -2,7 +2,9 @@ import type {
   ConversationPhase,
   TransitionResult,
   EnrichmentResult,
+  ConversationMetadata,
 } from "../types.ts";
+import { createTraceId } from "@totem/utils";
 import { selectVariant } from "../../messaging/variation-selector.ts";
 import * as S from "../../templates/sales.ts";
 
@@ -16,7 +18,7 @@ const MAX_OBJECTIONS = 2;
 export function transitionHandlingObjection(
   phase: HandlingObjectionPhase,
   message: string,
-  _metadata: unknown,
+  _metadata: ConversationMetadata,
   enrichment?: EnrichmentResult,
 ): TransitionResult {
   const lower = message.toLowerCase();
@@ -44,13 +46,19 @@ export function transitionHandlingObjection(
           phase: "escalated",
           reason: "customer_question_during_objection",
         },
-        commands: [
+        commands: [],
+        events: [
           {
-            type: "NOTIFY_TEAM",
-            channel: "agent",
-            message: `Pregunta durante manejo de objeción`,
+            type: "escalation_triggered",
+            traceId: createTraceId(),
+            timestamp: Date.now(),
+            payload: {
+              reason: "customer_question_during_objection",
+              phoneNumber:
+                _metadata?.phoneNumber?.replace(/\D/g, "") || "unknown",
+              context: { message },
+            },
           },
-          { type: "ESCALATE", reason: "customer_question_during_objection" },
         ],
       };
     }
@@ -64,13 +72,19 @@ export function transitionHandlingObjection(
         phase: "escalated",
         reason: "multiple_objections",
       },
-      commands: [
+      commands: [],
+      events: [
         {
-          type: "NOTIFY_TEAM",
-          channel: "agent",
-          message: `Cliente rechazó múltiples ofertas`,
+          type: "escalation_triggered",
+          traceId: createTraceId(),
+          timestamp: Date.now(),
+          payload: {
+            reason: "multiple_objections",
+            phoneNumber:
+              _metadata?.phoneNumber?.replace(/\D/g, "") || "unknown",
+            context: { objectionCount: phase.objectionCount },
+          },
         },
-        { type: "ESCALATE", reason: "multiple_objections" },
       ],
     };
   }

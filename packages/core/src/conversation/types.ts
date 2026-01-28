@@ -1,4 +1,5 @@
 import type { Segment, Bundle, CategoryGroup } from "@totem/types";
+import type { DomainEvent } from "@totem/types";
 
 export type ConversationPhase =
   | { phase: "greeting" }
@@ -91,6 +92,7 @@ export type ConversationMetadata = {
   triedDnis?: string[];
   createdAt: number;
   lastActivityAt: number;
+  phoneNumber?: string;
 };
 
 export type EnrichmentRequest =
@@ -168,20 +170,20 @@ export type Command =
       query?: string;
     }
   | { type: "SEND_BUNDLE"; bundleId: string }
-  | { type: "TRACK_EVENT"; event: string; metadata?: Record<string, unknown> }
-  | { type: "NOTIFY_TEAM"; channel: "agent" | "dev" | "sales"; message: string }
-  | { type: "ESCALATE"; reason: string };
+  | { type: "TRACK_EVENT"; event: string; metadata?: Record<string, unknown> };
 
 export type TransitionResult =
   | {
       type: "update";
       nextPhase: ConversationPhase;
       commands: Command[];
+      events?: DomainEvent[];
     }
   | {
       type: "need_enrichment";
       enrichment: EnrichmentRequest;
       pendingPhase?: ConversationPhase;
+      events?: DomainEvent[];
     };
 
 export type TransitionInput = {

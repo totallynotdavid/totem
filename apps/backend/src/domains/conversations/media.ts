@@ -1,6 +1,6 @@
 import { db } from "../../db/index.ts";
 import { logAction } from "../../platform/audit/logger.ts";
-import { NotificationService } from "../notifications/service.ts";
+import { eventBus, createEvent } from "../../shared/events/index.ts";
 import { resolve, join } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -16,14 +16,7 @@ type UploadContractInput = {
 export async function uploadContract(
   input: UploadContractInput,
 ): Promise<{ success: boolean }> {
-  const {
-    phoneNumber,
-    userId,
-    contractFile,
-    audioFile,
-    clientName,
-    userDisplayName,
-  } = input;
+  const { phoneNumber, userId, contractFile, audioFile, clientName } = input;
 
   const contractsDir = resolve(process.cwd(), "data", "contracts", phoneNumber);
   await mkdir(contractsDir, { recursive: true });
@@ -55,13 +48,15 @@ export async function uploadContract(
     audioFile: audioFile.name,
   });
 
-  await NotificationService.notifyContractUploaded(
-    {
-      clientName,
+  // Contract path for reference
+  const contractRelPath = `contracts/${phoneNumber}/contract.${contractExt}`;
+
+  eventBus.emit(
+    createEvent("contract_uploaded", {
       phoneNumber,
-      urlSuffix: `/conversations/${phoneNumber}`,
-    },
-    userDisplayName,
+      clientName: clientName || "Cliente",
+      contractPath: contractRelPath,
+    }),
   );
 
   return { success: true };
